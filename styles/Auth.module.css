@@ -1,0 +1,59 @@
+.authContainer {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.authCard {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1),
+    0 8px 10px -6px rgb(0 0 0 / 0.1);
+  padding: var(--spacing-xl);
+  width: 100%;
+  max-width: 440px;
+}
+
+.authHeader {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.authTitle {
+  font-size: var(--font-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.authSubtitle {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.formGroup {
+  margin-bottom: var(--spacing-lg);
+}
+
+.formActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xl);
+}
+
+.authFooter {
+  text-align: center;
+  margin-top: var(--spacing-lg);
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.authLink {
+  color: var(--primary);
+  font-weight: 600;
+  margin-left: var(--spacing-xs);
+}

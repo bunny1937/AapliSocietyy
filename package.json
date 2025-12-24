@@ -1,0 +1,30 @@
+{
+  "name": "nexgen-society-erp",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.62.7",
+    "bcryptjs": "^2.4.3",
+    "exceljs": "^4.4.0",
+    "html2canvas": "^1.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "jspdf": "^3.0.4",
+    "jspdf-autotable": "^5.0.2",
+    "mongoose": "^8.8.4",
+    "next": "^15.1.0",
+    "pdfkit": "^0.17.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "eslint": "^9.17.0",
+    "eslint-config-next": "^15.1.0"
+  }
+}

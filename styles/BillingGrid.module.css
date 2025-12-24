@@ -1,0 +1,435 @@
+.gridContainer {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.gridToolbar {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.gridToolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex: 1;
+  min-width: 300px;
+}
+
+.gridToolbarRight {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.searchInput {
+  max-width: 300px;
+}
+
+.filterSelect {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: var(--font-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.gridWrapper {
+  position: relative;
+  overflow: auto;
+  max-height: calc(100vh - 280px);
+}
+
+.gridTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 1200px;
+}
+
+.gridHeader {
+  background-color: var(--bg-tertiary);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.gridHeaderCell {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+  background-color: var(--bg-tertiary);
+  user-select: none;
+}
+
+.gridHeaderCell.sticky {
+  position: sticky;
+  left: 0;
+  z-index: 101;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+}
+
+.gridHeaderCell.stickySecond {
+  position: sticky;
+  left: 80px;
+  z-index: 101;
+}
+
+.gridHeaderCell.stickyThird {
+  position: sticky;
+  left: 160px;
+  z-index: 101;
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable:hover {
+  background-color: var(--border-hover);
+}
+
+.sortIcon {
+  margin-left: var(--spacing-xs);
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+.gridRow {
+  transition: background-color 0.15s ease;
+}
+
+.gridRow:hover {
+  background-color: var(--bg-secondary);
+}
+
+.gridRow.modified {
+  background-color: #fef3c7;
+}
+
+.gridRow.error {
+  background-color: #fee2e2;
+}
+
+.gridCell {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+}
+
+.gridCell.sticky {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background-color: var(--bg-primary);
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.03);
+}
+
+.gridCell.stickySecond {
+  position: sticky;
+  left: 80px;
+  z-index: 10;
+  background-color: var(--bg-primary);
+}
+
+.gridCell.stickyThird {
+  position: sticky;
+  left: 160px;
+  z-index: 10;
+  background-color: var(--bg-primary);
+}
+
+.gridRow:hover .gridCell {
+  background-color: var(--bg-secondary);
+}
+
+.gridRow.modified .gridCell {
+  background-color: #fef3c7;
+}
+
+.gridRow.error .gridCell {
+  background-color: #fee2e2;
+}
+
+.cellInput {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.cellInput:focus {
+  outline: none;
+  border-color: var(--primary);
+  background-color: white;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.cellInput:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.cellInputError {
+  border-color: var(--danger);
+}
+
+.cellInputError:focus {
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
+}
+
+.cellReadonly {
+  background-color: var(--bg-tertiary);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cellCalculated {
+  background-color: #dbeafe;
+  font-weight: 600;
+  color: var(--primary-dark);
+  text-align: right;
+}
+
+.gridFooter {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 2px solid var(--border);
+  background-color: var(--bg-tertiary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-sm);
+}
+
+.gridSummary {
+  display: flex;
+  gap: var(--spacing-lg);
+  color: var(--text-secondary);
+}
+
+.gridSummaryItem {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.gridSummaryLabel {
+  font-weight: 500;
+}
+
+.gridSummaryValue {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.gridActions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.progressBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: var(--bg-tertiary);
+  z-index: 9999;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+  transition: width 0.3s ease;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.errorList {
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.errorListTitle {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: #991b1b;
+  margin-bottom: var(--spacing-sm);
+}
+
+.errorListItems {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.errorListItem {
+  font-size: var(--font-sm);
+  color: #991b1b;
+  padding: 4px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+}
+
+.errorListItem::before {
+  content: "•";
+  font-weight: bold;
+}
+
+.uploadZone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background-color: var(--bg-secondary);
+}
+
+.uploadZone:hover {
+  border-color: var(--primary);
+  background-color: #eff6ff;
+}
+
+.uploadZone.dragActive {
+  border-color: var(--primary);
+  background-color: #dbeafe;
+  transform: scale(1.02);
+}
+
+.uploadIcon {
+  font-size: 48px;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.4;
+}
+
+.uploadText {
+  font-size: var(--font-md);
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-bottom: var(--spacing-sm);
+}
+
+.uploadSubtext {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.fileInput {
+  display: none;
+}
+
+.configForm {
+  display: grid;
+  gap: var(--spacing-lg);
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.matrixPreview {
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+}
+
+.matrixPreviewTitle {
+  font-size: var(--font-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.matrixGrid {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.matrixRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+.matrixLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 8px 12px;
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  min-width: 120px;
+}
+
+.matrixLabelText {
+  flex: 1;
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+}
+
+.deleteBtn {
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.deleteBtn:hover {
+  opacity: 1;
+}
