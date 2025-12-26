@@ -1,208 +1,511 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import styles from "@/styles/Dashboard.module.css";
 import gridStyles from "@/styles/BillingGrid.module.css";
+import Select from "react-select";
 
-export default function PaymentsPage() {
+export default function AdvancedPaymentPage() {
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState({
-    memberId: "",
-    amount: "",
-    paymentMode: "Cash",
-    paymentDate: new Date().toISOString().split("T")[0],
-    chequeNo: "",
-    bankName: "",
-    transactionRef: "",
-    upiId: "",
-    notes: "",
-  });
-  const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState("");
 
+  const [selectedMemberId, setSelectedMemberId] = useState("");
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentMode, setPaymentMode] = useState("Cash");
+  const [paymentDate, setPaymentDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [notes, setNotes] = useState("");
+  const [paymentDetails, setPaymentDetails] = useState({});
+
+  const [showReceiptPreview, setShowReceiptPreview] = useState(false);
+  const [allocationStrategy, setAllocationStrategy] = useState("oldest-first");
+  const [showForecast, setShowForecast] = useState(false);
+
+  // Fetch members
   const { data: membersData } = useQuery({
-    queryKey: ["members-list"],
-    queryFn: () => apiClient.get("/api/members/list?limit=1000"),
+    queryKey: ["members"],
+    queryFn: () => apiClient.get("/api/members/list"),
   });
 
-  const { data: paymentsData } = useQuery({
-    queryKey: ["payments-list"],
-    queryFn: () => apiClient.get("/api/payments/list?limit=50"),
+  // Fetch outstanding info when member selected
+  const { data: outstandingData, isLoading: outstandingLoading } = useQuery({
+    queryKey: ["outstanding", selectedMemberId],
+    queryFn: () =>
+      apiClient.get(`/api/payments/outstanding?memberId=${selectedMemberId}`),
+    enabled: !!selectedMemberId,
   });
 
-  const recordMutation = useMutation({
+  // Fetch payment history for selected member
+  const { data: paymentHistory } = useQuery({
+    queryKey: ["payment-history", selectedMemberId],
+    queryFn: () =>
+      apiClient.get(
+        `/api/ledger/fetch?memberId=${selectedMemberId}&category=Payment&limit=10`
+      ),
+    enabled: !!selectedMemberId,
+  });
+
+  // Record payment mutation
+  const recordPaymentMutation = useMutation({
     mutationFn: (data) => apiClient.post("/api/payments/record", data),
-    onSuccess: (data) => {
-      setSuccessMessage(
-        `✓ Payment recorded successfully! Transaction ID: ${data.transaction.transactionId}`
-      );
-      setFormData({
-        memberId: "",
-        amount: "",
-        paymentMode: "Cash",
-        paymentDate: new Date().toISOString().split("T")[0],
-        chequeNo: "",
-        bankName: "",
-        transactionRef: "",
-        upiId: "",
-        notes: "",
-      });
-      setErrors({});
-      queryClient.invalidateQueries(["payments-list"]);
-      queryClient.invalidateQueries(["ledger-transactions"]);
-      queryClient.invalidateQueries(["bills-list"]);
-      setTimeout(() => setSuccessMessage(""), 5000);
+    onSuccess: () => {
+      alert("✅ Payment recorded successfully!");
+      queryClient.invalidateQueries(["outstanding"]);
+      queryClient.invalidateQueries(["payment-history"]);
+      queryClient.invalidateQueries(["ledger"]);
+      resetForm();
     },
     onError: (error) => {
-      setErrors({ submit: error.message });
+      alert(`❌ Error: ${error.message}`);
     },
   });
 
-  const members = membersData?.members || [];
-  const payments = paymentsData?.payments || [];
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
+  const resetForm = () => {
+    setSelectedMemberId("");
+    setPaymentAmount("");
+    setNotes("");
+    setPaymentDetails({});
+    setShowReceiptPreview(false);
   };
 
-  const validate = () => {
-    const newErrors = {};
-
-    if (!formData.memberId) {
-      newErrors.memberId = "Please select a member";
+  const handleQuickPayment = (percentage) => {
+    if (outstandingData?.totalOutstanding) {
+      const amount = (outstandingData.totalOutstanding * percentage) / 100;
+      setPaymentAmount(Math.round(amount));
     }
-
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      newErrors.amount = "Amount must be greater than 0";
-    }
-
-    if (formData.paymentMode === "Cheque") {
-      if (!formData.chequeNo) newErrors.chequeNo = "Cheque number required";
-      if (!formData.bankName) newErrors.bankName = "Bank name required";
-    }
-
-    if (formData.paymentMode === "UPI" && !formData.upiId) {
-      newErrors.upiId = "UPI ID required";
-    }
-
-    if (
-      ["Online", "NEFT", "RTGS"].includes(formData.paymentMode) &&
-      !formData.transactionRef
-    ) {
-      newErrors.transactionRef = "Transaction reference required";
-    }
-
-    return newErrors;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
+    if (!selectedMemberId || !paymentAmount) {
+      alert("Please select member and enter amount");
       return;
     }
 
-    const paymentDetails = {};
-    if (formData.chequeNo) paymentDetails.chequeNo = formData.chequeNo;
-    if (formData.bankName) paymentDetails.bankName = formData.bankName;
-    if (formData.transactionRef)
-      paymentDetails.transactionRef = formData.transactionRef;
-    if (formData.upiId) paymentDetails.upiId = formData.upiId;
-
-    recordMutation.mutate({
-      memberId: formData.memberId,
-      amount: parseFloat(formData.amount),
-      paymentMode: formData.paymentMode,
-      paymentDate: formData.paymentDate,
+    const payload = {
+      memberId: selectedMemberId,
+      amount: parseFloat(paymentAmount),
+      paymentMode,
+      paymentDate,
       paymentDetails,
-      notes: formData.notes,
-    });
+      notes,
+    };
+
+    recordPaymentMutation.mutate(payload);
+  };
+
+  // Transform members data for React Select
+  const memberOptions =
+    membersData?.members
+      ?.sort((a, b) => {
+        // ✅ PROPER NUMERIC SORTING
+        const wingCompare = (a.wing || "").localeCompare(b.wing || "");
+        if (wingCompare !== 0) return wingCompare;
+
+        const roomA = parseInt(a.roomNo) || 0;
+        const roomB = parseInt(b.roomNo) || 0;
+        return roomA - roomB;
+      })
+      .map((member) => ({
+        value: member._id,
+        label: `${member.wing || ""}-${member.roomNo} | ${member.ownerName} | ${
+          member.areaSqFt
+        } sq.ft`,
+        member: member,
+      })) || [];
+
+  // ✅ ADD THIS: Find the currently selected member
+  const selectedMember = membersData?.members?.find(
+    (m) => m._id === selectedMemberId
+  );
+
+  const forecastInterest = (days) => {
+    if (!outstandingData?.principalAmount) return 0;
+    const rate = outstandingData.interestRate / 100;
+    const n = outstandingData.interestCompoundingFrequency === "DAILY" ? 30 : 1;
+    const t = days / 30;
+    const amount =
+      outstandingData.principalAmount * Math.pow(1 + rate / n, n * t);
+    return Math.round((amount - outstandingData.principalAmount) * 100) / 100;
   };
 
   return (
     <div>
+      {/* PAGE HEADER */}
       <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Record Payment</h1>
-        <p className={styles.pageSubtitle}>
-          Record member payments and adjust bills automatically
-        </p>
+        <div>
+          <h1 className={styles.pageTitle}>💳 Advanced Payment Recording</h1>
+          <p className={styles.pageSubtitle}>
+            Real-time interest calculation with payment forecasting
+          </p>
+        </div>
       </div>
 
-      {successMessage && (
-        <div
-          className="toast toast-success"
-          style={{ position: "relative", marginBottom: "var(--spacing-lg)" }}
-        >
-          {successMessage}
-        </div>
-      )}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1.5fr 1fr",
+          gap: "1.5rem",
+        }}
+      >
+        {/* LEFT PANEL: PAYMENT FORM */}
+        <div className={styles.contentCard}>
+          <div className={styles.cardHeader}>
+            <h2 className={styles.cardTitle}>🔍 Member Selection</h2>
+          </div>
 
-      {errors.submit && (
-        <div className={gridStyles.errorList}>
-          <div className={gridStyles.errorListTitle}>❌ Payment Failed</div>
-          <div>{errors.submit}</div>
-        </div>
-      )}
-
-      <div className={styles.contentCard}>
-        <div className={styles.cardHeader}>
-          <h2 className={styles.cardTitle}>Payment Details</h2>
-        </div>
-
-        <form onSubmit={handleSubmit} className={gridStyles.configForm}>
-          <div className={gridStyles.formRow}>
+          <form onSubmit={handleSubmit} style={{ padding: "1.5rem" }}>
+            {/* MEMBER SELECTOR WITH SEARCH */}
             <div className={gridStyles.formGroup}>
-              <label className="label">Member *</label>
-              <select
-                name="memberId"
-                value={formData.memberId}
-                onChange={handleChange}
-                className={`input ${errors.memberId ? "input-error" : ""}`}
+              <label className="label">Select Member *</label>
+              <Select
+                options={memberOptions}
+                value={memberOptions.find(
+                  (opt) => opt.value === selectedMemberId
+                )}
+                onChange={(option) => setSelectedMemberId(option?.value || "")}
+                placeholder="🔍 Search by Room No, Name, or Wing..."
+                isClearable
+                isSearchable
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    fontSize: "1rem",
+                    padding: "0.5rem",
+                    borderColor: "#D1D5DB",
+                    "&:hover": {
+                      borderColor: "#3B82F6",
+                    },
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isSelected
+                      ? "#3B82F6"
+                      : state.isFocused
+                      ? "#DBEAFE"
+                      : "white",
+                    color: state.isSelected ? "white" : "#1F2937",
+                    fontSize: "0.9375rem",
+                    padding: "0.75rem 1rem",
+                  }),
+                  menu: (base) => ({
+                    ...base,
+                    maxHeight: "300px",
+                    overflowY: "auto",
+                    zIndex: 9999,
+                  }),
+                }}
+              />
+              <p
+                style={{
+                  fontSize: "0.875rem",
+                  color: "#6B7280",
+                  marginTop: "0.5rem",
+                }}
               >
-                <option value="">Select Member</option>
-                {members.map((member) => (
-                  <option key={member._id} value={member._id}>
-                    {member.wing ? `${member.wing}-` : ""}
-                    {member.roomNo} - {member.ownerName}
-                  </option>
-                ))}
-              </select>
-              {errors.memberId && (
-                <p className="error-text">{errors.memberId}</p>
+                📊 Total Members: <strong>{memberOptions.length}</strong> | 🔍
+                Type to search
+              </p>
+            </div>
+
+            {/* OUTSTANDING INFO BOX */}
+            {outstandingLoading && selectedMemberId && (
+              <div
+                style={{
+                  padding: "1rem",
+                  backgroundColor: "#F3F4F6",
+                  borderRadius: "8px",
+                  textAlign: "center",
+                }}
+              >
+                <div className="loading-spinner"></div>
+                <p>Calculating outstanding amount...</p>
+              </div>
+            )}
+
+            {outstandingData && outstandingData.totalOutstanding > 0 && (
+              <div
+                style={{
+                  marginTop: "1rem",
+                  padding: "1.5rem",
+                  backgroundColor:
+                    outstandingData.daysOverdue > 0 ? "#FEF3C7" : "#DBEAFE",
+                  border: `3px solid ${
+                    outstandingData.daysOverdue > 0 ? "#F59E0B" : "#3B82F6"
+                  }`,
+                  borderRadius: "12px",
+                }}
+              >
+                {/* MEMBER INFO HEADER */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "1rem",
+                    paddingBottom: "1rem",
+                    borderBottom: "2px solid #D1D5DB",
+                  }}
+                >
+                  <div>
+                    <h3
+                      style={{
+                        margin: 0,
+                        fontSize: "1.25rem",
+                        color: "#1F2937",
+                      }}
+                    >
+                      {selectedMember?.wing}-{selectedMember?.roomNo}
+                    </h3>
+                    <p style={{ margin: "0.25rem 0 0 0", color: "#6B7280" }}>
+                      {selectedMember?.ownerName}
+                    </p>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "0.875rem",
+                        color: "#6B7280",
+                      }}
+                    >
+                      Area
+                    </p>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "1.125rem",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {selectedMember?.areaSqFt} sq.ft
+                    </p>
+                  </div>
+                </div>
+
+                {/* OUTSTANDING BREAKDOWN */}
+                <div style={{ fontSize: "0.9375rem" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    <span style={{ color: "#4B5563" }}>Principal Amount:</span>
+                    <strong style={{ fontSize: "1.125rem" }}>
+                      ₹{outstandingData.principalAmount.toLocaleString("en-IN")}
+                    </strong>
+                  </div>
+
+                  {outstandingData.interestAmount > 0 && (
+                    <>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          marginBottom: "0.5rem",
+                          color: "#DC2626",
+                        }}
+                      >
+                        <span>
+                          Interest ({outstandingData.daysOverdue} days overdue):
+                        </span>
+                        <strong style={{ fontSize: "1.125rem" }}>
+                          +₹
+                          {outstandingData.interestAmount.toLocaleString(
+                            "en-IN"
+                          )}
+                        </strong>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "0.8125rem",
+                          color: "#92400E",
+                          backgroundColor: "#FEE2E2",
+                          padding: "0.5rem",
+                          borderRadius: "6px",
+                          marginBottom: "0.75rem",
+                        }}
+                      >
+                        ⚠️ Overdue since:{" "}
+                        {new Date(
+                          outstandingData.graceEndDate
+                        ).toLocaleDateString("en-IN")}
+                        <br />
+                        Interest Method:{" "}
+                        {outstandingData.interestCalculationMethod} @{" "}
+                        {outstandingData.interestRate}% p.a.
+                      </div>
+                    </>
+                  )}
+
+                  <hr style={{ margin: "0.75rem 0", borderColor: "#D1D5DB" }} />
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontSize: "1.25rem",
+                      fontWeight: "bold",
+                      color: "#DC2626",
+                    }}
+                  >
+                    <span>Total Outstanding:</span>
+                    <span>
+                      ₹
+                      {outstandingData.totalOutstanding.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* QUICK PAYMENT BUTTONS */}
+                <div style={{ marginTop: "1rem" }}>
+                  <p
+                    style={{
+                      fontSize: "0.875rem",
+                      color: "#6B7280",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    Quick Payment:
+                  </p>
+                  <div
+                    style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}
+                  >
+                    {[25, 50, 75, 100].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => handleQuickPayment(pct)}
+                        className="btn btn-secondary"
+                        style={{ flex: "1 1 auto", fontSize: "0.875rem" }}
+                      >
+                        {pct}% (₹
+                        {Math.round(
+                          (outstandingData.totalOutstanding * pct) / 100
+                        ).toLocaleString("en-IN")}
+                        )
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* FORECAST TOGGLE */}
+                <button
+                  type="button"
+                  onClick={() => setShowForecast(!showForecast)}
+                  style={{
+                    marginTop: "1rem",
+                    width: "100%",
+                    padding: "0.625rem",
+                    backgroundColor: "#F3F4F6",
+                    border: "1px solid #D1D5DB",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontSize: "0.875rem",
+                  }}
+                >
+                  {showForecast ? "▲ Hide" : "▼ Show"} Interest Forecast
+                </button>
+
+                {showForecast && (
+                  <div
+                    style={{
+                      marginTop: "0.75rem",
+                      padding: "0.75rem",
+                      backgroundColor: "#FEE2E2",
+                      borderRadius: "6px",
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    <p style={{ fontWeight: "bold", marginBottom: "0.5rem" }}>
+                      📈 Future Interest Projection:
+                    </p>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      <div>
+                        <span style={{ color: "#6B7280" }}>+7 days:</span>
+                        <strong style={{ float: "right" }}>
+                          +₹{forecastInterest(7).toLocaleString("en-IN")}
+                        </strong>
+                      </div>
+                      <div>
+                        <span style={{ color: "#6B7280" }}>+15 days:</span>
+                        <strong style={{ float: "right" }}>
+                          +₹{forecastInterest(15).toLocaleString("en-IN")}
+                        </strong>
+                      </div>
+                      <div>
+                        <span style={{ color: "#6B7280" }}>+30 days:</span>
+                        <strong style={{ float: "right", color: "#DC2626" }}>
+                          +₹{forecastInterest(30).toLocaleString("en-IN")}
+                        </strong>
+                      </div>
+                      <div>
+                        <span style={{ color: "#6B7280" }}>+60 days:</span>
+                        <strong style={{ float: "right", color: "#DC2626" }}>
+                          +₹{forecastInterest(60).toLocaleString("en-IN")}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* PAYMENT AMOUNT */}
+            <div
+              className={gridStyles.formGroup}
+              style={{ marginTop: "1.5rem" }}
+            >
+              <label className="label">Payment Amount (₹) *</label>
+              <input
+                type="number"
+                min="1"
+                step="0.01"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                className="input"
+                placeholder="Enter amount"
+                style={{ fontSize: "1.25rem", fontWeight: "bold" }}
+              />
+              {outstandingData && paymentAmount && (
+                <p
+                  style={{
+                    marginTop: "0.5rem",
+                    fontSize: "0.875rem",
+                    color:
+                      parseFloat(paymentAmount) >=
+                      outstandingData.totalOutstanding
+                        ? "#059669"
+                        : "#F59E0B",
+                  }}
+                >
+                  {parseFloat(paymentAmount) >= outstandingData.totalOutstanding
+                    ? "✅ Full payment - Account will be cleared"
+                    : `⚠️ Partial payment - Remaining: ₹${(
+                        outstandingData.totalOutstanding -
+                        parseFloat(paymentAmount)
+                      ).toLocaleString("en-IN")}`}
+                </p>
               )}
             </div>
 
-            <div className={gridStyles.formGroup}>
-              <label className="label">Amount (₹) *</label>
-              <input
-                type="number"
-                name="amount"
-                min="0"
-                step="0.01"
-                value={formData.amount}
-                onChange={handleChange}
-                className={`input ${errors.amount ? "input-error" : ""}`}
-                placeholder="0.00"
-              />
-              {errors.amount && <p className="error-text">{errors.amount}</p>}
-            </div>
-          </div>
-
-          <div className={gridStyles.formRow}>
+            {/* PAYMENT MODE */}
             <div className={gridStyles.formGroup}>
               <label className="label">Payment Mode *</label>
               <select
-                name="paymentMode"
-                value={formData.paymentMode}
-                onChange={handleChange}
+                value={paymentMode}
+                onChange={(e) => setPaymentMode(e.target.value)}
                 className="input"
               >
                 <option value="Cash">Cash</option>
@@ -214,174 +517,104 @@ export default function PaymentsPage() {
               </select>
             </div>
 
+            {/* PAYMENT DATE */}
             <div className={gridStyles.formGroup}>
               <label className="label">Payment Date *</label>
               <input
                 type="date"
-                name="paymentDate"
-                value={formData.paymentDate}
-                onChange={handleChange}
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
                 className="input"
               />
             </div>
-          </div>
 
-          {formData.paymentMode === "Cheque" && (
-            <div className={gridStyles.formRow}>
-              <div className={gridStyles.formGroup}>
-                <label className="label">Cheque Number *</label>
-                <input
-                  type="text"
-                  name="chequeNo"
-                  value={formData.chequeNo}
-                  onChange={handleChange}
-                  className={`input ${errors.chequeNo ? "input-error" : ""}`}
-                  placeholder="123456"
-                />
-                {errors.chequeNo && (
-                  <p className="error-text">{errors.chequeNo}</p>
-                )}
-              </div>
-
-              <div className={gridStyles.formGroup}>
-                <label className="label">Bank Name *</label>
-                <input
-                  type="text"
-                  name="bankName"
-                  value={formData.bankName}
-                  onChange={handleChange}
-                  className={`input ${errors.bankName ? "input-error" : ""}`}
-                  placeholder="HDFC Bank"
-                />
-                {errors.bankName && (
-                  <p className="error-text">{errors.bankName}</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {["Online", "NEFT", "RTGS"].includes(formData.paymentMode) && (
+            {/* NOTES */}
             <div className={gridStyles.formGroup}>
-              <label className="label">Transaction Reference *</label>
-              <input
-                type="text"
-                name="transactionRef"
-                value={formData.transactionRef}
-                onChange={handleChange}
-                className={`input ${
-                  errors.transactionRef ? "input-error" : ""
-                }`}
-                placeholder="REF123456789"
+              <label className="label">Notes (Optional)</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="input"
+                rows="3"
+                placeholder="Add any additional notes..."
               />
-              {errors.transactionRef && (
-                <p className="error-text">{errors.transactionRef}</p>
-              )}
             </div>
-          )}
 
-          {formData.paymentMode === "UPI" && (
-            <div className={gridStyles.formGroup}>
-              <label className="label">UPI ID *</label>
-              <input
-                type="text"
-                name="upiId"
-                value={formData.upiId}
-                onChange={handleChange}
-                className={`input ${errors.upiId ? "input-error" : ""}`}
-                placeholder="user@paytm"
-              />
-              {errors.upiId && <p className="error-text">{errors.upiId}</p>}
+            {/* SUBMIT BUTTON */}
+            <div style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+              >
+                🔄 Reset
+              </button>
+              <button
+                type="submit"
+                className="btn btn-success"
+                style={{ flex: 2 }}
+                disabled={
+                  !selectedMemberId ||
+                  !paymentAmount ||
+                  recordPaymentMutation.isPending
+                }
+              >
+                {recordPaymentMutation.isPending ? (
+                  <>
+                    <span className="loading-spinner"></span> Processing...
+                  </>
+                ) : (
+                  "💰 Record Payment"
+                )}
+              </button>
             </div>
-          )}
+          </form>
+        </div>
 
-          <div className={gridStyles.formGroup}>
-            <label className="label">Notes (Optional)</label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              className="input"
-              rows="3"
-              placeholder="Additional notes..."
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="btn btn-success"
-            disabled={recordMutation.isPending}
-            style={{ width: "100%", justifyContent: "center" }}
-          >
-            {recordMutation.isPending ? (
-              <>
-                <span className="loading-spinner"></span>
-                Recording Payment...
-              </>
-            ) : (
-              <>💰 Record Payment</>
-            )}
-          </button>
-        </form>
-      </div>
-
-      {payments.length > 0 && (
-        <div className={styles.contentCard}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>Recent Payments</h2>
-          </div>
-
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Transaction ID</th>
-                  <th>Member</th>
-                  <th>Amount</th>
-                  <th>Mode</th>
-                  <th>Recorded By</th>
-                </tr>
-              </thead>
-              <tbody>
-                {payments.slice(0, 10).map((payment) => (
-                  <tr key={payment._id}>
-                    <td>
-                      {new Date(payment.date).toLocaleDateString("en-IN")}
-                    </td>
-                    <td
+        {/* RIGHT PANEL: PAYMENT HISTORY */}
+        <div>
+          {selectedMemberId && paymentHistory?.transactions?.length > 0 && (
+            <div className={styles.contentCard}>
+              <div className={styles.cardHeader}>
+                <h2 className={styles.cardTitle}>📜 Recent Payments</h2>
+              </div>
+              <div style={{ padding: "1rem" }}>
+                {paymentHistory.transactions.slice(0, 5).map((txn) => (
+                  <div
+                    key={txn._id}
+                    style={{
+                      padding: "0.75rem",
+                      backgroundColor: "#F9FAFB",
+                      borderLeft: "4px solid #10B981",
+                      marginBottom: "0.75rem",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    <div
                       style={{
-                        fontFamily: "monospace",
-                        fontSize: "var(--font-xs)",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: "0.25rem",
                       }}
                     >
-                      {payment.transactionId}
-                    </td>
-                    <td>
-                      {payment.memberId?.wing
-                        ? `${payment.memberId.wing}-`
-                        : ""}
-                      {payment.memberId?.roomNo}
-                      <br />
-                      <small style={{ color: "var(--text-tertiary)" }}>
-                        {payment.memberId?.ownerName}
-                      </small>
-                    </td>
-                    <td style={{ fontWeight: "600", color: "var(--success)" }}>
-                      ₹{payment.amount.toLocaleString()}
-                    </td>
-                    <td>
-                      <span className="badge badge-success">
-                        {payment.paymentMode}
+                      <strong style={{ color: "#059669" }}>
+                        ₹{txn.amount.toLocaleString("en-IN")}
+                      </strong>
+                      <span style={{ fontSize: "0.875rem", color: "#6B7280" }}>
+                        {new Date(txn.date).toLocaleDateString("en-IN")}
                       </span>
-                    </td>
-                    <td>{payment.createdBy?.name}</td>
-                  </tr>
+                    </div>
+                    <div style={{ fontSize: "0.875rem", color: "#6B7280" }}>
+                      {txn.paymentMode} • {txn.description}
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

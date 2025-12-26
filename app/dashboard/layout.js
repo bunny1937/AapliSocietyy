@@ -5,6 +5,82 @@ import { useRouter, usePathname } from "next/navigation";
 import { getAuthUser, clearAuthData } from "@/lib/auth-utils";
 import styles from "@/styles/Dashboard.module.css";
 
+const getNavigationByRole = (role) => {
+  if (role === "Member") {
+    return [
+      {
+        title: "Overview",
+        items: [{ name: "Dashboard", path: "/dashboard", icon: "📊" }],
+      },
+      {
+        title: "My Account",
+        items: [
+          { name: "My Profile", path: "/dashboard/profile", icon: "👤" },
+          { name: "My Bills", path: "/dashboard/my-bills", icon: "📄" },
+          { name: "My Ledger", path: "/dashboard/my-ledger", icon: "📒" },
+          {
+            name: "Make Payment",
+            path: "/dashboard/make-payment",
+            icon: "💳",
+          },
+        ],
+      },
+    ];
+  }
+
+  return [
+    {
+      title: "Overview",
+      items: [{ name: "Dashboard", path: "/dashboard", icon: "📊" }],
+    },
+    {
+      title: "Configuration",
+      items: [
+        {
+          name: "Society Config",
+          path: "/dashboard/society-config",
+          icon: "⚙️",
+        },
+        {
+          name: "Matrix Config",
+          path: "/dashboard/matrix-config",
+          icon: "📋",
+        },
+      ],
+    },
+    {
+      title: "Members",
+      items: [
+        {
+          name: "Import Members",
+          path: "/dashboard/import-members",
+          icon: "📥",
+        },
+      ],
+    },
+    {
+      title: "Billing",
+      items: [
+                { name: "Billing Template", path: "/dashboard/bill-template", icon: "📝" },
+
+        { name: "Billing Grid", path: "/dashboard/billing-grid", icon: "🧮" },
+        {
+          name: "Generate Bills",
+          path: "/dashboard/generate-bills",
+          icon: "📄",
+        },
+      ],
+    },
+    {
+      title: "Transactions",
+      items: [
+        { name: "Ledger", path: "/dashboard/ledger", icon: "📖" },
+        { name: "Payments", path: "/dashboard/payments", icon: "💳" },
+      ],
+    },
+  ];
+};
+
 export default function DashboardLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -24,51 +100,23 @@ export default function DashboardLayout({ children }) {
     router.push("/auth/login");
   };
 
-  const navigation = [
-    {
-      title: "Overview",
-      items: [{ name: "Dashboard", path: "/dashboard", icon: "📊" }],
-    },
-    {
-      title: "Configuration",
-      items: [
-        {
-          name: "Society Config",
-          path: "/dashboard/society-config",
-          icon: "⚙️",
-        },
-        { name: "Matrix Config", path: "/dashboard/matrix-config", icon: "📋" },
-      ],
-    },
-    {
-      title: "Members",
-      items: [
-        {
-          name: "Import Members",
-          path: "/dashboard/import-members",
-          icon: "📥",
-        },
-      ],
-    },
-    {
-      title: "Billing",
-      items: [
-        { name: "Billing Grid", path: "/dashboard/billing-grid", icon: "🧮" },
-        {
-          name: "Generate Bills",
-          path: "/dashboard/generate-bills",
-          icon: "📄",
-        },
-      ],
-    },
-    {
-      title: "Transactions",
-      items: [
-        { name: "Ledger", path: "/dashboard/ledger", icon: "📖" },
-        { name: "Payments", path: "/dashboard/payments", icon: "💳" },
-      ],
-    },
-  ];
+  // Show loading while user is being fetched
+  if (!user) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+        }}
+      >
+        <div className="loading-spinner"></div>
+      </div>
+    );
+  }
+
+  const navigation = getNavigationByRole(user.role);
 
   if (!user) {
     return (

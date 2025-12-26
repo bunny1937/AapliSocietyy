@@ -17,10 +17,10 @@ export async function GET(request) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "100");
-    const search = searchParams.get("search") || "";
+    const searchParams = new URL(request.url).searchParams;
+    const page = parseInt(searchParams.get("page")) || 1;
+    const limit = parseInt(searchParams.get("limit")) || 1000; // ✅ INCREASED TO 1000
+    const search = searchParams.get("search");
 
     const query = { societyId: decoded.societyId };
 
@@ -36,7 +36,7 @@ export async function GET(request) {
 
     const [members, total] = await Promise.all([
       Member.find(query)
-        .sort({ wing: 1, roomNo: 1 })
+        .sort({ wing: 1, roomNo: 1 }) // ✅ PROPER SORTING
         .skip(skip)
         .limit(limit)
         .lean(),

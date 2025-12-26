@@ -20,6 +20,17 @@ export default function GenerateBillsPage() {
     queryFn: () => apiClient.get("/api/members/list?limit=1000"),
   });
 
+  // ADD THESE TWO QUERIES
+  const { data: billingConfig } = useQuery({
+    queryKey: ["billing-config"],
+    queryFn: () => apiClient.get("/api/billing-config"),
+  });
+
+  const { data: societyData } = useQuery({
+    queryKey: ["society-config"],
+    queryFn: () => apiClient.get("/api/society/config"),
+  });
+
   const generateMutation = useMutation({
     mutationFn: (data) => apiClient.post("/api/billing/generate", data),
     onSuccess: (data) => {
@@ -50,6 +61,7 @@ export default function GenerateBillsPage() {
   );
 
   const members = membersData?.members || [];
+  const billingHeads = billingConfig?.billingHeads || [];
 
   const handleGenerate = () => {
     if (members.length === 0) {
@@ -65,6 +77,73 @@ export default function GenerateBillsPage() {
       year: selectedYear,
       customCharges: {},
     });
+  };
+
+  const downloadPDFBill = async (member, billingHeads, billPeriodId) => {
+    try {
+      // Calculate amounts
+      const items = billingHeads.map((head) => {
+        let amount = 0;
+        if (head.calculationType === "Fixed") {
+          amount = head.defaultAmount;
+        } else if (head.calculationType === "Per Sq Ft") {
+          amount = head.defaultAmount * (member.areaSqFt || 0);
+        }
+        return {
+          description: head.headName,
+          amount: Math.round(amount),
+        };
+      });
+
+      const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
+      const tax = subtotal * 0.02; // 2% tax
+      const currentBillTotal = subtotal + tax;
+
+      // You can fetch previous balance from member or calculate
+      const previousBalance = member.previousBalance || 0;
+      const interestCharged = previousBalance > 0 ? previousBalance * 0.21 : 0;
+      const totalPayable = currentBillTotal + previousBalance + interestCharged;
+
+      const response = await fetch("/api/billing/generate-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          memberId: member.id,
+          billPeriod: billPeriodId,
+          billDate: new Date().toLocaleDateString("en-IN"),
+          dueDate: new Date(
+            Date.now() + 30 * 24 * 60 * 60 * 1000
+          ).toLocaleDateString("en-IN"),
+          items,
+          subtotal,
+          tax,
+          currentBillTotal,
+          interestCharged,
+          previousBalance,
+          totalPayable,
+        }),
+      });
+
+      if (!response.ok) throw new Error("PDF generation failed");
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+
+      // Open in new tab (editable)
+      window.open(url, "_blank");
+
+      // Also offer download
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Bill-${member.wing}-${member.roomNo}-${billPeriodId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("PDF download error:", error);
+      alert("Failed to download PDF");
+    }
   };
 
   return (
@@ -145,7 +224,74 @@ export default function GenerateBillsPage() {
                 </ul>
               </div>
             )}
-
+          {generationResult.createdBills &&
+            generationResult.createdBills.length > 0 && (
+              <div style={{ marginTop: "var(--spacing-lg)" }}>
+                <h3 style={{ marginBottom: "var(--spacing-md)" }}>
+                  📄 Download Bills
+                </h3>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "10px",
+                  }}
+                >
+                  {generationResult.createdBills.slice(0, 10).map((bill) => (
+                    <div
+                      key={bill.memberId}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "12px",
+                        border: "1px solid var(--border)",
+                        borderRadius: "var(--radius-md)",
+                        backgroundColor: "var(--bg-secondary)",
+                      }}
+                    >
+                      <span style={{ flex: 1 }}>
+                        {bill.wing}-{bill.roomNo} - {bill.memberName}
+                      </span>
+                      <span style={{ fontWeight: "bold", marginRight: "15px" }}>
+                        ₹{bill.amount}
+                      </span>
+                      <button
+                        className="btn btn-secondary"
+                        style={{ minWidth: "140px" }}
+                        onClick={() =>
+                          downloadPDFBill(
+                            {
+                              ownerName: bill.memberName,
+                              roomNo: bill.roomNo,
+                              wing: bill.wing,
+                              contact: bill.contact,
+                            },
+                            billingHeads,
+                            generationResult.billPeriodId
+                          )
+                        }
+                      >
+                        📄 Download PDF
+                      </button>
+                    </div>
+                  ))}
+                  {generationResult.createdBills.length > 10 && (
+                    <p
+                      style={{
+                        fontSize: "var(--font-sm)",
+                        color: "var(--text-secondary)",
+                        textAlign: "center",
+                        marginTop: "10px",
+                      }}
+                    >
+                      Showing first 10 bills. Total:{" "}
+                      {generationResult.createdBills.length}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           <div style={{ marginTop: "var(--spacing-lg)" }}>
             <button
               className="btn btn-primary"
