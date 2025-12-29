@@ -762,22 +762,15 @@ export default function SocietyConfigPage() {
             {/* Compounding Frequency */}
             <div className={gridStyles.formGroup}>
               <label className="label">Interest Compounding Frequency</label>
-              <select
-                value={formData.config.interestCompoundingFrequency}
-                onChange={(e) =>
-                  handleChange(
-                    "config.interestCompoundingFrequency",
-                    e.target.value
-                  )
-                }
-                className="input"
-                disabled={
-                  formData.config.interestCalculationMethod === "SIMPLE"
-                }
-              >
-                <option value="DAILY">Daily</option>
-                <option value="MONTHLY">Monthly</option>
-              </select>
+             <select 
+  value={formData.config.interestCompoundingFrequency}
+  onChange={(e) => handleChange('config.interestCompoundingFrequency', e.target.value)}
+  className="input"
+  disabled={formData.config.interestCalculationMethod === 'SIMPLE'}
+>
+  <option value="MONTHLY">Monthly</option>
+</select>
+
               <span
                 style={{
                   fontSize: "var(--font-xs)",

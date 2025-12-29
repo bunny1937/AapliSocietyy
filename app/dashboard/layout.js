@@ -46,6 +46,11 @@ const getNavigationByRole = (role) => {
           path: "/dashboard/matrix-config",
           icon: "📋",
         },
+        {
+          name: "DB Manager",
+          path: "/dashboard/database-manager",
+          icon: "📋",
+        },
       ],
     },
     {
@@ -54,6 +59,11 @@ const getNavigationByRole = (role) => {
         {
           name: "Import Members",
           path: "/dashboard/import-members",
+          icon: "📥",
+        },
+          {
+          name: "View Members",
+          path: "/dashboard/view-members",
           icon: "📥",
         },
       ],

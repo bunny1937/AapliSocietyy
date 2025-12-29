@@ -13,20 +13,22 @@ const AuditLogSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    action: {
-      type: String,
-      required: true,
-      enum: [
-        "UPDATE_SOCIETY_CONFIG",
-        "UPDATE_MATRIX_CONFIG",
-        "GENERATE_BILLS",
-        "RECORD_PAYMENT",
-        "IMPORT_MEMBERS",
-        "UPDATE_MEMBER",
-        "DELETE_MEMBER",
-        "FINANCIAL_YEAR_CLOSE",
-      ],
-    },
+   action: {
+  type: String,
+  required: true,
+  enum: [
+    'UPDATE_SOCIETY_CONFIG',
+    'UPDATE_MATRIX_CONFIG',
+    'GENERATE_BILLS',
+    'RECORD_PAYMENT',
+    'IMPORT_MEMBERS',
+    'IMPORT_MEMBERS_ENHANCED',  // ← ADD THIS
+    'UPDATE_MEMBER',
+    'DELETE_MEMBER',
+    'FINANCIAL_YEAR_CLOSE',
+  ],
+},
+
     oldData: {
       type: mongoose.Schema.Types.Mixed,
     },
