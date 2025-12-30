@@ -1,0 +1,313 @@
+.adminContainer {
+  padding: 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.pageTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1F2937;
+  margin: 0;
+}
+
+.pageSubtitle {
+  font-size: 0.95rem;
+  color: #6B7280;
+  margin-top: 0.25rem;
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.statCard {
+  background: white;
+  border: 3px solid;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.statNumber {
+  font-size: 2.5rem;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.statLabel {
+  font-size: 0.9rem;
+  color: #6B7280;
+  font-weight: 600;
+}
+
+/* Filters */
+.filtersBar {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.searchInput {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 2px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #3B82F6;
+}
+
+.filterSelect {
+  padding: 0.75rem 1rem;
+  border: 2px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: white;
+  min-width: 200px;
+}
+
+/* Table */
+.tableCard {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  overflow-x: auto;
+}
+
+.tableHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.adminTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.adminTable th {
+  background: #F9FAFB;
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.adminTable td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #E5E7EB;
+  vertical-align: middle;
+}
+
+.adminTable tbody tr:hover {
+  background: #F9FAFB;
+}
+
+.selectedRow {
+  background: #DBEAFE !important;
+}
+
+/* Society Info */
+.societyName {
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.societyId {
+  font-size: 0.75rem;
+  color: #9CA3AF;
+  font-family: monospace;
+}
+
+/* Badges */
+.planBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #E0E7FF;
+  color: #3730A3;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 0.35rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.statusBadge.active {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.statusBadge.trial {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.statusBadge.suspended {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.statusBadge.expired {
+  background: #E5E7EB;
+  color: #374151;
+}
+
+.statusBadge.paid {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.statusBadge.unpaid {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+/* Action Buttons */
+.actionButtons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btnSmall {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btnSmall:hover {
+  opacity: 0.85;
+}
+
+.btnSmall:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.deleteButton {
+  padding: 0.75rem 1.5rem;
+  background: #EF4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.deleteButton:disabled {
+  background: #D1D5DB;
+  cursor: not-allowed;
+}
+
+/* Browser Controls */
+.browserControls {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 1.5rem;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.controlGroup label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #374151;
+}
+
+.controlSelect {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+/* Info Box */
+.infoBox {
+  background: #DBEAFE;
+  border: 2px solid #3B82F6;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.infoBox h4 {
+  margin: 0 0 1rem 0;
+  color: #1E40AF;
+}
+
+.infoBox ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.infoBox li {
+  margin-bottom: 0.5rem;
+  color: #1E3A8A;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6B7280;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.1rem;
+  color: #6B7280;
+}
+
+.idCell {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+
+.amountCell {
+  font-weight: 600;
+  color: #059669;
+}

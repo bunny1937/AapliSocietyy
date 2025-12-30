@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Transaction from "@/models/Transaction";
+import Bill from "@/models/Bill"; // ✅ ADDED
 import Member from "@/models/Member";
-import Society from "@/models/Society"; // ✅ ADDED (was missing)
+import Society from "@/models/Society";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import { getFinancialYear } from "@/lib/date-utils";
 import AuditLog from "@/models/AuditLog";
+import { calculateBillStatusAfterPayment } from '@/lib/bill-status-manager';
 
 export async function POST(request) {
   try {
@@ -26,7 +28,10 @@ export async function POST(request) {
       amount,
       paymentMode,
       paymentDate,
-      paymentDetails,
+      chequeNo,
+      bankName,
+      upiId,
+      transactionRef,
       notes,
     } = await request.json();
 
@@ -53,7 +58,37 @@ export async function POST(request) {
       return NextResponse.json({ error: "Member not found" }, { status: 404 });
     }
 
-    // ✅ Get current balance from latest transaction
+    // ✅ CORRECT: Get outstanding bills (not transactions)
+    const unpaidBills = await Bill.find({
+      memberId,
+      societyId: decoded.societyId,
+      status: { $in: ["Unpaid", "Partial", "Overdue"] },
+      isDeleted: false,
+    }).sort({ billYear: 1, billMonth: 1 }); // Oldest first
+
+    if (unpaidBills.length === 0) {
+      return NextResponse.json(
+        { error: "No outstanding bills found for this member" },
+        { status: 400 }
+      );
+    }
+
+    // ✅ Calculate total outstanding from BILLS
+    const totalOutstanding = unpaidBills.reduce(
+      (sum, bill) => sum + bill.balanceAmount,
+      0
+    );
+
+    if (amount > totalOutstanding) {
+      return NextResponse.json(
+        {
+          error: `Payment amount exceeds outstanding balance. Outstanding: ₹${totalOutstanding.toFixed(2)}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // ✅ Get current ledger balance for transaction
     const lastTransaction = await Transaction.findOne({
       memberId,
       societyId: decoded.societyId,
@@ -62,114 +97,47 @@ export async function POST(request) {
       .sort({ date: -1, createdAt: -1 })
       .lean();
 
-    let currentBalance =
+    let currentLedgerBalance =
       lastTransaction?.balanceAfterTransaction ?? member.openingBalance ?? 0;
 
-    if (currentBalance <= 0) {
-      return NextResponse.json(
-        { error: "No outstanding bills found for this member" },
-        { status: 400 }
+    // ✅ ALLOCATE PAYMENT TO BILLS (FIFO - First In First Out)
+    let remainingPayment = parseFloat(amount);
+    const billsUpdated = [];
+
+    for (const bill of unpaidBills) {
+      if (remainingPayment <= 0) break;
+
+      const billBalance = bill.balanceAmount;
+      const paymentForThisBill = Math.min(remainingPayment, billBalance);
+
+      // Update bill
+      bill.amountPaid += paymentForThisBill;
+      bill.balanceAmount -= paymentForThisBill;
+
+      // ✅ EXPLICIT STATUS (using helper function)
+      bill.status = calculateBillStatusAfterPayment(
+        bill.totalAmount,
+        bill.amountPaid
       );
-    }
 
-    // ✅ FETCH SOCIETY CONFIG FOR INTEREST CALCULATION
-    const society = await Society.findById(decoded.societyId).lean();
-    const {
-      interestRate = 0,
-      gracePeriodDays = 10,
-      billDueDay = 10,
-      interestCalculationMethod = "COMPOUND",
-      interestCompoundingFrequency = "MONTHLY",
-    } = society.config || {};
+      bill.lastModifiedAt = new Date();
+      bill.lastModifiedBy = decoded.userId;
 
-    let interestAmount = 0;
-    let daysOverdue = 0;
+      await bill.save();
 
-    // ✅ Find oldest unpaid bill to calculate interest
-    const oldestUnpaidBill = await Transaction.findOne({
-      memberId,
-      societyId: decoded.societyId,
-      type: "Debit",
-      category: "Maintenance",
-      isReversed: false,
-    })
-      .sort({ date: 1 }) // Oldest first
-      .lean();
-
-    if (oldestUnpaidBill && interestRate > 0) {
-      const billDate = new Date(oldestUnpaidBill.date);
-      const dueDate = new Date(
-        billDate.getFullYear(),
-        billDate.getMonth(),
-        billDueDay
-      );
-      const graceEndDate = new Date(dueDate);
-      graceEndDate.setDate(graceEndDate.getDate() + gracePeriodDays);
-
-      const now = new Date();
-      if (now > graceEndDate) {
-        daysOverdue = Math.floor((now - graceEndDate) / (1000 * 60 * 60 * 24));
-
-        // Calculate interest
-        if (interestCalculationMethod === "SIMPLE") {
-          const monthsOverdue = daysOverdue / 30;
-          interestAmount =
-            currentBalance * (interestRate / 100) * monthsOverdue;
-        } else {
-          // COMPOUND
-          const n = interestCompoundingFrequency === "DAILY" ? 30 : 1;
-          const t = daysOverdue / 30;
-          if (t > 0) {
-            const r = interestRate / 100;
-            const amount = currentBalance * Math.pow(1 + r / n, n * t);
-            interestAmount = amount - currentBalance;
-          }
-        }
-
-        interestAmount = Math.round(interestAmount * 100) / 100;
-      }
-    }
-
-    // ✅ ADD INTEREST TRANSACTION IF OVERDUE
-    if (interestAmount > 0) {
-      await Transaction.create({
-        transactionId: Transaction.generateTransactionId(),
-        date: new Date(),
-        memberId,
-        societyId: decoded.societyId,
-        type: "Debit",
-        category: "Interest",
-        description: `Interest on arrears (${daysOverdue} days overdue, ${interestCalculationMethod.toLowerCase()} @ ${interestRate}%)`,
-        amount: interestAmount,
-        balanceAfterTransaction: currentBalance + interestAmount,
-        paymentMode: "System",
-        createdBy: decoded.userId,
-        financialYear: getFinancialYear(new Date()),
+      billsUpdated.push({
+        billId: bill._id,
+        billPeriod: bill.billPeriodId,
+        amountPaid: paymentForThisBill,
+        newStatus: bill.status,
       });
 
-      console.log(
-        `✅ Added interest: ₹${interestAmount} for member ${member.ownerName} (${daysOverdue} days overdue)`
-      );
-
-      // ✅ UPDATE CURRENT BALANCE AFTER ADDING INTEREST
-      currentBalance = currentBalance + interestAmount;
+      remainingPayment -= paymentForThisBill;
     }
 
-    // ✅ VALIDATE PAYMENT AMOUNT
-    if (amount > currentBalance) {
-      return NextResponse.json(
-        {
-          error: `Payment amount exceeds outstanding balance. Outstanding: ₹${currentBalance.toFixed(
-            2
-          )}`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // ✅ RECORD PAYMENT TRANSACTION
-    const totalAdjusted = parseFloat(amount);
-    const newBalance = currentBalance - totalAdjusted;
+    // ✅ RECORD PAYMENT TRANSACTION IN LEDGER
+    const paymentAmount = parseFloat(amount);
+    const newLedgerBalance = currentLedgerBalance - paymentAmount;
 
     const transaction = await Transaction.create({
       transactionId: Transaction.generateTransactionId(),
@@ -181,10 +149,14 @@ export async function POST(request) {
       description: `Payment received via ${paymentMode || "Cash"}${
         notes ? ` - ${notes}` : ""
       }`,
-      amount: totalAdjusted,
-      balanceAfterTransaction: newBalance,
+      amount: paymentAmount,
+      balanceAfterTransaction: newLedgerBalance,
       paymentMode: paymentMode || "Cash",
-      paymentDetails: paymentDetails || {},
+      chequeNo,
+      bankName,
+      upiId,
+      transactionRef,
+      notes,
       createdBy: decoded.userId,
       financialYear: getFinancialYear(new Date()),
     });
@@ -199,11 +171,11 @@ export async function POST(request) {
         memberName: member.ownerName,
         roomNo: member.roomNo,
         wing: member.wing,
-        amount: totalAdjusted,
+        amount: paymentAmount,
         paymentMode,
-        interestAdded: interestAmount,
-        previousBalance: currentBalance,
-        newBalance,
+        previousBalance: currentLedgerBalance,
+        newBalance: newLedgerBalance,
+        billsUpdated,
       },
       timestamp: new Date(),
     });
@@ -214,10 +186,10 @@ export async function POST(request) {
         message: "Payment recorded successfully",
         transaction: {
           transactionId: transaction.transactionId,
-          amount: totalAdjusted,
-          interestAdded: interestAmount, // ✅ Show interest added
-          previousBalance: currentBalance, // ✅ Before payment
-          newBalance, // ✅ After payment
+          amount: paymentAmount,
+          previousBalance: currentLedgerBalance,
+          newBalance: newLedgerBalance,
+          billsUpdated,
         },
       },
       { status: 201 }

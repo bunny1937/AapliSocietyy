@@ -20,7 +20,7 @@ const UserSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["Admin", "Secretary", "Accountant", "Member"], // ← ADDED 'Member'
+      enum: ["SuperAdmin", "Secretary", "Accountant", "Member"], // ✅ UPDATED
       default: "Member",
     },
     societyId: {

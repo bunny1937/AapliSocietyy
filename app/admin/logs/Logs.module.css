@@ -1,0 +1,130 @@
+.container {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #fff;
+  padding: 2rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2rem;
+}
+
+.header p {
+  color: #999;
+  margin: 0;
+}
+
+.backBtn {
+  background: #333;
+  color: #fff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.backBtn:hover {
+  background: #444;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.filters button {
+  background: #1a1a1a;
+  color: #fff;
+  border: 1px solid #333;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.filters button:hover {
+  background: #252525;
+  border-color: #4CAF50;
+}
+
+.activeFilter {
+  background: #4CAF50 !important;
+  border-color: #4CAF50 !important;
+}
+
+.loading,
+.empty {
+  text-align: center;
+  padding: 3rem;
+  color: #999;
+  font-size: 1.2rem;
+}
+
+.timeline {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.logEntry {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.logIcon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.logContent {
+  flex: 1;
+}
+
+.logHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.logAction {
+  font-weight: 600;
+  color: #4CAF50;
+  font-size: 1.1rem;
+}
+
+.logTime {
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.logDetails {
+  display: flex;
+  gap: 1.5rem;
+  color: #999;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.logMeta {
+  background: #0a0a0a;
+  padding: 1rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #0f0;
+  white-space: pre-wrap;
+  margin-top: 1rem;
+}

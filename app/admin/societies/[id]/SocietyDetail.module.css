@@ -1,0 +1,258 @@
+.container {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #fff;
+  padding: 2rem;
+}
+
+.loading,
+.error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-size: 1.5rem;
+}
+
+.backBtn {
+  background: #333;
+  color: #fff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-bottom: 2rem;
+}
+
+.backBtn:hover {
+  background: #444;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2.5rem;
+}
+
+.regNo {
+  color: #999;
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.badge {
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge.Active {
+  background: #4CAF50;
+  color: #fff;
+}
+
+.badge.Trial {
+  background: #ff9800;
+  color: #fff;
+}
+
+.badge.Suspended {
+  background: #f44336;
+  color: #fff;
+}
+
+.badge.Paid {
+  background: #4CAF50;
+  color: #fff;
+}
+
+.badge.Unpaid {
+  background: #f44336;
+  color: #fff;
+}
+
+.badge.PartiallyPaid {
+  background: #ff9800;
+  color: #fff;
+}
+
+.suspendBtn {
+  background: #f44336;
+  color: #fff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.suspendBtn:hover {
+  background: #d32f2f;
+}
+
+.activateBtn {
+  background: #4CAF50;
+  color: #fff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.activateBtn:hover {
+  background: #45a049;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.statCard {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.statIcon {
+  font-size: 2.5rem;
+}
+
+.statCard h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #999;
+  font-weight: normal;
+}
+
+.statValue {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.infoSection {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.infoSection h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.infoItem label {
+  color: #999;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.infoItem span {
+  color: #fff;
+  font-size: 1rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid #333;
+  margin-bottom: 2rem;
+}
+
+.tabs button {
+  background: transparent;
+  color: #999;
+  border: none;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tabs button:hover {
+  color: #fff;
+}
+
+.activeTab {
+  color: #4CAF50 !important;
+  border-bottom-color: #4CAF50 !important;
+}
+
+.tabContent {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 2rem;
+  min-height: 400px;
+}
+
+.overview h3 {
+  margin: 0 0 1rem 0;
+}
+
+.overview p {
+  margin: 0.5rem 0;
+  color: #999;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  background: #252525;
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid #333;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  color: #999;
+}
+
+.table td {
+  padding: 1rem;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.table tr:hover {
+  background: #1f1f1f;
+}

@@ -270,6 +270,7 @@ MemberSchema.index({ societyId: 1, ownershipType: 1 });
 MemberSchema.index({ panCard: 1 }, { sparse: true });
 MemberSchema.index({ contactNumber: 1 });
 MemberSchema.index({ emailPrimary: 1 }, { sparse: true });
+MemberSchema.index({ isDeleted: 1 });
 
 // Virtual for full flat identifier
 MemberSchema.virtual('fullFlatId').get(function() {

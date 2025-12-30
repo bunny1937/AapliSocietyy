@@ -1,0 +1,251 @@
+.container {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #fff;
+}
+
+.navbar {
+  background: #1a1a1a;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #333;
+}
+
+.navBrand h1 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logoutBtn {
+  background: #ff4444;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.logoutBtn:hover {
+  background: #cc0000;
+}
+
+.content {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h2 {
+  font-size: 2rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.header p {
+  color: #999;
+  margin: 0;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.statCard {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.statIcon {
+  font-size: 2.5rem;
+}
+
+.statContent h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #999;
+  font-weight: normal;
+}
+
+.statValue {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.controls {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.searchBox {
+  margin-bottom: 1rem;
+}
+
+.searchInput {
+  width: 100%;
+  background: #0a0a0a;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.filters button {
+  background: #0a0a0a;
+  color: #fff;
+  border: 1px solid #333;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filters button:hover {
+  background: #252525;
+  border-color: #4CAF50;
+}
+
+.activeFilter {
+  background: #4CAF50 !important;
+  border-color: #4CAF50 !important;
+}
+
+.tableContainer {
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  background: #252525;
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid #333;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  color: #999;
+}
+
+.table td {
+  padding: 1rem;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.table tr:hover {
+  background: #1f1f1f;
+}
+
+.societyName {
+  font-weight: 600;
+  color: #4CAF50;
+}
+
+.contactInfo {
+  font-size: 0.9rem;
+  color: #999;
+}
+
+.phone {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.badge.Active {
+  background: #4CAF50;
+  color: #fff;
+}
+
+.badge.Trial {
+  background: #ff9800;
+  color: #fff;
+}
+
+.badge.Suspended {
+  background: #f44336;
+  color: #fff;
+}
+
+.badge.Expired {
+  background: #777;
+  color: #fff;
+}
+
+.viewBtn {
+  background: #4CAF50;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.viewBtn:hover {
+  background: #45a049;
+}
+
+.empty {
+  text-align: center;
+  padding: 3rem;
+  color: #999;
+  font-size: 1.1rem;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-size: 1.5rem;
+}

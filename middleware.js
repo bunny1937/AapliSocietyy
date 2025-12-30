@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 export function middleware(request) {
   const { pathname } = request.nextUrl;
 
+  // ✅ COMPLETELY SKIP ALL ADMIN ROUTES - Let APIs handle their own auth
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+    return NextResponse.next();
+  }
+
+  // ✅ PROTECT society dashboard routes ONLY
   if (pathname.startsWith("/dashboard")) {
     const token = request.cookies.get("token")?.value;
 
@@ -32,5 +38,9 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: [
+    "/dashboard/:path*",
+    "/api/admin/:path*",
+    "/admin/:path*"
+  ],
 };

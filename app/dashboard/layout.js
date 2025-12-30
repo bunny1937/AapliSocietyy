@@ -6,6 +6,7 @@ import { getAuthUser, clearAuthData } from "@/lib/auth-utils";
 import styles from "@/styles/Dashboard.module.css";
 
 const getNavigationByRole = (role) => {
+  // ✅ MEMBER VIEW (Flat owners)
   if (role === "Member") {
     return [
       {
@@ -18,16 +19,38 @@ const getNavigationByRole = (role) => {
           { name: "My Profile", path: "/dashboard/profile", icon: "👤" },
           { name: "My Bills", path: "/dashboard/my-bills", icon: "📄" },
           { name: "My Ledger", path: "/dashboard/my-ledger", icon: "📒" },
+          { name: "Make Payment", path: "/dashboard/make-payment", icon: "💳" },
+        ],
+      },
+    ];
+  }
+
+  // ✅ SUPERADMIN VIEW (YOU - Developer, sees all societies)
+  if (role === "SuperAdmin") {
+    return [
+      {
+        title: "Overview",
+        items: [{ name: "Dashboard", path: "/dashboard", icon: "📊" }],
+      },
+      {
+        title: "🔐 Super Admin",
+        items: [
           {
-            name: "Make Payment",
-            path: "/dashboard/make-payment",
-            icon: "💳",
+            name: "Manage Societies",
+            path: "/dashboard/admin/societies",
+            icon: "🏢",
+          },
+          {
+            name: "Data Browser",
+            path: "/dashboard/admin/data-browser",
+            icon: "🗄️",
           },
         ],
       },
     ];
   }
 
+  // ✅ SECRETARY & ACCOUNTANT VIEW (Society-level management)
   return [
     {
       title: "Overview",
@@ -36,49 +59,25 @@ const getNavigationByRole = (role) => {
     {
       title: "Configuration",
       items: [
-        {
-          name: "Society Config",
-          path: "/dashboard/society-config",
-          icon: "⚙️",
-        },
-        {
-          name: "Matrix Config",
-          path: "/dashboard/matrix-config",
-          icon: "📋",
-        },
-        {
-          name: "DB Manager",
-          path: "/dashboard/database-manager",
-          icon: "📋",
-        },
+        { name: "Society Config", path: "/dashboard/society-config", icon: "⚙️" },
+        { name: "Matrix Config", path: "/dashboard/matrix-config", icon: "📋" },
+        { name: "DB Manager", path: "/dashboard/database-manager", icon: "📋" },
       ],
     },
     {
       title: "Members",
       items: [
-        {
-          name: "Import Members",
-          path: "/dashboard/import-members",
-          icon: "📥",
-        },
-          {
-          name: "View Members",
-          path: "/dashboard/view-members",
-          icon: "📥",
-        },
+        { name: "Import Members", path: "/dashboard/import-members", icon: "📥" },
+        { name: "View Members", path: "/dashboard/view-members", icon: "👥" },
       ],
     },
     {
       title: "Billing",
       items: [
-                { name: "Billing Template", path: "/dashboard/bill-template", icon: "📝" },
-
+        { name: "Billing Template", path: "/dashboard/bill-template", icon: "📝" },
+        { name: "Import Bills", path: "/dashboard/import-bills", icon: "📥" },
         { name: "Billing Grid", path: "/dashboard/billing-grid", icon: "🧮" },
-        {
-          name: "Generate Bills",
-          path: "/dashboard/generate-bills",
-          icon: "📄",
-        },
+        { name: "Generate Bills", path: "/dashboard/generate-bills", icon: "📄" },
       ],
     },
     {
@@ -110,7 +109,6 @@ export default function DashboardLayout({ children }) {
     router.push("/auth/login");
   };
 
-  // Show loading while user is being fetched
   if (!user) {
     return (
       <div
@@ -127,21 +125,6 @@ export default function DashboardLayout({ children }) {
   }
 
   const navigation = getNavigationByRole(user.role);
-
-  if (!user) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "100vh",
-        }}
-      >
-        <div className="loading-spinner"></div>
-      </div>
-    );
-  }
 
   return (
     <div className={styles.dashboardContainer}>

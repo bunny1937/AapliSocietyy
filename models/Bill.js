@@ -29,21 +29,13 @@ const BillSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+
     charges: {
       type: Map,
       of: Number,
       default: new Map(),
     },
-    breakdown: {
-      maintenance: { type: Number, default: 0 },
-      sinkingFund: { type: Number, default: 0 },
-      repairFund: { type: Number, default: 0 },
-      fixedCharges: { type: Number, default: 0 },
-      dynamicCharges: { type: Number, default: 0 },
-      previousArrears: { type: Number, default: 0 },
-      interestOnArrears: { type: Number, default: 0 },
-      serviceTax: { type: Number, default: 0 },
-    },
+
     totalAmount: {
       type: Number,
       required: true,
@@ -62,12 +54,38 @@ const BillSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+
     status: {
       type: String,
       enum: ["Unpaid", "Partial", "Paid", "Overdue"],
       default: "Unpaid",
       index: true,
     },
+
+    importedFrom: {
+      type: String,
+      enum: ["Manual", "Excel", "API", "System"],
+      default: "System",
+    },
+    importBatchId: { type: String }, // ❌ REMOVED: index: true
+    importMetadata: {
+      fileName: String,
+      uploadedAt: Date,
+      rowNumber: Number,
+      validationStatus: {
+        type: String,
+        enum: ["Valid", "Warning", "Error"],
+        default: "Valid",
+      },
+      validationMessages: [String],
+    },
+
+    generationMetadata: {
+      societyConfigVersion: Number,
+      memberAreaAtGeneration: Number,
+      ratesApplied: mongoose.Schema.Types.Mixed,
+    },
+
     isLocked: {
       type: Boolean,
       default: false,
@@ -91,31 +109,29 @@ const BillSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+
+    // Soft delete - NO INDEX HERE
+    isDeleted: { type: Boolean, default: false }, // ❌ REMOVED: index: true
+    deletedAt: { type: Date },
+    deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   {
     timestamps: true,
   }
 );
 
+// ✅ ALL INDEXES DEFINED HERE (single place)
 BillSchema.index(
   { societyId: 1, billPeriodId: 1, memberId: 1 },
   { unique: true }
 );
 BillSchema.index({ societyId: 1, status: 1, dueDate: 1 });
+BillSchema.index({ importBatchId: 1 }); // ✅ Defined here only
+BillSchema.index({ "importMetadata.validationStatus": 1 });
+BillSchema.index({ isDeleted: 1 }); // ✅ Defined here only
 
 BillSchema.pre("save", function (next) {
   this.balanceAmount = this.totalAmount - this.amountPaid;
-
-  if (this.balanceAmount <= 0 && this.amountPaid > 0) {
-    this.status = "Paid";
-  } else if (this.amountPaid > 0 && this.balanceAmount > 0) {
-    this.status = "Partial";
-  } else if (new Date() > this.dueDate && this.balanceAmount > 0) {
-    this.status = "Overdue";
-  } else {
-    this.status = "Unpaid";
-  }
-
   next();
 });
 
