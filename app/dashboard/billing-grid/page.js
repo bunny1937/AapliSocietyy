@@ -49,76 +49,93 @@ export default function BillingGridPage() {
   }, [members]);
 
   // Filtered members
-  const filteredMembers = useMemo(() => {
-    return members
-      .filter((member) => {
-        const matchesSearch =
-          member.roomNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          member.ownerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (member.wing &&
-            member.wing.toLowerCase().includes(searchTerm.toLowerCase()));
-        const matchesWing =
-          selectedWing === "all" || member.wing === selectedWing;
-        return matchesSearch && matchesWing;
-      })
-      .sort((a, b) => {
-        const wingCompare = (a.wing || "").localeCompare(b.wing || "");
-        if (wingCompare !== 0) return wingCompare;
-        return (parseInt(a.roomNo) || 0) - (parseInt(b.roomNo) || 0);
+const filteredMembers = useMemo(() => {
+  const term = searchTerm.toLowerCase();
+
+  return members
+    .filter((member) => {
+      const matchesSearch =
+        (member.flatNo ?? "").toLowerCase().includes(term) ||
+        (member.ownerName ?? "").toLowerCase().includes(term) ||
+        (member.wing ?? "").toLowerCase().includes(term);
+
+      const matchesWing =
+        selectedWing === "all" || member.wing === selectedWing;
+
+      return matchesSearch && matchesWing;
+    })
+    .sort((a, b) => {
+      const wingCompare = (a.wing || "").localeCompare(b.wing || "");
+      if (wingCompare !== 0) return wingCompare;
+
+      return (a.flatNo || "").localeCompare(b.flatNo || "", undefined, {
+        numeric: true,
+        sensitivity: "base",
       });
-  }, [members, searchTerm, selectedWing]);
+    });
+}, [members, searchTerm, selectedWing]);
 
   // Calculate row total
-  const calculateRowTotal = useCallback(
-    (memberId, member) => {
-      const rowData = gridData[memberId] || {};
+ const calculateRowTotal = useCallback(
+  (memberId, member) => {
+    const rowData = gridData[memberId] || {};
 
-      // Base charges
-      const maintenance =
-        member.areaSqFt * (society?.config?.maintenanceRate || 2.5);
-      const sinkingFund =
-        member.areaSqFt * (society?.config?.sinkingFundRate || 0.5);
-      const repairFund =
-        member.areaSqFt * (society?.config?.repairFundRate || 0.5);
-      const fixedCharges =
-        (society?.config?.fixedCharges?.water || 0) +
-        (society?.config?.fixedCharges?.security || 0) +
-        (society?.config?.fixedCharges?.electricity || 0);
+    // ✅ Normalize area (choose carpet first, fallback to built-up)
+    const areaSqFt = Number(
+      member.carpetAreaSqft ?? member.builtUpAreaSqft ?? 0
+    );
 
-      // Custom columns
-      const customTotal = customColumns.reduce((sum, col) => {
-        return sum + (parseFloat(rowData[col.id]) || 0);
-      }, 0);
+    // Base charges
+    const maintenance =
+      areaSqFt * (society?.config?.maintenanceRate ?? 2.5);
 
-      const subtotal =
-        maintenance + sinkingFund + repairFund + fixedCharges + customTotal;
-      const serviceTax =
-        (subtotal * (society?.config?.serviceTaxRate || 0)) / 100;
-      const total = Math.round((subtotal + serviceTax) * 100) / 100;
+    const sinkingFund =
+      areaSqFt * (society?.config?.sinkingFundRate ?? 0.5);
 
-      return {
-        maintenance,
-        sinkingFund,
-        repairFund,
-        fixedCharges,
-        customTotal,
-        subtotal,
-        serviceTax,
-        total,
-        breakdown: {
-          Maintenance: maintenance,
-          "Sinking Fund": sinkingFund,
-          "Repair Fund": repairFund,
-          "Fixed Charges": fixedCharges,
-          ...customColumns.reduce((acc, col) => {
-            acc[col.name] = parseFloat(rowData[col.id]) || 0;
-            return acc;
-          }, {}),
-        },
-      };
-    },
-    [gridData, society, customColumns]
-  );
+    const repairFund =
+      areaSqFt * (society?.config?.repairFundRate ?? 0.5);
+
+    const fixedCharges =
+      (society?.config?.fixedCharges?.water ?? 0) +
+      (society?.config?.fixedCharges?.security ?? 0) +
+      (society?.config?.fixedCharges?.electricity ?? 0);
+
+    // Custom columns
+    const customTotal = customColumns.reduce((sum, col) => {
+      return sum + (Number(rowData[col.id]) || 0);
+    }, 0);
+
+    const subtotal =
+      maintenance + sinkingFund + repairFund + fixedCharges + customTotal;
+
+    const serviceTax =
+      (subtotal * (society?.config?.serviceTaxRate ?? 0)) / 100;
+
+    const total = Math.round((subtotal + serviceTax) * 100) / 100;
+
+    return {
+      maintenance,
+      sinkingFund,
+      repairFund,
+      fixedCharges,
+      customTotal,
+      subtotal,
+      serviceTax,
+      total,
+      breakdown: {
+        Maintenance: maintenance,
+        "Sinking Fund": sinkingFund,
+        "Repair Fund": repairFund,
+        "Fixed Charges": fixedCharges,
+        ...customColumns.reduce((acc, col) => {
+          acc[col.name] = Number(rowData[col.id]) || 0;
+          return acc;
+        }, {}),
+      },
+    };
+  },
+  [gridData, society, customColumns]
+);
 
   // Add custom column
   const handleAddColumn = () => {
@@ -244,7 +261,10 @@ export default function BillingGridPage() {
       "{{memberName}}": member.ownerName,
       "{{memberWing}}": member.wing || "",
       "{{memberRoomNo}}": member.roomNo,
-      "{{memberArea}}": member.areaSqFt,
+      "{{memberArea}}":
+  member.carpetAreaSqft ??
+  member.builtUpAreaSqft ??
+  "",
       "{{memberContact}}": member.contact || "",
       "{{billPeriod}}": `${year}-${String(month).padStart(2, "0")}`,
       "{{billDate}}": new Date().toLocaleDateString("en-IN"),
@@ -443,10 +463,14 @@ export default function BillingGridPage() {
                   >
                     <td>{member.wing || "-"}</td>
                     <td>
-                      <strong>{member.roomNo}</strong>
+                      <strong>{member.flatNo}</strong>
                     </td>
                     <td>{member.ownerName}</td>
-                    <td>{member.areaSqFt}</td>
+<td>
+  {member.carpetAreaSqft ??
+    member.builtUpAreaSqft ??
+    "-"}
+</td>
                     <td>₹{calc.maintenance.toFixed(2)}</td>
                     <td>₹{calc.sinkingFund.toFixed(2)}</td>
                     <td>₹{calc.repairFund.toFixed(2)}</td>

@@ -76,6 +76,8 @@ const getNavigationByRole = (role) => {
       items: [
         { name: "Billing Template", path: "/dashboard/bill-template", icon: "📝" },
         { name: "Import Bills", path: "/dashboard/import-bills", icon: "📥" },
+        { name: "Billing Config", path: "/dashboard/billing-config", icon: '⚙️' },
+        { name: "View Bills", path: "/dashboard/view-bills", icon: '👁️' },
         { name: "Billing Grid", path: "/dashboard/billing-grid", icon: "🧮" },
         { name: "Generate Bills", path: "/dashboard/generate-bills", icon: "📄" },
       ],

@@ -42,12 +42,12 @@ export async function GET(request) {
     }
 
     const bills = await Bill.find(query)
-      .populate("memberId", "roomNo wing ownerName areaSqFt contact")
+      .populate("memberId", "flatNo wing ownerName areaSqFt contact")
       .sort({
         billYear: -1,
         billMonth: -1,
         "memberId.wing": 1,
-        "memberId.roomNo": 1,
+        "memberId.flatNo": 1,
       })
       .lean();
 

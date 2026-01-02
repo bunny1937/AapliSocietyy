@@ -30,6 +30,13 @@ const BillSchema = new mongoose.Schema(
       index: true,
     },
 
+     // Interest fields
+  previousBalance: { type: Number, default: 0 },
+  interestAmount: { type: Number, default: 0 },
+  subtotal: Number,
+  serviceTax: { type: Number, default: 0 },
+  currentBillTotal: Number,
+
     charges: {
       type: Map,
       of: Number,
@@ -39,7 +46,6 @@ const BillSchema = new mongoose.Schema(
     totalAmount: {
       type: Number,
       required: true,
-      min: 0,
     },
     amountPaid: {
       type: Number,
@@ -48,7 +54,8 @@ const BillSchema = new mongoose.Schema(
     },
     balanceAmount: {
       type: Number,
-      default: 0,
+        required: true
+
     },
     dueDate: {
       type: Date,
@@ -109,6 +116,7 @@ const BillSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+  billPdfUrl: String, // Generated PDF URL
 
     // Soft delete - NO INDEX HERE
     isDeleted: { type: Boolean, default: false }, // ❌ REMOVED: index: true

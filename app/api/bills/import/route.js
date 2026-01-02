@@ -2,8 +2,10 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Bill from '@/models/Bill';
 import Member from '@/models/Member';
-import { verifyToken, getTokenFromRequest } from '@/lib/jwt';
-import ExcelJS from 'exceljs';
+import Society from '@/models/Society';
+import BillingHead from '@/models/BillingHead';
+import { getTokenFromRequest, verifyToken } from '@/lib/jwt';
+import * as XLSX from 'xlsx';
 import { v4 as uuidv4 } from 'uuid';
 
 let tempStorage = {};
@@ -13,10 +15,14 @@ export async function POST(request) {
     await connectDB();
     
     const token = getTokenFromRequest(request);
-    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const decoded = verifyToken(token);
-    if (!decoded) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
 
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
@@ -25,53 +31,61 @@ export async function POST(request) {
     if (action === 'preview') {
       const formData = await request.formData();
       const file = formData.get('file');
-      if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
 
-      const bytes = await file.arrayBuffer();
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(Buffer.from(bytes));
-      const worksheet = workbook.worksheets[0];
-
-      const headers = [];
-      worksheet.getRow(1).eachCell((cell) => {
-        headers.push(String(cell.value).trim());
-      });
-
-      const required = ['Member ID', 'Bill Month', 'Bill Year', 'Total Amount'];
-      const missing = required.filter(r => !headers.includes(r));
-      if (missing.length > 0) {
-        return NextResponse.json({ error: `Missing columns: ${missing.join(', ')}` }, { status: 400 });
+      if (!file) {
+        return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
       }
 
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      
+      // Read Excel
+      const workbook = XLSX.read(buffer);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(worksheet);
+
+      if (data.length === 0) {
+        return NextResponse.json({ error: 'Excel file is empty' }, { status: 400 });
+      }
+
+      // Get headers
+      const headers = Object.keys(data[0]);
+      
+      // Required columns
+      const required = ['Member ID', 'Bill Month', 'Bill Year'];
+      const missing = required.filter(r => !headers.includes(r));
+      
+      if (missing.length > 0) {
+        return NextResponse.json({
+          error: `Missing required columns: ${missing.join(', ')}`
+        }, { status: 400 });
+      }
+
+      // Fetch members
       const members = await Member.find({ societyId: decoded.societyId }).lean();
       const memberMap = new Map(members.map(m => [m._id.toString(), m]));
 
-      const existingBills = await Bill.find({ 
-        societyId: decoded.societyId 
-      }).select('memberId billMonth billYear billPeriodId').lean();
-      
+      // Fetch existing bills
+      const existingBills = await Bill.find({ societyId: decoded.societyId })
+        .select('memberId billMonth billYear billPeriodId')
+        .lean();
       const existingSet = new Set(
         existingBills.map(b => `${b.memberId}-${b.billMonth}-${b.billYear}`)
       );
 
+      // Validate rows
       const rows = [];
       let valid = 0, warnings = 0, errors = 0, duplicates = 0;
       const duplicateList = [];
       const errorList = [];
 
-      worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber === 1) return;
-
-        const rowData = {};
-        row.eachCell((cell, colNumber) => {
-          const header = headers[colNumber - 1];
-          rowData[header] = cell.value;
-        });
-
+      data.forEach((row, index) => {
         const issues = [];
         let status = 'Valid';
+        const rowNumber = index + 2; // Excel row number
 
-        const memberId = rowData['Member ID']?.toString().trim();
+        // Validate Member ID
+        const memberId = row['Member ID']?.toString().trim();
         if (!memberId) {
           issues.push('Member ID missing');
           status = 'Error';
@@ -80,8 +94,9 @@ export async function POST(request) {
           status = 'Error';
         }
 
-        const billMonth = parseInt(rowData['Bill Month']);
-        const billYear = parseInt(rowData['Bill Year']);
+        // Validate Month & Year
+        const billMonth = parseInt(row['Bill Month']);
+        const billYear = parseInt(row['Bill Year']);
         
         if (isNaN(billMonth) || billMonth < 0 || billMonth > 11) {
           issues.push('Invalid Bill Month (0-11)');
@@ -93,11 +108,13 @@ export async function POST(request) {
           status = 'Error';
         }
 
+        // Check duplicates
         const billKey = `${memberId}-${billMonth}-${billYear}`;
         if (existingSet.has(billKey)) {
           issues.push('Duplicate bill exists');
           status = 'Error';
           duplicates++;
+          
           const member = memberMap.get(memberId);
           duplicateList.push({
             member: member ? `${member.wing}-${member.roomNo}` : 'Unknown',
@@ -106,18 +123,31 @@ export async function POST(request) {
           });
         }
 
-        const amount = parseFloat(rowData['Total Amount']);
-        if (isNaN(amount) || amount <= 0) {
-          issues.push('Invalid amount');
-          status = 'Error';
+        // Validate amounts (all charge columns)
+        const chargeColumns = headers.filter(h => 
+          !['Member ID', 'Wing', 'Room No', 'Bill Month', 'Bill Year', 'Due Date', 'Notes'].includes(h)
+        );
+
+        const charges = {};
+        chargeColumns.forEach(col => {
+          const value = parseFloat(row[col]);
+          if (!isNaN(value) && value > 0) {
+            charges[col] = value;
+          }
+        });
+
+        const totalAmount = Object.values(charges).reduce((sum, val) => sum + val, 0);
+
+        if (totalAmount === 0) {
+          issues.push('Total amount is 0');
+          status = 'Warning';
+          warnings++;
         }
 
         if (status === 'Error') {
           errors++;
           errorList.push({ rowNumber, message: issues.join(', ') });
-        } else if (status === 'Warning') {
-          warnings++;
-        } else {
+        } else if (status === 'Valid') {
           valid++;
         }
 
@@ -127,12 +157,13 @@ export async function POST(request) {
           status,
           member: member ? `${member.wing}-${member.roomNo}` : 'Unknown',
           period: `${billYear}-${String(billMonth + 1).padStart(2, '0')}`,
-          amount: amount || 0,
+          amount: totalAmount.toFixed(2),
           issues,
-          data: rowData
+          data: row
         });
       });
 
+      // Store in temp cache
       const batchId = uuidv4();
       tempStorage[batchId] = { rows, decoded };
 
@@ -153,59 +184,67 @@ export async function POST(request) {
     if (action === 'confirm') {
       const { batchId } = await request.json();
       const cached = tempStorage[batchId];
-      
+
       if (!cached) {
         return NextResponse.json({ error: 'Session expired' }, { status: 400 });
       }
 
       const { rows, decoded: cachedDecoded } = cached;
       const validRows = rows.filter(r => r.status === 'Valid');
-      
-      // ✅ FIX: Build charges Map from Excel columns
+
+      // Fetch members again
+      const members = await Member.find({ societyId: cachedDecoded.societyId }).lean();
+      const memberMap = new Map(members.map(m => [m._id.toString(), m]));
+
+      // Create bills
       const billsToInsert = validRows.map(row => {
+        const data = row.data;
+        const memberId = data['Member ID'].toString().trim();
+        const member = memberMap.get(memberId);
+        
+        const billMonth = parseInt(data['Bill Month']);
+        const billYear = parseInt(data['Bill Year']);
+        const billPeriodId = `${billYear}-${String(billMonth + 1).padStart(2, '0')}`;
+
+        // Build charges map
         const charges = new Map();
-        
-        // Add all charge columns to charges Map
-        if (row.data['Maintenance']) charges.set('Maintenance', parseFloat(row.data['Maintenance']));
-        if (row.data['Sinking Fund']) charges.set('Sinking Fund', parseFloat(row.data['Sinking Fund']));
-        if (row.data['Repair Fund']) charges.set('Repair Fund', parseFloat(row.data['Repair Fund']));
-        if (row.data['Water Charges']) charges.set('Water Charges', parseFloat(row.data['Water Charges']));
-        if (row.data['Security Charges']) charges.set('Security Charges', parseFloat(row.data['Security Charges']));
-        if (row.data['Interest']) charges.set('Interest on Arrears', parseFloat(row.data['Interest']));
-        
-        // Add any other dynamic columns that aren't standard fields
-        Object.keys(row.data).forEach(key => {
-          if (!['Member ID', 'Bill Month', 'Bill Year', 'Total Amount', 'Due Date', 'Notes'].includes(key)) {
-            if (!charges.has(key) && row.data[key]) {
-              charges.set(key, parseFloat(row.data[key]) || 0);
+        Object.keys(data).forEach(key => {
+          if (!['Member ID', 'Wing', 'Room No', 'Bill Month', 'Bill Year', 'Due Date', 'Notes', 'Total Amount'].includes(key)) {
+            const value = parseFloat(data[key]);
+            if (!isNaN(value) && value > 0) {
+              charges.set(key, value);
             }
           }
         });
 
+        const totalAmount = Array.from(charges.values()).reduce((sum, val) => sum + val, 0);
+        
+        const dueDate = data['Due Date'] 
+          ? new Date(data['Due Date'])
+          : new Date(billYear, billMonth, 10);
+
         return {
-          billPeriodId: `${row.data['Bill Year']}-${String(parseInt(row.data['Bill Month']) + 1).padStart(2, '0')}`,
-          billMonth: parseInt(row.data['Bill Month']),
-          billYear: parseInt(row.data['Bill Year']),
-          memberId: row.data['Member ID'],
+          billPeriodId,
+          billMonth,
+          billYear,
+          memberId,
           societyId: cachedDecoded.societyId,
-          charges, // ✅ Single source of truth
-          totalAmount: parseFloat(row.data['Total Amount']),
+          charges: Object.fromEntries(charges),
+          totalAmount,
+          balanceAmount: totalAmount,
           amountPaid: 0,
-          balanceAmount: parseFloat(row.data['Total Amount']),
-          dueDate: row.data['Due Date'] || new Date(),
-          status: 'Unpaid', // ✅ Explicit status
+          dueDate,
+          status: 'Unpaid',
           importedFrom: 'Excel',
-          importBatchId: batchId,
-          importMetadata: {
-            fileName: 'imported_file.xlsx',
-            rowNumber: row.rowNumber,
-            validationStatus: 'Valid'
-          },
-          generatedBy: cachedDecoded.userId
+          notes: data['Notes'] || '',
+          generatedBy: cachedDecoded.userId,
+          generatedAt: new Date()
         };
       });
 
       await Bill.insertMany(billsToInsert);
+
+      // Clear cache
       delete tempStorage[batchId];
 
       return NextResponse.json({
@@ -218,7 +257,10 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 
   } catch (error) {
-    console.error('Import error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Import bills error:', error);
+    return NextResponse.json({
+      error: 'Internal server error',
+      details: error.message
+    }, { status: 500 });
   }
 }

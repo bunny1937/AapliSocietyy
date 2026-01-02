@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import Transaction from "@/models/Transaction";
+import Bill from "@/models/Bill";  
+import Member from "@/models/Member";  
 import { verifyToken, getTokenFromRequest } from "@/lib/jwt";
 
 export async function GET(request) {
@@ -17,14 +18,15 @@ export async function GET(request) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    const bills = await Transaction.find({
-      societyId: decoded.societyId,
-      category: "Maintenance",
-      billHtml: { $exists: true },
+    // Query Bill model - no filter, show ALL bills
+    const bills = await Bill.find({
+      societyId: decoded.societyId
     })
-      .populate("memberId", "roomNo wing ownerName areaSqFt")
-      .sort({ date: -1, createdAt: -1 })
+      .populate("memberId", "flatNo wing ownerName areaSqFt contact")
+      .sort({ billYear: -1, billMonth: -1, createdAt: -1 })
       .lean();
+
+    console.log('📋 Found bills in /api/billing/generated:', bills.length);
 
     return NextResponse.json({
       success: true,

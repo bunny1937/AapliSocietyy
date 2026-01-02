@@ -18,14 +18,55 @@ const SocietySchema = new mongoose.Schema(
     // Carpet Area
     carpetAreaSqft: { type: Number, default: 0 },
 
-    // Bill Template
-    billTemplate: {
-      type: { type: String, enum: ["default", "uploaded"], default: "default" },
-      fileName: { type: String },
-      filePath: { type: String },
-      uploadedAt: { type: Date },
-      uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+   // Bill Template - UPDATED STRUCTURE
+  billTemplate: {
+    type: {
+      type: String,
+      enum: ['default', 'custom', 'uploaded-pdf', 'uploaded-image'],
+      default: 'default'
     },
+    // For uploaded PDF
+    pdfUrl: { type: String },
+    hasFormFields: { type: Boolean, default: false },
+    detectedFields: [{ type: String }],
+    
+    // For uploaded image
+    imageUrl: { type: String },
+    
+    // For custom design
+    design: {
+      type: mongoose.Schema.Types.Mixed, 
+      default: null,
+      headerBg: String,
+      headerColor: String,
+      societyNameSize: Number,
+      addressSize: Number,
+      billTitleSize: Number,
+      billTitleAlign: String,
+      tableHeaderBg: String,
+      tableHeaderColor: String,
+      tableRowBg1: String,
+      tableRowBg2: String,
+      tableBorderColor: String,
+      totalBg: String,
+      totalColor: String,
+      totalSize: Number,
+      footerSize: Number,
+      footerText: [String],
+      showSignature: Boolean,
+      signatureLabel: String
+    },
+    
+    // Common assets
+    logoUrl: { type: String },
+    signatureUrl: { type: String },
+    
+    uploadedAt: { type: Date },
+    uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    // OLD FIELDS - keep for backward compatibility
+    fileName: { type: String },
+    filePath: { type: String }
+  },
 
     // Configuration
     config: {

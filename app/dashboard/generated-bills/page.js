@@ -17,6 +17,7 @@ export default function GeneratedBillsPage() {
   });
 
   const bills = billsData?.bills || [];
+console.log('📋 Bill data:', billsData?.bills[0]);
 
   // Get unique periods
   const periods = [...new Set(bills.map((b) => b.billPeriodId))]
