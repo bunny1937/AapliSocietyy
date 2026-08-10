@@ -8,14 +8,17 @@ void User;
 import Transaction from "@/models/Transaction";
 import Member from "@/models/Member";
 import mongoose from "mongoose";
-import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
+import { requireRoles, SOCIETY_ADMIN_ROLES } from "@/lib/authz";
 export async function GET(request) {
   try {
+    // Role gate BEFORE any DB work (test 02 critical: a Member token used to
+    // receive this society's full financials with HTTP 200).
+    // Admin + Secretary always; Accountant/Auditor included since they already
+    // work with the books — trim if your ARD says otherwise. Member: never.
+    const gate = requireRoles(request, [...SOCIETY_ADMIN_ROLES, "Accountant", "Auditor"]);
+    if (!gate.valid) return gate; // 401/403, nothing else runs
+    const decoded = gate.user;
     await connectDB();
-    const token = getTokenFromRequest(request);
-    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const decoded = verifyToken(token);
-    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     // Cast societyId string → ObjectId for aggregate pipelines
     const { societyId: societyIdStr } = decoded;
     if (!societyIdStr || !mongoose.Types.ObjectId.isValid(societyIdStr)) {

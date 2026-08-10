@@ -9,7 +9,7 @@ import PaymentImport from "@/models/PaymentImport";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import { validatePaymentRows } from "../../../../utils/excelValidator";
 import { getFinancialYear } from "@/lib/date-utils";
-import { parseFirstSheet } from "@/lib/excelParse";
+import { parseXlsxSafely, neutralizeCell, worksheetToJson } from "@/lib/excelParse";
 import crypto from "node:crypto";
 import cache from "@/lib/cache";
 import { applyPaymentToBill } from "@/lib/billing/allocationService";
@@ -46,7 +46,12 @@ function parseExcelDate(val) {
   return isNaN(d.getTime()) ? null : d;
 }
 // In-memory staging for preview→confirm flow
-const staged = {};
+// Preview staging lives in redis (lib/cache), NOT module memory: preview and
+// confirm routinely land on DIFFERENT lambda instances, and the old
+// `const staged = {}` silently lost every cross-instance confirm
+// ("Session expired. Re-upload file."). TTL bounds abandoned previews.
+const STAGE_TTL_SECONDS = 15 * 60;
+const stageKey = (batchKey) => `payimport:${batchKey}`;
 export async function POST(request) {
   try {
     await connectDB();
@@ -73,8 +78,13 @@ export async function POST(request) {
           { error: "No file uploaded" },
           { status: 400 },
         );
-      const bytes = await file.arrayBuffer();
-      const rows = await parseFirstSheet(Buffer.from(bytes), { defval: "" });
+      const bytes = Buffer.from(await file.arrayBuffer());
+      const parsed = await parseXlsxSafely(bytes);
+      if (parsed.error)
+        return NextResponse.json({ error: parsed.error }, { status: parsed.status });
+      const rows = worksheetToJson(parsed.worksheet, { defval: "" }).map((r) =>
+        Object.fromEntries(Object.entries(r).map(([k, v]) => [k, neutralizeCell(v)])),
+      );
       if (!rows.length)
         return NextResponse.json({ error: "Empty file" }, { status: 400 });
       // Validate required columns — accept merged "Wing-FlatNo" or legacy separate Wing+FlatNo
@@ -230,7 +240,7 @@ export async function POST(request) {
         });
       }
       const batchKey = `${decoded.societyId}-${Date.now()}`;
-      staged[batchKey] = { rows: preview, decoded, fileName: file.name };
+      await cache.set(stageKey(batchKey), { rows: preview, decoded, fileName: file.name }, STAGE_TTL_SECONDS);
       // Build bill map keyed by wing-flatno for grid validation (overpayment + tamper detection)
       const billMap = new Map();
       for (const p of preview) {
@@ -275,7 +285,7 @@ export async function POST(request) {
     // ── CONFIRM ──────────────────────────────────────────────────────────────
     if (action === "confirm") {
       const { batchKey, notes } = await request.json();
-      const batch = staged[batchKey];
+      const batch = await cache.get(stageKey(batchKey));
       if (!batch)
         return NextResponse.json(
           { error: "Session expired. Re-upload file." },
@@ -348,7 +358,7 @@ export async function POST(request) {
           prior &&
           ((prior.successRows || 0) > 0 || (prior.totalAmountUploaded || 0) > 0);
         if (priorApplied) {
-          delete staged[batchKey];
+          await cache.del(stageKey(batchKey));
           return NextResponse.json(
             {
               error:
@@ -591,7 +601,7 @@ export async function POST(request) {
         await cache.delPattern(`billing:list:${dec.societyId}:*`);
         await cache.del(`payments:outstanding:${dec.societyId}`);
 
-        delete staged[batchKey];
+        await cache.del(stageKey(batchKey));
         return {
           success: true,
           importId: importRecord._id,

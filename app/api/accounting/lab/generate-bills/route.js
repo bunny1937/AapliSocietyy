@@ -98,7 +98,12 @@ async function currentOutstanding(societyId, memberId) {
   return outstandingForBills(open);
 }
 
-export async function POST(request) {
+export async function POST(request)  {
+  // Lab tooling is dev/staging-only. In production return 404 (not 403) so
+  // the route does not even confirm its own existence.
+  if (process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
   try {

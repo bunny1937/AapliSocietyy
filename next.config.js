@@ -46,6 +46,37 @@ const nextConfig = {
   // dev (`node server.js`) or `next start`. Declaring it here as well makes
   // `/v1/*` -> `/api/v1/*` work in every environment (the custom server.js
   // routes through Next's handler, which honors these rewrites).
+  // Security headers (test 08). TLS + HSTS are already handled by Vercel;
+  // these close the real gaps: CSP, frame, sniffing, referrer, permissions.
+  async headers() {
+    const securityHeaders = [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+      // Report-Only first: watch the browser console for a week, tighten
+      // script-src, then rename to Content-Security-Policy to enforce.
+      {
+        key: "Content-Security-Policy-Report-Only",
+        value: [
+          "default-src 'self'",
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+          "style-src 'self' 'unsafe-inline'",
+          "img-src 'self' data: blob: https://*.r2.cloudflarestorage.com https://*.r2.dev",
+          "font-src 'self' data:",
+          "connect-src 'self' https://*.r2.cloudflarestorage.com https://*.r2.dev",
+          "frame-ancestors 'none'",
+          "base-uri 'self'",
+          "form-action 'self'",
+        ].join("; "),
+      },
+    ];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/api/:path*", headers: [{ key: "Cache-Control", value: "no-store" }] },
+    ];
+  },
+
   async rewrites() {
     return [{ source: "/v1/:path*", destination: "/api/v1/:path*" }];
   },

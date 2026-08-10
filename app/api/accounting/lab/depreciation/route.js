@@ -25,7 +25,12 @@ const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 
 // GET — current assets plus the depreciation that WOULD be charged, so the UI
 // can preview before committing.
-export async function GET(request) {
+export async function GET(request)  {
+  // Lab tooling is dev/staging-only. In production return 404 (not 403) so
+  // the route does not even confirm its own existence.
+  if (process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
   try {
@@ -63,7 +68,12 @@ export async function GET(request) {
 // POST — two actions:
 //   { action: "register", assets: [...] }  create fixed assets for the sim
 //   { action: "run", enabled, periodMonths }  charge depreciation for the period
-export async function POST(request) {
+export async function POST(request)  {
+  // Lab tooling is dev/staging-only. In production return 404 (not 403) so
+  // the route does not even confirm its own existence.
+  if (process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
   try {
