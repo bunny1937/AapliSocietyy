@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { generateEnhancedMemberTemplate } from '@/lib/excel-handler';
-export async function GET() {
+import { authorize } from "@/lib/rbac/authorize";
+export async function GET(request) {
   try {
+    const gate = await authorize(request, "member.importMembers.view");
+    if (!gate.ok) return gate.response;
     const buffer = await generateEnhancedMemberTemplate();
     return new NextResponse(buffer, {
       headers: {

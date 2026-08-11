@@ -10,6 +10,7 @@ import BillingHead from '@/models/BillingHead';
 import Receipt from '@/models/Receipt';
 import ExcelJS from 'exceljs';
 import { requireRoles, SOCIETY_ADMIN_ROLES } from '@/lib/authz';
+import { authorize } from '@/lib/rbac/authorize';
 const MAX_EXPORT_ROWS = 10000;
 const modelMap = {
   society: Society,
@@ -23,10 +24,9 @@ const modelMap = {
 };
 export async function GET(request, { params }) {
   try {
-    await connectDB();
-    const auth = requireRoles(request, SOCIETY_ADMIN_ROLES);
-    if (!auth.valid) return auth;
-    const decoded = auth.user;
+    const gate = await authorize(request, "society.data.export");
+    if (!gate.ok) return gate.response;
+    await connectDB();    const decoded = gate.context;
     const { entity } =  await params;
     const Model = modelMap[entity];
     if (!Model) {

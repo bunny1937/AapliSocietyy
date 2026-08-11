@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { verifyToken, getTokenFromRequest } from "@/lib/jwt";
+import { authorize } from "@/lib/rbac/authorize";
 import Bill from "@/models/Bill";
 import mongoose from "mongoose";
 export async function GET(request) {
   try {
+    const gate = await authorize(request, "billing.bill.view");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token)

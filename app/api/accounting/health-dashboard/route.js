@@ -5,11 +5,20 @@ import { getHealthDashboard, AccountingHealthServiceError } from "@/lib/services
 import { TrialBalanceServiceError } from "@/lib/services/TrialBalanceService";
 import { OpeningBalanceServiceError } from "@/lib/services/OpeningBalanceService";
 import { FinancialClosingServiceError } from "@/lib/services/FinancialClosingService";
+import { authorizeAny } from "@/lib/rbac/authorize";
 
 // GET /api/accounting/health-dashboard?financialYearId=
+// Read by generate-statements AND other-statements PageClient.js, not just
+// the accounting-lab test tool.
 export async function GET(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
+  const gate = await authorizeAny(request, [
+    "statements.generateStatements.view",
+    "statements.otherStatements.view",
+    "society.systemTests.view",
+  ]);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);

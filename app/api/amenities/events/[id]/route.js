@@ -15,7 +15,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.VIEW_AMENITIES);
+  const g = await gate(request, CAPABILITY.VIEW_AMENITIES);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid event id");
@@ -36,7 +36,7 @@ export const GET = withAmenityRoute(async (request, { params }) => {
 // PATCH — edit an event. Time or venue changes notify everyone registered,
 // because a changed start time that nobody hears about is a failed event.
 export const PATCH = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_EVENTS);
+  const g = await gate(request, CAPABILITY.MANAGE_EVENTS);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid event id");
@@ -121,7 +121,7 @@ export const PATCH = withAmenityRoute(async (request, { params }) => {
 // DELETE — cancel, never destroy. Registrations and attendance must survive for
 // the historical record, and registrants have to be told.
 export const DELETE = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_EVENTS);
+  const g = await gate(request, CAPABILITY.MANAGE_EVENTS);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid event id");

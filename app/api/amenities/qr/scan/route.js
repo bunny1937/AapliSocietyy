@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 // Every attempt is recorded, including rejections: "the code was scanned 40
 // times and refused" is the signal that a sticker has leaked or expired.
 export const POST = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.SCAN_QR);
+  const g = await gate(request, CAPABILITY.SCAN_QR);
   if (!g.ok) return g.response;
 
   const parsed = qrScanSchema.safeParse(await request.json());

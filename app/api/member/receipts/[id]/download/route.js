@@ -8,8 +8,11 @@ import Member from "@/models/Member";
 import { FlexiblePDFGenerator } from "@/lib/pdf-generator";
 import { buildReceiptFillData } from "@/lib/receipt-pdf-fields";
 import { extractFileId, loadUploadedFile } from "@/lib/file-store";
+import { authorize } from "@/lib/rbac/authorize";
 export async function GET(request, { params }) {
   try {
+    const gate = await authorize(request, "finance.receipt.download");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const { id } = await params;
     const token = getTokenFromRequest(request);

@@ -23,7 +23,7 @@ export const dynamic = "force-dynamic";
 // The full configuration screen in one request — the admin detail page needs all
 // of it at once, and six round trips would render the tabs progressively.
 export const GET = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.VIEW_AMENITIES);
+  const g = await gate(request, CAPABILITY.VIEW_AMENITIES);
   if (!g.ok) return g.response;
 
   const { id } = await params;
@@ -74,7 +74,7 @@ export const GET = withAmenityRoute(async (request, { params }) => {
 // society-wide notification and must go through POST /[id]/status so it can never
 // happen as an invisible side effect of renaming an amenity.
 export const PATCH = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_AMENITIES);
+  const g = await gate(request, CAPABILITY.MANAGE_AMENITIES);
   if (!g.ok) return g.response;
 
   const { id } = await params;
@@ -171,7 +171,7 @@ export const PATCH = withAmenityRoute(async (request, { params }) => {
 // Soft delete only. Attendance, incidents and analytics all reference the
 // amenity, and the brief requires those histories to survive permanently.
 export const DELETE = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_AMENITIES);
+  const g = await gate(request, CAPABILITY.MANAGE_AMENITIES);
   if (!g.ok) return g.response;
 
   const { id } = await params;

@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.VIEW_AMENITIES);
+  const g = await gate(request, CAPABILITY.VIEW_AMENITIES);
   if (!g.ok) return g.response;
 
   const { id } = await params;
@@ -33,7 +33,7 @@ export const GET = withAmenityRoute(async (request, { params }) => {
 // (a clubhouse open 06:00-10:00 and 16:00-22:00 is normal), which is why this is
 // a separate collection rather than one opening/closing pair on the amenity.
 export const PUT = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_AVAILABILITY);
+  const g = await gate(request, CAPABILITY.MANAGE_AVAILABILITY);
   if (!g.ok) return g.response;
 
   const { id } = await params;

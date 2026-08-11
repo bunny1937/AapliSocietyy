@@ -17,7 +17,7 @@ export default function SelectSocietyPage() {
     setProfiles(JSON.parse(raw));
     setName(storedName || "");
   }, []);
-  const handleSelect = async (profileId) => {
+  const handleSelect = async (profileId, kind) => {
     setLoading(true);
     setError("");
     try {
@@ -35,7 +35,11 @@ export default function SelectSocietyPage() {
       sessionStorage.removeItem("pendingUserId");
       sessionStorage.removeItem("profileSelectToken");
       sessionStorage.removeItem("pendingName");
-      router.replace("/member/dashboard");
+      // /my-access always works for a staff-hat login, regardless of which
+      // pages that particular role actually has — was previously hardcoded
+      // to /admin/dashboard, which 403s/redirects for any role without
+      // Dashboard access (e.g. an Auditor scoped to just Finance pages).
+      router.replace(kind === "Staff" ? "/my-access" : "/member/dashboard");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -83,13 +87,13 @@ export default function SelectSocietyPage() {
           {profiles.map((p) => (
             <button
               key={String(p.profileId)}
-              onClick={() => handleSelect(String(p.profileId))}
+              onClick={() => handleSelect(String(p.profileId), p.kind)}
               disabled={loading}
               style={{
                 textAlign: "left",
                 padding: "16px 20px",
                 borderRadius: 10,
-                border: "1.5px solid #e5e7eb",
+                border: p.kind === "Staff" ? "1.5px solid #6366f1" : "1.5px solid #e5e7eb",
                 background: "#fff",
                 cursor: "pointer",
                 transition: "border-color 0.15s",
@@ -98,14 +102,23 @@ export default function SelectSocietyPage() {
                 (e.currentTarget.style.borderColor = "#6366f1")
               }
               onMouseLeave={(e) =>
-                (e.currentTarget.style.borderColor = "#e5e7eb")
+                (e.currentTarget.style.borderColor =
+                  p.kind === "Staff" ? "#6366f1" : "#e5e7eb")
               }
             >
               <div style={{ fontWeight: 600, fontSize: 15 }}>
-                🏢 {p.societyName}
+                {p.kind === "Staff" ? "🛡️" : "🏢"} {p.societyName}
               </div>
               <div style={{ color: "#6b7280", fontSize: 13, marginTop: 4 }}>
-                Flat {p.wing}-{p.flatNo} &nbsp;·&nbsp; {p.role}
+                {p.kind === "Staff" ? (
+                  <>Management &nbsp;·&nbsp; {p.role}</>
+                ) : (
+                  <>
+                    {p.kind === "Commercial" ? "Shop" : "Flat"}{" "}
+                    {p.wing ? `${p.wing}-` : ""}
+                    {p.flatNo} &nbsp;·&nbsp; {p.role}
+                  </>
+                )}
               </div>
             </button>
           ))}

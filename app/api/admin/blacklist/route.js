@@ -10,14 +10,15 @@ import Blacklist from "@/models/Blacklist";
 import { requireRoles } from "@/lib/authz";
 import { logAudit } from "@/lib/audit-logger";
 import { isSafePhotoValue } from "@/lib/visitor-config";
+import { authorize } from "@/lib/rbac/authorize";
 export async function GET(request) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "visitor.blacklist.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
     const includeInactive = searchParams.get("all") === "1";
-    const query = { societyId: auth.user.societyId };
+    const query = { societyId: gate.context.societyId };
     if (!includeInactive) query.active = true;
     const entries = await Blacklist.find(query)
       .sort({ createdAt: -1 })
@@ -31,8 +32,8 @@ export async function GET(request) {
   }
 }
 export async function POST(request) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "visitor.blacklist.add");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const body = await request.json();
@@ -57,7 +58,7 @@ export async function POST(request) {
     // Avoid duplicate active entries for the same phone.
     if (phone) {
       const dup = await Blacklist.findOne({
-        societyId: auth.user.societyId,
+        societyId: gate.context.societyId,
         phone,
         active: true,
       }).lean();
@@ -68,16 +69,16 @@ export async function POST(request) {
         );
     }
     const entry = await Blacklist.create({
-      societyId: auth.user.societyId,
+      societyId: gate.context.societyId,
       name,
       phone,
       reason,
       severity,
       photo,
-      addedBy: auth.user.userId,
+      addedBy: gate.context.userId,
       active: true,
     });
-    await logAudit(auth.user.userId, auth.user.societyId, "BLACKLIST_ADDED", null, {
+    await logAudit(gate.context.userId, gate.context.societyId, "BLACKLIST_ADDED", null, {
       id: entry._id.toString(),
       name,
       phone,
@@ -90,8 +91,8 @@ export async function POST(request) {
   }
 }
 export async function DELETE(request) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "visitor.blacklist.remove");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
@@ -99,13 +100,13 @@ export async function DELETE(request) {
     if (!id || !mongoose.Types.ObjectId.isValid(id))
       return NextResponse.json({ error: "Valid id required" }, { status: 400 });
     const entry = await Blacklist.findOneAndUpdate(
-      { _id: id, societyId: auth.user.societyId },
+      { _id: id, societyId: gate.context.societyId },
       { active: false },
       { new: true },
     );
     if (!entry)
       return NextResponse.json({ error: "Entry not found" }, { status: 404 });
-    await logAudit(auth.user.userId, auth.user.societyId, "BLACKLIST_REMOVED", null, {
+    await logAudit(gate.context.userId, gate.context.societyId, "BLACKLIST_REMOVED", null, {
       id: entry._id.toString(),
     });
     return NextResponse.json({ success: true });

@@ -18,7 +18,7 @@ function group(rules) {
 }
 
 export const GET = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.VIEW_AMENITIES);
+  const g = await gate(request, CAPABILITY.VIEW_AMENITIES);
   if (!g.ok) return g.response;
 
   const { id } = await params;
@@ -37,7 +37,7 @@ export const GET = withAmenityRoute(async (request, { params }) => {
 // text in the UI; replacing the set atomically avoids a half-saved rulebook, and
 // residents never see rules 1-3 of a 6-rule update.
 export const PUT = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_RULES);
+  const g = await gate(request, CAPABILITY.MANAGE_RULES);
   if (!g.ok) return g.response;
 
   const { id } = await params;

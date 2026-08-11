@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { verifyToken, getTokenFromRequest } from "@/lib/jwt";
 import User from "@/models/User";
+import { authorize } from "@/lib/rbac/authorize";
 export async function GET(request) {
+  const gate = await authorize(request, "rbac.user.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);

@@ -11,6 +11,7 @@ import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { requireRoles } from "@/lib/authz";
 import { logAudit } from "@/lib/audit-logger";
+import { authorize } from "@/lib/rbac/authorize";
 function isPlausiblePhone(phone) {
   const digits = String(phone || "").replace(/\D/g, "");
   return digits.length >= 10 && digits.length <= 13;
@@ -25,12 +26,12 @@ async function loadGuard(id, societyId) {
   });
 }
 export async function PATCH(request, { params }) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "security.guard.update");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await params;
-    const guard = await loadGuard(id, auth.user.societyId);
+    const guard = await loadGuard(id, gate.context.societyId);
     if (!guard)
       return NextResponse.json({ error: "Guard not found" }, { status: 404 });
     const body = await request.json();
@@ -59,7 +60,7 @@ export async function PATCH(request, { params }) {
     };
     Object.assign(guard, updates);
     await guard.save();
-    await logAudit(auth.user.userId, auth.user.societyId, "SECURITY_GUARD_UPDATED", before, {
+    await logAudit(gate.context.userId, gate.context.societyId, "SECURITY_GUARD_UPDATED", before, {
       id: guard._id.toString(),
       ...updates,
     });
@@ -80,12 +81,12 @@ export async function PATCH(request, { params }) {
   }
 }
 export async function POST(request, { params }) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "security.guard.resetPin");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await params;
-    const guard = await loadGuard(id, auth.user.societyId);
+    const guard = await loadGuard(id, gate.context.societyId);
     if (!guard)
       return NextResponse.json({ error: "Guard not found" }, { status: 404 });
     const body = await request.json().catch(() => ({}));
@@ -109,7 +110,7 @@ export async function POST(request, { params }) {
     }
     guard.password = await bcrypt.hash(newPassword, 10);
     await guard.save();
-    await logAudit(auth.user.userId, auth.user.societyId, "SECURITY_GUARD_PASSWORD_RESET", null, {
+    await logAudit(gate.context.userId, gate.context.societyId, "SECURITY_GUARD_PASSWORD_RESET", null, {
       id: guard._id.toString(),
       username: guard.username,
     });
@@ -125,18 +126,18 @@ export async function POST(request, { params }) {
   }
 }
 export async function DELETE(request, { params }) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "security.guard.delete");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await params;
-    const guard = await loadGuard(id, auth.user.societyId);
+    const guard = await loadGuard(id, gate.context.societyId);
     if (!guard)
       return NextResponse.json({ error: "Guard not found" }, { status: 404 });
     guard.isDeleted = true;
     guard.isActive = false;
     await guard.save();
-    await logAudit(auth.user.userId, auth.user.societyId, "SECURITY_GUARD_DELETED", null, {
+    await logAudit(gate.context.userId, gate.context.societyId, "SECURITY_GUARD_DELETED", null, {
       id: guard._id.toString(),
       username: guard.username,
     });

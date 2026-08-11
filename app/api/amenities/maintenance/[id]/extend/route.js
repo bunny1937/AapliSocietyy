@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 // to an audit trail on the record, so residents and auditors can see that a
 // three-day repair became nine days across three extensions.
 export const POST = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_MAINTENANCE);
+  const g = await gate(request, CAPABILITY.MANAGE_MAINTENANCE);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid maintenance id");

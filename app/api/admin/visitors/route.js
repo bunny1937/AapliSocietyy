@@ -10,12 +10,13 @@ import Visitor from "@/models/Visitor";
 import User from "@/models/User";
 import { requireRoles } from "@/lib/authz";
 import { VISITOR_STATUSES, VISITOR_PURPOSES } from "@/lib/visitor-config";
+import { authorize } from "@/lib/rbac/authorize";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(request) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "visitor.visitor.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
@@ -31,7 +32,7 @@ export async function GET(request) {
       100,
       parseInt(searchParams.get("limit") || "25", 10),
     );
-    const query = { societyId: auth.user.societyId };
+    const query = { societyId: gate.context.societyId };
     if (status && VISITOR_STATUSES.includes(status)) query.status = status;
     if (purpose && VISITOR_PURPOSES.includes(purpose)) query.purpose = purpose;
     if (offline === "1") query.entryMethod = "OfflineEntry";
@@ -64,17 +65,17 @@ export async function GET(request) {
       Visitor.aggregate([
         {
           $match: {
-            societyId: new mongoose.Types.ObjectId(String(auth.user.societyId)),
+            societyId: new mongoose.Types.ObjectId(String(gate.context.societyId)),
           },
         },
         { $group: { _id: "$status", count: { $sum: 1 } } },
       ]),
       Visitor.countDocuments({
-        societyId: auth.user.societyId,
+        societyId: gate.context.societyId,
         entryMethod: "OfflineEntry",
       }),
       Visitor.countDocuments({
-        societyId: auth.user.societyId,
+        societyId: gate.context.societyId,
         entryMethod: "OfflineEntry",
         "offlineMeta.confirmation.status": "Flagged",
       }),

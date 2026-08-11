@@ -7,12 +7,12 @@ import Bill from "@/models/Bill";
 import Transaction from "@/models/Transaction";
 import Receipt from "@/models/Receipt";
 import { requireRoles } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 export async function DELETE(request, { params }) {
   try {
-    await connectDB();
-    const auth = requireRoles(request, ["Admin"]);
-    if (!auth.valid) return auth;
-    const decoded = auth.user;
+    const gate = await authorize(request, "society.data.delete");
+    if (!gate.ok) return gate.response;
+    await connectDB();    const decoded = gate.context;
     const { entity } = await params;
     const { searchParams } = new URL(request.url);
     const ids = searchParams.get("ids")?.split(",") || [];

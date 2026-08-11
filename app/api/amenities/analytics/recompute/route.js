@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 // the truth from the source rows. Capped at 90 days per call to stay well inside
 // a request timeout.
 export const POST = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.VIEW_ANALYTICS);
+  const g = await gate(request, CAPABILITY.VIEW_ANALYTICS);
   if (!g.ok) return g.response;
 
   const sp = new URL(request.url).searchParams;

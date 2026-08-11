@@ -21,5 +21,7 @@ export const GET = adminCommercialRoute(
   },
   // Deliberately gated on the module flag, not the billing flag: "commercial
   // billing is switched off" is itself one of the answers this endpoint gives.
-  { requireFlag: "enabled" },
+  // Also read from Generate Bills (readiness check before running a bill
+  // batch), not just the Commercial admin page.
+  { requireFlag: "enabled", extraViewIds: ["billing.dashboard.view"] },
 );

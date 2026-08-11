@@ -15,9 +15,10 @@ import { applyProfileEditPayload } from "@/lib/profile-edit-apply";
 import { applyShopProfileEditPayload } from "@/lib/profile-edit-apply-shop";
 import { buildProfileEditDecisionNotification } from "@/lib/profile-edit-notifications";
 import { sendInApp } from "@/lib/visitor-channels";
+import { authorize } from "@/lib/rbac/authorize";
 export async function POST(request, { params }) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "member.profileEditRequest.approve");
+  if (!gate.ok) return gate.response;
   const { id } = await params;
   if (!mongoose.Types.ObjectId.isValid(id))
     return NextResponse.json({ error: "Valid id required" }, { status: 400 });
@@ -25,18 +26,18 @@ export async function POST(request, { params }) {
     await connectDB();
     const editRequest = await ProfileEditRequest.findOne({
       _id: id,
-      societyId: auth.user.societyId,
+      societyId: gate.context.societyId,
       status: "Pending",
     });
     if (!editRequest)
       return NextResponse.json({ error: "No pending request found for that id" }, { status: 404 });
     if (editRequest.section === "ShopProfile") {
-      const shop = await Shop.findOne({ _id: editRequest.shopId, societyId: auth.user.societyId });
+      const shop = await Shop.findOne({ _id: editRequest.shopId, societyId: gate.context.societyId });
       if (!shop) return NextResponse.json({ error: "Shop not found" }, { status: 404 });
       applyShopProfileEditPayload(shop, editRequest);
       await shop.save();
       editRequest.status = "Approved";
-      editRequest.approvedBy = auth.user.userId;
+      editRequest.approvedBy = gate.context.userId;
       editRequest.approvedAt = new Date();
       await editRequest.save();
       const shopNotif = buildProfileEditDecisionNotification({
@@ -45,8 +46,8 @@ export async function POST(request, { params }) {
         flatNo: shop.tradeName || shop.shopNo || "your shop",
       });
       await sendInApp({
-        societyId: auth.user.societyId,
-        createdBy: auth.user.userId,
+        societyId: gate.context.societyId,
+        createdBy: gate.context.userId,
         createdByName: "Admin",
         type: shopNotif.type,
         title: shopNotif.title,
@@ -55,7 +56,7 @@ export async function POST(request, { params }) {
         recipientIds: [String(editRequest.requestedByUserId)],
         metadata: { profileEditRequestId: String(editRequest._id) },
       });
-      await logAudit(auth.user.userId, auth.user.societyId, "PROFILE_EDIT_REQUEST_APPROVED", null, {
+      await logAudit(gate.context.userId, gate.context.societyId, "PROFILE_EDIT_REQUEST_APPROVED", null, {
         profileEditRequestId: String(editRequest._id),
         shopId: String(shop._id),
         section: editRequest.section,
@@ -64,7 +65,7 @@ export async function POST(request, { params }) {
       return NextResponse.json({ success: true, profileEditRequest: editRequest });
     }
 
-    const member = await Member.findOne({ _id: editRequest.memberId, societyId: auth.user.societyId });
+    const member = await Member.findOne({ _id: editRequest.memberId, societyId: gate.context.societyId });
     if (!member) return NextResponse.json({ error: "Flat not found" }, { status: 404 });
     try {
       applyProfileEditPayload(member, editRequest);
@@ -82,7 +83,7 @@ export async function POST(request, { params }) {
     }
     await member.save();
     editRequest.status = "Approved";
-    editRequest.approvedBy = auth.user.userId;
+    editRequest.approvedBy = gate.context.userId;
     editRequest.approvedAt = new Date();
     await editRequest.save();
     const notif = buildProfileEditDecisionNotification({
@@ -91,8 +92,8 @@ export async function POST(request, { params }) {
       flatNo: member.flatNo,
     });
     await sendInApp({
-      societyId: auth.user.societyId,
-      createdBy: auth.user.userId,
+      societyId: gate.context.societyId,
+      createdBy: gate.context.userId,
       createdByName: "Admin",
       type: notif.type,
       title: notif.title,
@@ -104,7 +105,7 @@ export async function POST(request, { params }) {
       recipientIds: [String(member._id)],
       metadata: { profileEditRequestId: String(editRequest._id) },
     });
-    await logAudit(auth.user.userId, auth.user.societyId, "PROFILE_EDIT_REQUEST_APPROVED", null, {
+    await logAudit(gate.context.userId, gate.context.societyId, "PROFILE_EDIT_REQUEST_APPROVED", null, {
       profileEditRequestId: String(editRequest._id),
       memberId: String(member._id),
       section: editRequest.section,

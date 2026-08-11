@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting, requireAccountingClose } from "@/lib/authz";
+import { authorizeAny } from "@/lib/rbac/authorize";
 import ChartOfAccount from "@/models/ChartOfAccount";
 import FinancialYear from "@/models/FinancialYear";
 import { getFiscalConfig } from "@/lib/services/FiscalConfigService";
@@ -35,6 +36,13 @@ export async function GET(request)  {
   }
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
+  // Read by the System Tests / Accounting Lab page too, not just Opening
+  // Balances — same cross-page-dependency pattern as financial-years.
+  const gate = await authorizeAny(request, [
+    "statements.openingBalances.view",
+    "society.systemTests.view",
+  ]);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const accounts = await ChartOfAccount.find({
@@ -63,6 +71,11 @@ export async function POST(request)  {
   }
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorizeAny(request, [
+    "statements.openingBalances.update",
+    "society.systemTests.update",
+  ]);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const societyId = auth.user.societyId;

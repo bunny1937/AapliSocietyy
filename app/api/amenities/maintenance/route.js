@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 // GET /api/amenities/maintenance?amenityId=&status=&from=&to=&scope=calendar
 // Powers both the maintenance calendar and the per-amenity history table.
 export const GET = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.VIEW_AMENITIES);
+  const g = await gate(request, CAPABILITY.VIEW_AMENITIES);
   if (!g.ok) return g.response;
 
   const sp = new URL(request.url).searchParams;
@@ -50,7 +50,7 @@ export const GET = withAmenityRoute(async (request) => {
 // future windows only set the status when they begin (handled by the effective
 // status resolver, so no cron is required for correctness).
 export const POST = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.MANAGE_MAINTENANCE);
+  const g = await gate(request, CAPABILITY.MANAGE_MAINTENANCE);
   if (!g.ok) return g.response;
 
   const parsed = maintenanceCreateSchema.safeParse(await request.json());

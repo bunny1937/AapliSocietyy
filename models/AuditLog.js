@@ -79,6 +79,21 @@ const AuditLogSchema = new mongoose.Schema(
         "COMMERCIAL_FEATURE_DISABLED",
         "COMMERCIAL_BILLING_HEAD_CREATED",
         "COMMERCIAL_BILLING_HEAD_UPDATED",
+        // ── RBAC (lib/rbac/rbac-audit.js RBAC_EVENTS) — never added, every
+        // one of these has been silently failing to log since the RBAC
+        // lockdown work started ──
+        "ROLE_CREATED",
+        "ROLE_UPDATED",
+        "ROLE_DELETED",
+        "ROLE_CLONED",
+        "ROLE_DEFAULTS_RESTORED",
+        "ROLE_ASSIGNED",
+        "ROLE_UNASSIGNED",
+        "PERMISSION_GRANTED",
+        "PERMISSION_REVOKED",
+        "USER_SUSPENDED",
+        "USER_REACTIVATED",
+        "AUTHZ_DENIED",
       ],
     },
     oldData: { type: mongoose.Schema.Types.Mixed },

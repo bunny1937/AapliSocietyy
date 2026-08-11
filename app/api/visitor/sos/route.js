@@ -5,9 +5,12 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Visitor from "@/models/Visitor";
 import { requireAuth } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 import { logAudit } from "@/lib/audit-logger";
 import { sendInApp } from "@/lib/visitor-channels";
 export async function POST(request) {
+  const gate = await authorize(request, "visitor.visitor.sos");
+  if (!gate.ok) return gate.response;
   const auth = requireAuth(request);
   if (!auth.valid) return auth;
   try {

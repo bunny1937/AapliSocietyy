@@ -3,7 +3,10 @@ import connectDB from "@/lib/mongodb";
 import Bill from "@/models/Bill";
 import { verifyToken, getTokenFromRequest } from "@/lib/jwt";
 import cache from "@/lib/cache";
+import { authorize } from "@/lib/rbac/authorize";
 export async function GET(request) {
+  const gate = await authorize(request, "billing.bill.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);

@@ -173,6 +173,7 @@ const [progress, setProgress] = useState(null);
   const cellRefs = useRef(new Map()); // "sheetId:row:colKey" -> input el
 const [pasteNote, setPasteNote] = useState(null);
 const [armedClear, setArmedClear] = useState(null); // sheet.id awaiting confirm
+const fileInputRef = useRef(null);
 
 // ── Schema: fetched once per open ──────────────────────────────────────
 // The attempt flag is a ref, not state: loadingSchema was both a dependency
@@ -539,6 +540,51 @@ clearInterval(poll);
     }
   }, [canSubmit, schema, data, onImported]);
 
+  // ── Alternate path: upload the filled .xlsx template instead of pasting
+  // seven sheets by hand. Same endpoint, same server-side validateWorkbook
+  // pass, same progress/result UI — only how the rows get to the server
+  // differs.
+  const uploadFile = useCallback(
+    async (file) => {
+      if (!file || submitting) return;
+      setSubmitting(true);
+      setServerResult(null);
+
+      const runId = crypto.randomUUID();
+      setImportRunId(runId);
+
+      const poll = setInterval(async () => {
+        try {
+          const r = await fetch(
+            `/api/admin/bulk-import/status?importRunId=${runId}`,
+            { credentials: "include" },
+          );
+          if (r.ok) setProgress(await r.json());
+        } catch { /* transient; next tick retries */ }
+      }, 1200);
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("importRunId", runId);
+        const res = await fetch("/api/admin/bulk-import", {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+        const json = await res.json();
+        setServerResult({ ok: res.ok, ...json });
+        if (res.ok && json.success) onImported?.(json);
+      } catch (err) {
+        setServerResult({ ok: false, error: err.message });
+      } finally {
+        clearInterval(poll);
+        setSubmitting(false);
+      }
+    },
+    [submitting, onImported],
+  );
+
   useEffect(() => {
     if (!open) return;
     const h = (e) => {
@@ -573,6 +619,28 @@ clearInterval(poll);
               browser — nothing is sent until all of it is valid.
             </p>
           </div>
+          {schema && !submitting && !serverResult?.success && (
+            <div className={styles.sheetActions}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = ""; // allow re-selecting the same file after a fix
+                  if (f) uploadFile(f);
+                }}
+              />
+              <button
+                className={styles.ghostBtn}
+                onClick={() => fileInputRef.current?.click()}
+                title="Fill the downloaded template in Excel (all 7 sheets), then upload it here instead of pasting sheet by sheet."
+              >
+                <ClipboardPaste size={14} /> Upload filled Excel (.xlsx)
+              </button>
+            </div>
+          )}
           <button className={styles.iconBtn} onClick={onClose} disabled={submitting} aria-label="Close">
             <X size={18} />
           </button>

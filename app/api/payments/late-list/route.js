@@ -8,8 +8,17 @@ import Member from "@/models/Member";
 import Society from "@/models/Society";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import { getBillPayFinalDate } from "../../../../utils/interestUtils";
+import { authorizeAny } from "@/lib/rbac/authorize";
 export async function GET(request) {
   try {
+    // The Late Payments page's own permission is finance.latePayment.view —
+    // the Payments page's finance.payment.view also works since it's the
+    // same underlying data, viewed from a different page.
+    const gate = await authorizeAny(request, [
+      "finance.latePayment.view",
+      "finance.payment.view",
+    ]);
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token)
@@ -17,11 +26,10 @@ export async function GET(request) {
     const decoded = verifyToken(token);
     if (!decoded)
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    // Must be Admin or Secretary
-    if (!["Admin", "Secretary"].includes(decoded.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-    const society = await Society.findById(decoded.societyId)
+    // Legacy "Admin or Secretary" check removed: authorize() above
+    // (finance.payment.view) is the real gate now.
+    const societyId = gate.context.societyId || decoded.societyId;
+    const society = await Society.findById(societyId)
       .select("config")
       .lean();
     const billPayFinalDay = society?.config?.billPayFinalDay || 0;
@@ -36,7 +44,7 @@ export async function GET(request) {
     today.setHours(0, 0, 0, 0);
     // All unpaid bills sorted oldest-first per member
     const unpaidBills = await Bill.find({
-      societyId: decoded.societyId,
+      societyId,
       status: { $in: ["Unpaid", "Partial", "Overdue"] },
       isDeleted: false,
     })

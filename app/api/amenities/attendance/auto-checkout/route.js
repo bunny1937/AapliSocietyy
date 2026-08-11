@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 // window, and stamps them as auto-closed so they are distinguishable from real
 // check-outs in analytics.
 export const POST = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.ADJUST_ATTENDANCE);
+  const g = await gate(request, CAPABILITY.ADJUST_ATTENDANCE);
   if (!g.ok) return g.response;
 
   const settings = await getSettings(g.societyId);

@@ -8,6 +8,7 @@ import Visitor from "@/models/Visitor";
 import Member from "@/models/Member";
 import Society from "@/models/Society";
 import { requireRoles } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 import { logAudit } from "@/lib/audit-logger";
 import { notifyOfflineEntry } from "@/lib/visitor-notify";
 const ALLOWED_PURPOSES = [
@@ -21,8 +22,8 @@ const ALLOWED_PURPOSES = [
 const MEMBER_FIELDS =
   "flatNo wing ownerName ownershipType currentTenant whatsappNumber contactNumber alternateContact emailPrimary emailSecondary";
 export async function POST(request) {
-  const auth = requireRoles(request, ["Security"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "visitor.visitor.offlineEntry");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const body = await request.json();
@@ -44,7 +45,7 @@ export async function POST(request) {
     }
     // Resolve the flat: by id first, otherwise by wing + flatNo (offline-friendly).
     const baseQuery = {
-      societyId: auth.user.societyId,
+      societyId: gate.context.societyId,
       isDeleted: { $ne: true },
     };
     let member = null;
@@ -73,7 +74,7 @@ export async function POST(request) {
     // De-dupe: if this device entry was already synced, return the existing row.
     if (clientRef) {
       const existing = await Visitor.findOne({
-        societyId: auth.user.societyId,
+        societyId: gate.context.societyId,
         "offlineMeta.clientRef": clientRef,
       }).lean();
       if (existing) {
@@ -90,7 +91,7 @@ export async function POST(request) {
       }
     }
     const visitor = await Visitor.create({
-      societyId: auth.user.societyId,
+      societyId: gate.context.societyId,
       memberId: member._id,
       name,
       phone,
@@ -100,8 +101,8 @@ export async function POST(request) {
       status: "Entered", // they have physically entered already
       entryMethod: "OfflineEntry",
       entryTime: queuedAt,
-      enteredBy: auth.user.userId,
-      gateLabel: auth.user.gateLabel || "Main Gate",
+      enteredBy: gate.context.userId,
+      gateLabel: gate.context.gateLabel || "Main Gate",
       offlineMeta: {
         wasOffline: true,
         queuedAt,
@@ -114,16 +115,16 @@ export async function POST(request) {
     // Different, high-priority alert: "X has ENTERED to meet you".
     let notifyResult = { steps: [], anyReachable: false };
     try {
-      const society = await Society.findById(auth.user.societyId)
+      const society = await Society.findById(gate.context.societyId)
         .select("name")
         .lean();
       notifyResult = await notifyOfflineEntry({
-        society: society || { _id: auth.user.societyId },
+        society: society || { _id: gate.context.societyId },
         member,
         visitor,
         guard: {
-          name: auth.user.name || "Security",
-          phone: auth.user.phone || "",
+          name: gate.context.name || "Security",
+          phone: gate.context.phone || "",
         },
       });
       if (notifyResult.steps && notifyResult.steps.length) {
@@ -141,8 +142,8 @@ export async function POST(request) {
       console.error("offline-entry notify error", e && e.message);
     }
     await logAudit(
-      auth.user.userId,
-      auth.user.societyId,
+      gate.context.userId,
+      gate.context.societyId,
       "VISITOR_OFFLINE_ENTRY",
       null,
       {

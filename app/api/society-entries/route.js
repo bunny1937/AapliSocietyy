@@ -6,6 +6,15 @@ import SocietyEntry from "@/models/SocietyEntry";
 import User from "@/models/User";
 void User;
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
+import { authorize, authorizeAny } from "@/lib/rbac/authorize";
+// GET read by receipts and balance-sheet pages too, not just Ledger — same
+// cross-page-dependency pattern as financial-years.
+const SOCIETY_ENTRY_VIEW_IDS = [
+  "finance.societyEntry.view",
+  "finance.receipts.view",
+  "billing.balanceSheet.view",
+  "finance.ledger.view",
+];
 function auth(request) {
   const token = getTokenFromRequest(request);
   if (!token) return null;
@@ -13,12 +22,14 @@ function auth(request) {
 }
 // GET /api/society-entries?fy=2025
 export async function GET(request) {
+  const gate = await authorizeAny(request, SOCIETY_ENTRY_VIEW_IDS);
+  if (!gate.ok) return gate.response;
   const decoded = auth(request);
   if (!decoded) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   await connectDB();
   const { searchParams } = new URL(request.url);
   const fy = parseInt(searchParams.get("fy") || "0");
-  const query = { societyId: decoded.societyId };
+  const query = { societyId: gate.context.societyId || decoded.societyId };
   if (fy) query.fy = fy;
   const entries = await SocietyEntry.find(query)
     .populate("createdBy", "name")
@@ -28,11 +39,13 @@ export async function GET(request) {
 }
 // POST /api/society-entries
 export async function POST(request) {
+  const gate = await authorize(request, "finance.societyEntry.create");
+  if (!gate.ok) return gate.response;
   const decoded = auth(request);
   if (!decoded) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!["Admin", "Secretary"].includes(decoded.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  // Legacy ["Admin","Secretary"] check removed: authorize() above
+  // (finance.societyEntry.create) is the real gate now.
+  const societyId = gate.context.societyId || decoded.societyId;
   await connectDB();
   const body = await request.json();
   const { fy, name, type, entryKind, amount, date, notes } = body;
@@ -46,7 +59,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "amount must be positive number" }, { status: 400 });
   }
   const entry = await SocietyEntry.create({
-    societyId: decoded.societyId,
+    societyId,
     fy: Number(fy),
     name: name.trim(),
     type: type || "Custom",
@@ -60,16 +73,17 @@ export async function POST(request) {
 }
 // DELETE /api/society-entries?id=<entryId>
 export async function DELETE(request) {
+  const gate = await authorize(request, "finance.societyEntry.delete");
+  if (!gate.ok) return gate.response;
   const decoded = auth(request);
   if (!decoded) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!["Admin", "Secretary"].includes(decoded.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  // Legacy ["Admin","Secretary"] check removed: authorize() above
+  // (finance.societyEntry.delete) is the real gate now.
   await connectDB();
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
-  const entry = await SocietyEntry.findOneAndDelete({ _id: id, societyId: decoded.societyId });
+  const entry = await SocietyEntry.findOneAndDelete({ _id: id, societyId: gate.context.societyId || decoded.societyId });
   if (!entry) return NextResponse.json({ error: "Entry not found" }, { status: 404 });
   return NextResponse.json({ success: true });
 }

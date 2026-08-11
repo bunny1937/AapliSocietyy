@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { verifyToken, getTokenFromRequest } from "@/lib/jwt";
+import { authorize } from "@/lib/rbac/authorize";
 import Member from "@/models/Member";
 import Society from "@/models/Society";
 export async function GET(request) {
   try {
+    const gate = await authorize(request, "member.profile.viewSelf");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token)
@@ -42,6 +45,8 @@ export async function GET(request) {
 }
 export async function PUT(request) {
   try {
+    const gate = await authorize(request, "member.profile.updateSelf");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token)

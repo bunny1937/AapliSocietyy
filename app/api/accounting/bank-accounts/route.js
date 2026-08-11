@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting, requireAccountingClose } from "@/lib/authz";
 import { createBankAccount, listBankAccounts, BankAccountServiceError } from "@/lib/services/BankAccountService";
+import { authorize } from "@/lib/rbac/authorize";
 
 // GET /api/accounting/bank-accounts?includeInactive=true
 export async function GET(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
@@ -27,6 +30,8 @@ export async function GET(request) {
 export async function POST(request) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.update");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const body = await request.json();

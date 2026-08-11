@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Member from "@/models/Member";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
+import { authorizeAny } from "@/lib/rbac/authorize";
 /**
  * GET /api/billing-simulator/members
  * Returns members for the society with billing-relevant fields only.
@@ -9,6 +10,14 @@ import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
  */
 export async function GET(request) {
   try {
+    // Also read by the System Tests / Accounting Lab page, not just the real
+    // Billing Simulator — same cross-page-dependency pattern as financial-years.
+    const gate = await authorizeAny(request, [
+      "billing.bill.view",
+      "billing.simulator.view",
+      "society.systemTests.view",
+    ]);
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) {

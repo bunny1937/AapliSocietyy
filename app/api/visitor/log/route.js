@@ -6,6 +6,7 @@ import connectDB from "@/lib/mongodb";
 import Visitor from "@/models/Visitor";
 import Member from "@/models/Member";
 import { requireSecurity } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 import { logAudit } from "@/lib/audit-logger";
 import { checkBlacklist } from "@/lib/blacklist";
 import { notifyVisitorApproval } from "@/lib/visitor-notify";
@@ -15,6 +16,8 @@ import {
   isSafePhotoValue,
 } from "@/lib/visitor-config";
 export async function POST(request) {
+  const gate = await authorize(request, "visitor.visitor.enter");
+  if (!gate.ok) return gate.response;
   const auth = requireSecurity(request);
   if (!auth.valid) return auth;
   try {

@@ -9,7 +9,10 @@ import Bill from "@/models/Bill";
 import { calculateMonthlyInterest } from "../../../../utils/interestUtils";
 import { safeConfigDate } from "../../../../utils/dateUtils";
 import { resolveOpeningBalances } from "@/lib/billing/generationService";
+import { authorize } from "@/lib/rbac/authorize";
 export async function GET(request) {
+  const gate = await authorize(request, "billing.bill.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);

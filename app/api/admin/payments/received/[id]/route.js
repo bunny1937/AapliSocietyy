@@ -14,7 +14,7 @@ import connectDB from "@/lib/mongodb";
 import Transaction from "@/models/Transaction";
 import User from "@/models/User";
 void User;
-import { requireRoles } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,12 +27,12 @@ async function load(id, societyId) {
 }
 
 export async function PATCH(request, ctx) {
-  const auth = requireRoles(request, ["Admin", "Secretary", "Treasurer"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "finance.payment.record");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await ctx.params;
-    const txn = await load(id, auth.user.societyId);
+    const txn = await load(id, gate.context.societyId);
     if (!txn) return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     if (txn.isReversed)
       return NextResponse.json({ error: "This payment is reversed and can no longer be edited" }, { status: 409 });
@@ -66,8 +66,8 @@ export async function PATCH(request, ctx) {
 }
 
 export async function POST(request, ctx) {
-  const auth = requireRoles(request, ["Admin", "Treasurer"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "finance.payment.record");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await ctx.params;
@@ -75,7 +75,7 @@ export async function POST(request, ctx) {
     if (body.action !== "reverse")
       return NextResponse.json({ error: "Unsupported action" }, { status: 400 });
 
-    const txn = await load(id, auth.user.societyId);
+    const txn = await load(id, gate.context.societyId);
     if (!txn) return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     if (txn.isReversed)
       return NextResponse.json({ error: "Payment is already reversed" }, { status: 409 });
@@ -98,7 +98,7 @@ export async function POST(request, ctx) {
       billPeriodId: txn.billPeriodId,
       paymentMode: "System",
       notes: body.reason || "",
-      createdBy: auth.user.userId,
+      createdBy: gate.context.userId,
       financialYear: txn.financialYear,
     });
 

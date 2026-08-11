@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting } from "@/lib/authz";
+import { authorizeAny } from "@/lib/rbac/authorize";
 import {
   previewOpeningBalances,
   OpeningBalanceServiceError,
@@ -8,9 +9,16 @@ import {
 
 // POST /api/accounting/opening-balance/preview — computes the balancing figure
 // and proposed lines without posting. Body: { entries, openingFundAccountId }.
+// Non-destructive (no write), gated by requireAccounting (not the stricter
+// requireAccountingClose) — view-level is the right RBAC match, not manage.
 export async function POST(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
+  const gate = await authorizeAny(request, [
+    "statements.openingBalances.view",
+    "society.systemTests.view",
+  ]);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const body = await request.json();

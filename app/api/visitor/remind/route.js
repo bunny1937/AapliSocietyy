@@ -12,6 +12,7 @@ import Visitor from "@/models/Visitor";
 import Member from "@/models/Member";
 import Society from "@/models/Society";
 import { requireSecurity } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 import { logAudit } from "@/lib/audit-logger";
 import { notifyVisitorApproval } from "@/lib/visitor-notify";
 import { APPROVAL_WINDOW_MS } from "@/lib/visitor-config";
@@ -24,6 +25,8 @@ const CHANNEL_LABEL = {
   email: "email",
 };
 export async function PATCH(request) {
+  const gate = await authorize(request, "visitor.visitor.view");
+  if (!gate.ok) return gate.response;
   const auth = requireSecurity(request);
   if (!auth.valid) return auth;
   try {

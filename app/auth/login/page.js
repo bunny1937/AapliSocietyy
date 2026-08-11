@@ -110,6 +110,12 @@ export default function LoginPage() {
         router.replace("/admin/dashboard");
       } else if (role === "Security") {
         router.replace("/security/dashboard");
+      } else if (data.user?.kind === "Staff") {
+        // RBAC-only staff role (e.g. Auditor, Treasurer) — role is a display
+        // name, not one of the legacy literal strings above, and this
+        // account may not hold Dashboard access at all. /my-access always
+        // works regardless of which pages this specific role was granted.
+        router.replace("/my-access");
       } else {
         router.replace("/member/dashboard");
       }

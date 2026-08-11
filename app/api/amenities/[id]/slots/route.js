@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.VIEW_AMENITIES);
+  const g = await gate(request, CAPABILITY.VIEW_AMENITIES);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid amenity id");
@@ -34,7 +34,7 @@ export const GET = withAmenityRoute(async (request, { params }) => {
 // dryRun returns the computed grid without writing, so the admin can preview
 // "30 minute slots with a 5 minute buffer" before committing.
 export const POST = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_SLOTS);
+  const g = await gate(request, CAPABILITY.MANAGE_SLOTS);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid amenity id");
@@ -84,7 +84,7 @@ export const POST = withAmenityRoute(async (request, { params }) => {
 // PUT — add or edit a single custom slot (the "Clubhouse: custom slots" case).
 // Marked isCustom so a later regeneration does not wipe it.
 export const PUT = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_SLOTS);
+  const g = await gate(request, CAPABILITY.MANAGE_SLOTS);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid amenity id");
@@ -152,7 +152,7 @@ export const PUT = withAmenityRoute(async (request, { params }) => {
 // slots, then delete" flow); with no body it clears everything — generated
 // slots by default, plus hand-added ones too if ?includeCustom=1 is set.
 export const DELETE = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_SLOTS);
+  const g = await gate(request, CAPABILITY.MANAGE_SLOTS);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid amenity id");

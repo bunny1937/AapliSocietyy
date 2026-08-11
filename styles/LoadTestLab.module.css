@@ -1,0 +1,545 @@
+.page {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  color: #e6e8ee;
+}
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.titleRow h1 {
+  font-size: 20px;
+  margin: 0;
+}
+.subtitle {
+  margin: 0;
+  color: #9aa1b1;
+  font-size: 13px;
+  max-width: 900px;
+}
+.safetyBanner {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: rgba(229, 72, 77, 0.1);
+  border: 1px solid rgba(229, 72, 77, 0.35);
+  color: #ffb4b4;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.safetyCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #c7cbd6;
+  cursor: pointer;
+}
+.configGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+.configField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.configField label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8b93a7;
+}
+.configField input,
+.configField select {
+  background: #171a23;
+  border: 1px solid #2a2f3d;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #e6e8ee;
+  font-size: 13px;
+}
+.hint {
+  font-size: 11px;
+  color: #8b93a7;
+  line-height: 1.4;
+}
+.laneBToggleRow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: #12141b;
+  border: 1px solid #22262f;
+  border-radius: 10px;
+}
+.runControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.btnPrimary,
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.btnPrimary {
+  background: #3b82f6;
+  color: white;
+}
+.btnPrimary:disabled,
+.btnSecondary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btnSecondary {
+  background: #171a23;
+  border-color: #2a2f3d;
+  color: #e6e8ee;
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.laneGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 16px;
+}
+.laneCard {
+  background: #12141b;
+  border: 1px solid #22262f;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.laneHeader {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c7cbd6;
+}
+.flowDiagram {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.flowNode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #6b7280;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid #22262f;
+  min-width: 64px;
+}
+.flowNodeActive {
+  color: #3b82f6;
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+}
+.flowTrack {
+  position: relative;
+  flex: 1;
+  height: 2px;
+  background: #22262f;
+  min-width: 40px;
+}
+.flowLine {
+  position: absolute;
+  inset: 0;
+  background: #22262f;
+}
+.flowPill {
+  position: absolute;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3b82f6;
+  box-shadow: 0 0 8px 2px rgba(59, 130, 246, 0.6);
+}
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.metricCard {
+  background: #171a23;
+  border: 1px solid #22262f;
+  border-radius: 8px;
+  padding: 10px;
+}
+.metricLabelRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #9aa1b1;
+  margin-bottom: 4px;
+}
+.metricLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.metricValue {
+  font-size: 18px;
+  font-weight: 600;
+}
+.metricSub {
+  font-size: 11px;
+  color: #6b7280;
+}
+.iconPass {
+  color: #2f9e5c;
+}
+.iconFail {
+  color: #e5484d;
+}
+.iconIdle {
+  color: #6b7280;
+}
+.panelsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 16px;
+}
+.panel {
+  background: #12141b;
+  border: 1px solid #22262f;
+  border-radius: 12px;
+  padding: 16px;
+}
+.panel h3 {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #c7cbd6;
+}
+.emptyNote {
+  font-size: 12px;
+  color: #6b7280;
+  padding: 12px 0;
+}
+.waterfallWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.waterfallRow {
+  display: grid;
+  grid-template-columns: 160px 1fr 56px;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.waterfallLabel {
+  color: #9aa1b1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.waterfallTrack {
+  position: relative;
+  height: 10px;
+  background: #171a23;
+  border-radius: 4px;
+}
+.waterfallBar {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: 4px;
+  min-width: 2px;
+}
+.barPass {
+  background: #2f9e5c;
+}
+.barFail {
+  background: #e5484d;
+}
+.waterfallMs {
+  color: #6b7280;
+  text-align: right;
+}
+.latencySvg {
+  display: block;
+}
+.eventLog {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 360px;
+  overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.eventLogItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.eventLogItem:hover {
+  background: #171a23;
+}
+.eventLogTime {
+  color: #6b7280;
+  min-width: 76px;
+}
+.eventLogBadge {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.badgePass {
+  background: rgba(47, 158, 92, 0.15);
+  color: #2f9e5c;
+}
+.badgeFail {
+  background: rgba(229, 72, 77, 0.15);
+  color: #e5484d;
+}
+.badgeInfo {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+.eventLogLane {
+  color: #c7cbd6;
+  font-weight: 600;
+  min-width: 16px;
+}
+.eventLogStage {
+  color: #9aa1b1;
+  flex: 1;
+}
+.eventLogMs {
+  color: #6b7280;
+}
+.eventLogStatus {
+  color: #6b7280;
+}
+.eventLogError {
+  color: #e5484d;
+}
+
+/* ---- v2 additions: provisioning, phases, percentiles, raw body log ---- */
+.flowActiveLabel {
+  font-size: 11px;
+  color: #3b82f6;
+  margin-left: 8px;
+}
+.laneOkBadge {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #2f9e5c;
+  background: rgba(47, 158, 92, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.laneErrBadge {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #9aa1b1;
+  background: rgba(155, 161, 177, 0.12);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.laneMeta {
+  font-size: 12px;
+  color: #c7cbd6;
+}
+.laneError {
+  font-size: 12px;
+  color: #ffb4b4;
+  background: rgba(229, 72, 77, 0.08);
+  border: 1px solid rgba(229, 72, 77, 0.3);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.laneError code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+.phaseSection {
+  margin-bottom: 14px;
+}
+.phaseSectionTitle {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8b93a7;
+  margin-bottom: 8px;
+}
+.statsBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.statsBlock h4 {
+  margin: 0;
+  font-size: 13px;
+  color: #c7cbd6;
+}
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 8px;
+}
+.statCard {
+  background: #171a23;
+  border: 1px solid #22262f;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+}
+.statPass {
+  border-color: rgba(47, 158, 92, 0.4);
+}
+.statFail {
+  border-color: rgba(229, 72, 77, 0.4);
+}
+.statValue {
+  font-size: 16px;
+  font-weight: 700;
+}
+.statLabel {
+  font-size: 10px;
+  color: #8b93a7;
+  text-transform: uppercase;
+}
+.byStageTable {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+}
+.byStageRow {
+  display: grid;
+  grid-template-columns: 1fr 70px 60px 60px 70px;
+  gap: 6px;
+  color: #9aa1b1;
+  padding: 4px 0;
+  border-top: 1px solid #22262f;
+}
+.byStageName {
+  color: #c7cbd6;
+}
+.statPassText {
+  color: #2f9e5c;
+}
+.statFailText {
+  color: #e5484d;
+}
+.phaseBarWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.phaseBarTrack {
+  display: flex;
+  height: 10px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #171a23;
+}
+.phaseBarSeg {
+  height: 100%;
+}
+.phaseBarLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 10px;
+  color: #9aa1b1;
+}
+.phaseLegendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.phaseLegendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.eventLogRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.eventLogRow:hover {
+  background: #171a23;
+}
+.eventLogPhase {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: #8b93a7;
+  border: 1px solid #22262f;
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.badgeSkip {
+  background: rgba(155, 161, 177, 0.12);
+  color: #9aa1b1;
+}
+.eventLogDetail {
+  margin: 4px 0 8px 20px;
+  padding: 10px;
+  background: #0e1016;
+  border: 1px solid #22262f;
+  border-radius: 8px;
+}
+.rawBodyLabel {
+  font-size: 10px;
+  color: #8b93a7;
+  margin: 6px 0 4px 0;
+  text-transform: uppercase;
+}
+.rawBody {
+  font-size: 11px;
+  color: #c7cbd6;
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}

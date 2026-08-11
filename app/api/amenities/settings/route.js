@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 // GET /api/amenities/settings
 export const GET = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.VIEW_AMENITIES);
+  const g = await gate(request, CAPABILITY.VIEW_AMENITIES);
   if (!g.ok) return g.response;
 
   const settings = await getSettings(g.societyId);
@@ -24,7 +24,7 @@ export const GET = withAmenityRoute(async (request) => {
 
 // PATCH /api/amenities/settings
 export const PATCH = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.MANAGE_SETTINGS);
+  const g = await gate(request, CAPABILITY.MANAGE_SETTINGS);
   if (!g.ok) return g.response;
 
   const parsed = settingsUpdateSchema.safeParse(await request.json());

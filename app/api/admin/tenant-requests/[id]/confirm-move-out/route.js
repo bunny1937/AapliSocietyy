@@ -9,15 +9,16 @@ import TenantRequest from "@/models/TenantRequest";
 import Member from "@/models/Member";
 import { requireRoles } from "@/lib/authz";
 import { logAudit } from "@/lib/audit-logger";
+import { authorize } from "@/lib/rbac/authorize";
 export async function POST(request, { params }) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "member.tenantRequest.confirmMoveOut");
+  if (!gate.ok) return gate.response;
   const { id } = await params;
   if (!mongoose.Types.ObjectId.isValid(id))
     return NextResponse.json({ error: "Valid id required" }, { status: 400 });
   try {
     await connectDB();
-    const tenantRequest = await TenantRequest.findOne({ _id: id, societyId: auth.user.societyId });
+    const tenantRequest = await TenantRequest.findOne({ _id: id, societyId: gate.context.societyId });
     if (!tenantRequest) return NextResponse.json({ error: "Not found" }, { status: 404 });
     tenantRequest.adminConfirmedMoveOutAt = new Date();
     if (tenantRequest.ownerConfirmedMoveOutAt) {
@@ -29,7 +30,7 @@ export async function POST(request, { params }) {
       tenantRequest.status = "Closed";
     }
     await tenantRequest.save();
-    await logAudit(auth.user.userId, auth.user.societyId, "TENANT_MOVE_OUT_CONFIRMED", null, {
+    await logAudit(gate.context.userId, gate.context.societyId, "TENANT_MOVE_OUT_CONFIRMED", null, {
       tenantRequestId: String(tenantRequest._id),
       finalized: tenantRequest.status === "Closed",
     });

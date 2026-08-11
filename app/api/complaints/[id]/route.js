@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { verifyToken, getTokenFromRequest } from "@/lib/jwt";
+import { authorize } from "@/lib/rbac/authorize";
 import Complaint from "@/models/Complaint";
 import ComplaintReply from "@/models/ComplaintReply";
 export async function GET(request, { params }) {
   try {
+    const gate = await authorize(request, "complaint.complaint.view");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token)
@@ -26,7 +29,7 @@ export async function GET(request, { params }) {
     // --- Fetch complaint ---
     const complaint = await Complaint.findOne({
       _id: id,
-      societyId: decoded.societyId, // always scope to their society
+      societyId: gate.context.societyId || decoded.societyId, // always scope to their society
     }).lean();
     if (!complaint) {
       return NextResponse.json(

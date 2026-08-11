@@ -4,6 +4,7 @@ import Visitor from "@/models/Visitor";
 import Member from "@/models/Member";
 import { requireRoles } from "@/lib/authz";
 import { logAudit } from "@/lib/audit-logger";
+import { authorize } from "@/lib/rbac/authorize";
 const ALLOWED_PURPOSES = [
   "Guest",
   "Delivery",
@@ -13,12 +14,12 @@ const ALLOWED_PURPOSES = [
   "Other",
 ];
 export async function GET(request) {
-  const auth = requireRoles(request, ["Security"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "visitor.visitor.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const visitors = await Visitor.find({
-      societyId: auth.user.societyId,
+      societyId: gate.context.societyId,
     })
       .populate("memberId", "flatNo wing ownerName ownershipType currentTenant")
       .sort({ createdAt: -1 })

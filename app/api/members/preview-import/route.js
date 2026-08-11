@@ -5,6 +5,7 @@ import { verifyToken, getTokenFromRequest } from "@/lib/jwt";
 import ImportStaging from "@/models/ImportStaging";
 import { getSocietySnapshot } from "@/lib/import/societySnapshot";
 import ExcelJS from "exceljs";
+import { authorize } from "@/lib/rbac/authorize";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,6 +55,8 @@ export const maxDuration = 60;
  */
 export async function POST(request) {
   try {
+    const gate = await authorize(request, "member.member.import");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

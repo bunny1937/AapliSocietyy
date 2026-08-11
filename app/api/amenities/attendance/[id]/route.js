@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 // place with the original values preserved in the activity log, plus an
 // adjustment reason and adjuster stamped on the row itself.
 export const PATCH = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.ADJUST_ATTENDANCE);
+  const g = await gate(request, CAPABILITY.ADJUST_ATTENDANCE);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid attendance id");

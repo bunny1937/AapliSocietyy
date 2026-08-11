@@ -3,7 +3,10 @@ import connectDB from "@/lib/mongodb";
 import Bill from "@/models/Bill";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import { buildWorkbook, addSheetFromJson, workbookBuffer } from "@/lib/excelParse";
+import { authorize } from "@/lib/rbac/authorize";
 export async function POST(request) {
+  const gate = await authorize(request, "billing.bill.export");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);

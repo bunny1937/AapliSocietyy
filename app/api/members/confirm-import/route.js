@@ -9,6 +9,7 @@ import { randomBytes } from "crypto";
 import cache from "@/lib/cache";
 import { requireRoles, SOCIETY_ADMIN_ROLES } from "@/lib/authz";
 import { invalidateSocietySnapshot } from "@/lib/import/societySnapshot";
+import { authorize } from "@/lib/rbac/authorize";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,10 +50,9 @@ function generatePassword() {
  */
 export async function POST(request) {
   try {
-    await connectDB();
-    const auth = requireRoles(request, SOCIETY_ADMIN_ROLES);
-    if (!auth.valid) return auth;
-    const decoded = auth.user;
+    const gate = await authorize(request, "member.member.import");
+    if (!gate.ok) return gate.response;
+    await connectDB();    const decoded = gate.context;
 
     const body = await request.json();
     const stagingId = body.stagingId || body.previewId;

@@ -139,3 +139,17 @@ screenshots
 # Subagent-driven-development scratch workspace (ledgers, briefs, review packages)
 .superpowers/
 hardcoretestsresults/
+
+# RBAC audit/codemod scratch output + a stale duplicate copy of the real
+# implementation that lives at app/api/rbac, lib/rbac, components/rbac
+rbac-batch-*
+rbac-guard-audit.txt
+rbac-noguard-list.txt
+/rbac/
+
+# Repomix full-codebase dump (regenerable, multi-MB, not source)
+context.md
+
+# One-off test artifacts / screenshots taken during manual testing
+Bill-A-101-*.pdf
+Screenshot *.png

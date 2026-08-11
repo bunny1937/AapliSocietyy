@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting, requireAccountingClose } from "@/lib/authz";
 import { listSchedules, createSchedule, ScheduleServiceError } from "@/lib/services/ScheduleService";
+import { authorize } from "@/lib/rbac/authorize";
 
 // GET /api/accounting/schedules
 export async function GET(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const schedules = await listSchedules(auth.user.societyId);
@@ -24,6 +27,8 @@ export async function GET(request) {
 export async function POST(request) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.update");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const body = await request.json();

@@ -3,8 +3,18 @@ import connectDB from "@/lib/mongodb";
 import BillingHead from "@/models/BillingHead";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import cache from "@/lib/cache";
+import { authorizeAny } from "@/lib/rbac/authorize";
+// Read by Bill Template, Import Bills and Generate Bills pages too, not just
+// Billing Config — same cross-page-dependency pattern as financial-years.
 export async function GET(request) {
   try {
+    const gate = await authorizeAny(request, [
+      "billing.head.view",
+      "billing.template.view",
+      "billing.importBills.view",
+      "billing.dashboard.view",
+    ]);
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) {

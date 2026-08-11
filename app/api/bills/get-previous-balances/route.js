@@ -5,6 +5,7 @@ import Transaction from "@/models/Transaction";
 import Member from "@/models/Member";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import { resolveOpeningBalances } from "@/lib/billing/generationService";
+import { authorizeAny } from "@/lib/rbac/authorize";
 
 // Ledger V2: preview of what GenerationService will actually use as opening
 // balances for the next bill. Uses the SAME single-lookup carry-forward
@@ -12,6 +13,10 @@ import { resolveOpeningBalances } from "@/lib/billing/generationService";
 // diverge from what generateBill() computes.
 export async function POST(request) {
   try {
+    // Also called from Generate Bills (pre-generation preview), not just
+    // View Bills — same cross-page-dependency pattern as financial-years.
+    const gate = await authorizeAny(request, ["billing.bill.view", "billing.dashboard.view"]);
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token)

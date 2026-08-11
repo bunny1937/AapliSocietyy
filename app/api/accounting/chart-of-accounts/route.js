@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting, requireAccountingClose } from "@/lib/authz";
+import { authorize, authorizeAny } from "@/lib/rbac/authorize";
 import {
   createAccount,
   listAccounts,
@@ -8,9 +9,16 @@ import {
 } from "@/lib/services/ChartOfAccountService";
 
 // GET /api/accounting/chart-of-accounts?type=Asset&includeInactive=true
+// Also read by app/admin/opening-balances/PageClient.js (needs the account
+// list to build its entry form) — not just the accounting-lab test tool.
 export async function GET(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
+  const gate = await authorizeAny(request, [
+    "statements.openingBalances.view",
+    "society.systemTests.view",
+  ]);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
@@ -32,6 +40,8 @@ export async function GET(request) {
 export async function POST(request) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.update");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const body = await request.json();

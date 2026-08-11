@@ -14,6 +14,7 @@ import { generatePassword } from "@/lib/password-generator";
 import { generateSimpleUsername, buildUsernameBloomFilter } from "@/lib/username-generator";
 import { ensureSocietyCode } from "@/lib/society-code";
 import { requireRoles, SOCIETY_ADMIN_ROLES } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 async function upsertMemberUser({
   memberDoc,
   basic,
@@ -86,10 +87,9 @@ async function upsertMemberUser({
 }
 export async function POST(request) {
   try {
-    await connectDB();
-    const auth = requireRoles(request, SOCIETY_ADMIN_ROLES);
-    if (!auth.valid) return auth;
-    const decoded = auth.user;
+    const gate = await authorize(request, "member.member.import");
+    if (!gate.ok) return gate.response;
+    await connectDB();    const decoded = gate.context;
     const formData = await request.formData();
     const file = formData.get("file");
     const confirmImport = formData.get("confirmImport"); // ← NEW: Check if confirm

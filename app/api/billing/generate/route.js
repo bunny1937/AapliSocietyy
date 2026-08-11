@@ -11,15 +11,20 @@ import { generateBill } from "@/lib/billing/generationService";
 import { applyPaymentToBill } from "@/lib/billing/allocationService";
 import renderBillHtml from "@/lib/bill-renderer";
 import { isCommercialUnit } from "@/lib/commercial/constants";
+import { authorize } from "@/lib/rbac/authorize";
 export async function POST(request) {
+  const gate = await authorize(request, "billing.bill.generate");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const decoded = verifyToken(token);
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    if (["Accountant", "Member"].includes(decoded.role))
-      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+    // Legacy deny-list removed: authorize() above (billing.bill.generate) is
+    // the real gate now. It harmlessly no-op'd for RBAC-only staff tokens
+    // (decoded.role is undefined for those, never matches), but decoded.societyId
+    // below did not — that field only exists on legacy-shaped tokens.
 
     const { year, month, bills, memberIds } = await request.json();
     if (!year || !month)
@@ -27,7 +32,7 @@ export async function POST(request) {
     if (month < 1 || month > 12)
       return NextResponse.json({ error: "Month must be between 1 and 12" }, { status: 400 });
 
-    const societyId = decoded.societyId;
+    const societyId = gate.context.societyId || decoded.societyId;
     const society = await Society.findById(societyId).lean();
     if (!society) return NextResponse.json({ error: "Society not found" }, { status: 404 });
 

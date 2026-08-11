@@ -3,8 +3,11 @@ import connectDB from "@/lib/mongodb";
 import BillingHead from "@/models/BillingHead";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import cache from "@/lib/cache";
+import { authorize } from "@/lib/rbac/authorize";
 export async function DELETE(request, { params }) {
   try {
+    const gate = await authorize(request, "billing.head.delete");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) {

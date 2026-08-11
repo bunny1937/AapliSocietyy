@@ -7,6 +7,7 @@ import { getFiscalConfig } from "@/lib/services/FiscalConfigService";
 import { EVENT_TYPES, createAccountingEvent } from "@/lib/accounting/events.js";
 import { process as engineProcess } from "@/lib/accounting/AccountingEngine.js";
 import "@/lib/accounting/bootstrap";
+import { authorize } from "@/lib/rbac/authorize";
 
 // POST /api/accounting/lab/expenses
 //
@@ -83,6 +84,8 @@ export async function GET(request)  {
   }
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const accounts = await ChartOfAccount.find({
@@ -113,6 +116,8 @@ export async function POST(request)  {
   }
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.update");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const societyId = auth.user.societyId;

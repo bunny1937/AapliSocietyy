@@ -86,7 +86,7 @@ const SocietySchema = new mongoose.Schema(
       signatureUrl: { type: String },
       uploadedAt: { type: Date },
       uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      // OLD FIELDS - keep for backward compatibility
+      // OLD FInode ".\scripts\rbac\_tmp-wipe.js"ELDS - keep for backward compatibility
       fileName: { type: String },
       filePath: { type: String },
     },
@@ -250,6 +250,9 @@ const SocietySchema = new mongoose.Schema(
     deletionReason: { type: String },
     // Config versioning
     configVersion: { type: Number, default: 1 },
+    // RBAC cache-invalidation version (Rev 2). Bumped on any role/assignment/
+    // permission change so perms:{user}:{society}:{hat}:{rbacVersion} rotates.
+    rbacVersion: { type: Number, default: 0 },
     // Onboarding tracking
     onboarding: {
       billHistoryImported: { type: Boolean, default: false },

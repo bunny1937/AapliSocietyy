@@ -130,6 +130,9 @@ const UserSchema = new mongoose.Schema(
     },
     // Bulk-import provenance — see Society.importRunId
     importRunId: { type: String, default: null, index: true },
+    // RBAC (Rev 2): monotonic counter embedded in every access JWT. Bumped on
+    // privilege reduction to force re-auth (see lib/rbac/session.js).
+    sessionEpoch: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

@@ -35,7 +35,7 @@ export default function DashboardLayout({
       }),
   );
   useEffect(() => {
-    if (pathname.includes("/login")) return;
+    if (pathname.includes("/auth/login")) return;
     const fetchUser = async () => {
       try {
         const res = await fetch("/api/auth/me", { credentials: "include" });
@@ -44,7 +44,7 @@ export default function DashboardLayout({
         setUser(data.user);
         if (data.user?.wing) localStorage.setItem("userWing", data.user.wing);
       } catch {
-        if (!pathname.includes("/login")) {
+        if (!pathname.includes("/auth/login")) {
           window.location.href = "/auth/login";
         }
       }

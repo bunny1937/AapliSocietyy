@@ -16,6 +16,7 @@ import { applyPaymentToBill } from "@/lib/billing/allocationService";
 import { notifyPaymentReceived } from "@/lib/v1/notify";
 import { mapLimit } from "@/lib/concurrency";
 import { ndjsonResponse } from "@/lib/ndjson-stream";
+import { authorize } from "@/lib/rbac/authorize";
 
 // Confirm was previously one sequential `for` loop over every payment row —
 // for 84 rows at several Mongo round trips each (member/bill lookups,
@@ -53,6 +54,8 @@ function parseExcelDate(val) {
 const STAGE_TTL_SECONDS = 15 * 60;
 const stageKey = (batchKey) => `payimport:${batchKey}`;
 export async function POST(request) {
+  const gate = await authorize(request, "finance.payment.upload");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);

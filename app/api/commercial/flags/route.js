@@ -19,7 +19,7 @@ const FLAG_KEYS = [
 
 export const GET = adminCommercialRoute("flags.read", async ({ flags }) => ({
   flags,
-}), { requireFlag: null });
+}), { requireFlag: null, skipAuthorize: true });
 
 export const POST = adminCommercialRoute(
   "flags.update",

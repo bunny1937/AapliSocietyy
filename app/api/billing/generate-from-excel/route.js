@@ -10,12 +10,15 @@ import { generateBill } from "@/lib/billing/generationService";
 import { applyPaymentToBill } from "@/lib/billing/allocationService";
 import { notifyBillCreated } from "@/lib/v1/notify";
 import { isCommercialUnit } from "@/lib/commercial/constants";
+import { authorize } from "@/lib/rbac/authorize";
 
 // Ledger V2: THIN WRAPPER over the shared GenerationService. No billing math
 // of its own — charges/interest/totals come from generateBill(), which
 // recomputes from BillingHeads. The uploaded Excel's `bills[]` is used only
 // to select which members to generate for.
 export async function POST(request) {
+  const gate = await authorize(request, "billing.bill.generate");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);

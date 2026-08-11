@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import VisitorPass from "@/models/VisitorPass";
 import { requireAuth } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 import { logAudit } from "@/lib/audit-logger";
 import {
   isValidPurpose,
@@ -18,6 +19,8 @@ function resolveMemberId(auth, bodyMemberId) {
   return bodyMemberId;
 }
 export async function POST(request) {
+  const gate = await authorize(request, "visitor.pass.create");
+  if (!gate.ok) return gate.response;
   const auth = requireAuth(request);
   if (!auth.valid) return auth;
   try {
@@ -108,6 +111,8 @@ export async function POST(request) {
   }
 }
 export async function GET(request) {
+  const gate = await authorize(request, "visitor.pass.view");
+  if (!gate.ok) return gate.response;
   const auth = requireAuth(request);
   if (!auth.valid) return auth;
   try {

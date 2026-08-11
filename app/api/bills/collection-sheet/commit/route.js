@@ -15,7 +15,7 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
-import { requireRoles, SOCIETY_ADMIN_ROLES } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 import Bill from "@/models/Bill";
 import Transaction from "@/models/Transaction";
 import ScheduledBillRun from "@/models/ScheduledBillRun";
@@ -32,12 +32,10 @@ const TOLERANCE = 0.01;
 
 export async function POST(request) {
   try {
-    const auth = await requireRoles(request, SOCIETY_ADMIN_ROLES);
-    if (!auth.valid) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const societyId = auth.user.societyId;
-    const userId = auth.user.userId;
+    const gate = await authorize(request, "billing.bill.generate");
+    if (!gate.ok) return gate.response;
+    const societyId = gate.context.societyId;
+    const userId = gate.context.userId;
 
     const body = await request.json();
     const {

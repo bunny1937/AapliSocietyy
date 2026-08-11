@@ -9,7 +9,10 @@ import Transaction from "@/models/Transaction";
 import Member from "@/models/Member";
 import mongoose from "mongoose";
 import { requireRoles, SOCIETY_ADMIN_ROLES } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 export async function GET(request) {
+  const gate = await authorize(request, "dashboard.stats.view");
+  if (!gate.ok) return gate.response;
   try {
     // Role gate BEFORE any DB work (test 02 critical: a Member token used to
     // receive this society's full financials with HTTP 200).

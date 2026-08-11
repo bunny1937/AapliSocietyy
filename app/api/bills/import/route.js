@@ -12,14 +12,14 @@ import { resolveOpeningBalances } from "@/lib/billing/generationService";
 import { validateBillInvariants } from "@/lib/billing/invariants";
 import { getSocietySnapshot, getBilledSet } from "@/lib/import/societySnapshot";
 import ImportStaging from "@/models/ImportStaging";
+import { authorize } from "@/lib/rbac/authorize";
 
 const twoDp = (n) => parseFloat((Number(n) || 0).toFixed(2));
 export async function POST(request) {
   try {
-    await connectDB();
-    const auth = requireRoles(request, BILLING_WRITE_ROLES);
-    if (!auth.valid) return auth;
-    const decoded = auth.user;
+    const gate = await authorize(request, "billing.bill.import");
+    if (!gate.ok) return gate.response;
+    await connectDB();    const decoded = gate.context;
     const { searchParams } = new URL(request.url);
     const action = searchParams.get("action");
     // STEP 1: PREVIEW

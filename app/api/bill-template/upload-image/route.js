@@ -2,14 +2,14 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { requireRoles, SOCIETY_ADMIN_ROLES } from '@/lib/authz';
 import { storeUploadedFile } from '@/lib/file-store';
+import { authorize } from '@/lib/rbac/authorize';
 
 export const runtime = 'nodejs';
 export async function POST(request) {
+  const gate = await authorize(request, "billing.template.upload");
+  if (!gate.ok) return gate.response;
   try {
-    await connectDB();
-    const auth = requireRoles(request, SOCIETY_ADMIN_ROLES);
-    if (!auth.valid) return auth;
-    const decoded = auth.user;
+    await connectDB();    const decoded = gate.context;
     const formData = await request.formData();
     const file = formData.get('file');
     const type = formData.get('type'); // 'logo' or 'signature'

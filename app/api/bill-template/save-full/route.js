@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Society from '@/models/Society';
 import { getTokenFromRequest, verifyToken } from '@/lib/jwt';
+import { authorize } from '@/lib/rbac/authorize';
 export async function POST(request) {
+  const gate = await authorize(request, "billing.template.update");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);

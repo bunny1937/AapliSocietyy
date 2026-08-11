@@ -5,10 +5,13 @@ import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import Visitor from "@/models/Visitor";
 import { requireSecurity } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 function toId(id) {
   return typeof id === "string" ? new mongoose.Types.ObjectId(id) : id;
 }
 export async function GET(request) {
+  const gate = await authorize(request, "visitor.gate.view");
+  if (!gate.ok) return gate.response;
   const auth = requireSecurity(request);
   if (!auth.valid) return auth;
   try {

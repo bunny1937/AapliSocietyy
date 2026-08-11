@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 // GET /api/amenities/events?amenityId=&status=&scope=upcoming|today|past&from=&to=
 export const GET = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.VIEW_AMENITIES);
+  const g = await gate(request, CAPABILITY.VIEW_AMENITIES);
   if (!g.ok) return g.response;
 
   const sp = new URL(request.url).searchParams;
@@ -57,7 +57,7 @@ export const GET = withAmenityRoute(async (request) => {
 
 // POST /api/amenities/events
 export const POST = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.MANAGE_EVENTS);
+  const g = await gate(request, CAPABILITY.MANAGE_EVENTS);
   if (!g.ok) return g.response;
 
   try {

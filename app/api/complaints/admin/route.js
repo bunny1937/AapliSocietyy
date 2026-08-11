@@ -3,14 +3,17 @@ import connectDB from "@/lib/mongodb";
 import { verifyToken, getTokenFromRequest } from "@/lib/jwt";
 import Complaint from "@/models/Complaint";
 import Member from "@/models/Member";
+import { authorize } from "@/lib/rbac/authorize";
 export async function GET(request) {
   try {
+    const gate = await authorize(request, "complaint.complaint.view");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const decoded = verifyToken(token);
-    if (!decoded || !["Admin", "Secretary"].includes(decoded.role)) {
+    if (!decoded) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const searchParams = new URL(request.url).searchParams;
@@ -18,7 +21,7 @@ export async function GET(request) {
     const category = searchParams.get("category");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
-    const query = { societyId: decoded.societyId };
+    const query = { societyId: gate.context.societyId || decoded.societyId };
     if (status !== "all") query.status = status;
     if (category && category !== "all") query.category = category;
     const [complaints, total] = await Promise.all([

@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.VIEW_AMENITIES);
+  const g = await gate(request, CAPABILITY.VIEW_AMENITIES);
   if (!g.ok) return g.response;
 
   const { id } = await params;
@@ -29,7 +29,7 @@ export const GET = withAmenityRoute(async (request, { params }) => {
 });
 
 export const PATCH = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_CATEGORIES);
+  const g = await gate(request, CAPABILITY.MANAGE_CATEGORIES);
   if (!g.ok) return g.response;
 
   const { id } = await params;
@@ -78,7 +78,7 @@ export const PATCH = withAmenityRoute(async (request, { params }) => {
 // Soft delete, and refused while amenities still reference the category:
 // orphaning amenities would strand them out of every listing.
 export const DELETE = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_CATEGORIES);
+  const g = await gate(request, CAPABILITY.MANAGE_CATEGORIES);
   if (!g.ok) return g.response;
 
   const { id } = await params;

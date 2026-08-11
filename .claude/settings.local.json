@@ -106,7 +106,13 @@
       "Bash(node --check lib/commercial/commercialChargeEngine.js)",
       "Bash(echo \"BUILD EXIT: $?\")",
       "Read(//Users/tttanishkkkk/.claude/plugins/**)",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(list\\(d.keys\\(\\)\\) if isinstance\\(d,dict\\) else d\\)\")"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(list\\(d.keys\\(\\)\\) if isinstance\\(d,dict\\) else d\\)\")",
+      "Bash(git stash *)",
+      "Bash(node -e \"require\\('@babel/core'\\)\")",
+      "Bash(npx --no-install eslint app/superadmin/societies/BulkImportWizard.jsx lib/import/validateWorkbook.js)",
+      "Bash(node --check node_modules/.bin/../../node_modules/next/dist/bin/next)",
+      "Bash(node -e ' *)",
+      "Bash(npx tsc *)"
     ]
   },
   "enableAllProjectMcpServers": true,

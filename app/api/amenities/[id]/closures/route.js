@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 // GET /api/amenities/[id]/closures?upcoming=true
 export const GET = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.VIEW_AMENITIES);
+  const g = await gate(request, CAPABILITY.VIEW_AMENITIES);
   if (!g.ok) return g.response;
 
   const { id } = await params;
@@ -33,7 +33,7 @@ export const GET = withAmenityRoute(async (request, { params }) => {
 // grid. Kept separate from maintenance on purpose: a Diwali closure is not a
 // maintenance event and should not appear in the maintenance-downtime metric.
 export const POST = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_AVAILABILITY);
+  const g = await gate(request, CAPABILITY.MANAGE_AVAILABILITY);
   if (!g.ok) return g.response;
 
   const { id } = await params;

@@ -6,6 +6,7 @@ import User from "@/models/User";
 import AuditLog from "@/models/AuditLog";
 import { signToken } from "@/lib/jwt";
 import { issueRefreshToken, setRefreshCookie } from "@/lib/refresh-token";
+import { getStaffProfiles } from "@/lib/rbac/staff-profiles";
 const MAX_ATTEMPTS = parseInt(process.env.RATE_LIMIT_LOGIN, 10) || 10;
 const WINDOW_MS = 15 * 60 * 1000;
 const loginAttempts = new Map();
@@ -130,8 +131,50 @@ export async function POST(request) {
     const activeProfiles = (user.profiles ?? []).filter(
       (p) => p.status === "Active",
     );
-    // CASE A: single profile → auto-login
-    if (activeProfiles.length === 1) {
+    // A member can ALSO hold a staff RoleAssignment (e.g. "Auditor" on top of
+    // their own flat) — those need to appear as selectable entries too, or
+    // granting the role gives them no way to ever use it.
+    const staffProfiles = await getStaffProfiles(user._id);
+    const totalProfileCount = activeProfiles.length + staffProfiles.length;
+    // CASE A: exactly one profile total (member OR staff, never both) → auto-login
+    if (totalProfileCount === 1 && staffProfiles.length === 1) {
+      clearLoginRateLimit(identifier);
+      const assignment = staffProfiles[0];
+      const token = signToken({
+        userId: user._id,
+        activeContext: { societyId: assignment.societyId, hat: "staff" },
+        // Root-level societyId, additive: authorize()/page-guard.js read
+        // activeContext.societyId (checked first, takes priority) — this is
+        // only for the large amount of pre-RBAC route code that reads
+        // decoded.societyId directly and would otherwise silently scope
+        // queries to "undefined" for any RBAC-only staff role.
+        societyId: assignment.societyId,
+        sessionEpoch: user.sessionEpoch || 0,
+      });
+      const response = NextResponse.json({
+        success: true,
+        requiresProfileSelect: false,
+        user: {
+          id: user._id,
+          name: user.name,
+          username: user.username,
+          role: assignment.role,
+          kind: "Staff",
+          societyId: assignment.societyId,
+          societyName: assignment.societyName,
+        },
+      });
+      response.cookies.set("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 60 * 60 * 8,
+      });
+      setRefreshCookie(response, await issueRefreshToken(user._id));
+      return response;
+    }
+    if (activeProfiles.length === 1 && staffProfiles.length === 0) {
       clearLoginRateLimit(identifier);
       const profile = activeProfiles[0];
       // Persist activeProfileId
@@ -173,8 +216,9 @@ export async function POST(request) {
       setRefreshCookie(response, await issueRefreshToken(user._id));
       return response;
     }
-    // CASE B: multiple profiles → return list, frontend shows selector
-    if (activeProfiles.length > 1) {
+    // CASE B: multiple profiles (member flats and/or staff roles) → return
+    // the merged list, frontend shows one selector for all of them.
+    if (totalProfileCount > 1) {
       clearLoginRateLimit(identifier);
       const profileSelectToken = signToken(
         {
@@ -183,6 +227,22 @@ export async function POST(request) {
         },
         { expiresIn: "10m" },
       );
+      // Commercial profiles have no flatNo/wing of their own (they link a
+      // Shop, not a Member) — resolve the shop label instead of showing a
+      // blank "Flat -".
+      const commercialShopIds = activeProfiles
+        .filter((p) => p.kind === "Commercial" && p.shopId)
+        .map((p) => p.shopId);
+      let shopLabelById = new Map();
+      if (commercialShopIds.length) {
+        const Shop = (await import("@/models/Shop")).default;
+        const shops = await Shop.find({ _id: { $in: commercialShopIds } })
+          .select("wing shopNo")
+          .lean();
+        shopLabelById = new Map(
+          shops.map((s) => [String(s._id), [s.wing, s.shopNo].filter(Boolean).join("-")]),
+        );
+      }
       // No cookie yet — user must pick a society first
       return NextResponse.json({
         success: true,
@@ -191,14 +251,21 @@ export async function POST(request) {
         profileSelectToken,
         name: user.name,
         username: user.username,
-        profiles: activeProfiles.map((p) => ({
-          profileId: p.profileId,
-          societyId: p.societyId,
-          societyName: p.societyName,
-          flatNo: p.flatNo,
-          wing: p.wing,
-          role: p.role,
-        })),
+        profiles: [
+          ...activeProfiles.map((p) => ({
+            profileId: p.profileId,
+            societyId: p.societyId,
+            societyName: p.societyName,
+            flatNo:
+              p.kind === "Commercial"
+                ? shopLabelById.get(String(p.shopId)) || ""
+                : p.flatNo,
+            wing: p.kind === "Commercial" ? "" : p.wing,
+            role: p.role,
+            kind: p.kind || "Residential",
+          })),
+          ...staffProfiles,
+        ],
       });
     }
     // CASE C: Member with zero active profiles (edge case / misconfigured)

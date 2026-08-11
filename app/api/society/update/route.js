@@ -6,6 +6,7 @@ import AuditLog from "@/models/AuditLog";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import { safeConfigDate } from "@/utils/dateUtils";
 import cache from "@/lib/cache";
+import { authorize } from "@/lib/rbac/authorize";
 const DAY_FIELDS = ["billGenerationDay", "paymentUploadDay", "billDueDay"];
 function normalizeSocietyUpdatePayload(payload) {
   const normalized = { ...payload };
@@ -30,20 +31,24 @@ async function updateOpenDueDates(societyId, billDueDay) {
   return result.modifiedCount || 0;
 }
 export async function PUT(request) {
+  const gate = await authorize(request, "society.config.update");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB(); const token = getTokenFromRequest(request); const decoded = token ? verifyToken(token) : null;
     if (!decoded) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    if (!['Admin','Secretary','Treasurer'].includes(decoded.role)) return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+    // Legacy ['Admin','Secretary','Treasurer'] check removed: authorize()
+    // above (society.config.update) is the real gate now.
+    const societyId = gate.context.societyId || decoded.societyId;
     const normalizedBody = normalizeSocietyUpdatePayload(await request.json().catch(() => ({})));
-    const oldSociety = await Society.findById(decoded.societyId); if (!oldSociety) return NextResponse.json({ error: "Society not found" }, { status: 404 });
+    const oldSociety = await Society.findById(societyId); if (!oldSociety) return NextResponse.json({ error: "Society not found" }, { status: 404 });
     const oldConfig = oldSociety.config?.toObject ? oldSociety.config.toObject() : { ...(oldSociety.config || {}) };
     normalizedBody.config = { ...oldConfig, ...(normalizedBody.config || {}) };
     const errors = scheduleErrors(normalizedBody.config); if (errors.length) return NextResponse.json({ error: "Invalid monthly billing schedule", errors }, { status: 400 });
     const oldDueDay = Number(oldConfig.billDueDay || 30); const newDueDay = Number(normalizedBody.config.billDueDay);
-    const updatedSociety = await Society.findByIdAndUpdate(decoded.societyId, { $set: normalizedBody }, { new: true, runValidators: true });
-    const openBillsUpdated = oldDueDay !== newDueDay ? await updateOpenDueDates(decoded.societyId, newDueDay) : 0;
-    await AuditLog.create({ userId: decoded.userId, societyId: decoded.societyId, action: "UPDATE_SOCIETY_CONFIG", oldData: oldSociety, newData: updatedSociety, timestamp: new Date() });
-    await cache.del(`society:config:${decoded.societyId}`);
+    const updatedSociety = await Society.findByIdAndUpdate(societyId, { $set: normalizedBody }, { new: true, runValidators: true });
+    const openBillsUpdated = oldDueDay !== newDueDay ? await updateOpenDueDates(societyId, newDueDay) : 0;
+    await AuditLog.create({ userId: decoded.userId, societyId, action: "UPDATE_SOCIETY_CONFIG", oldData: oldSociety, newData: updatedSociety, timestamp: new Date() });
+    await cache.del(`society:config:${societyId}`);
     return NextResponse.json({ success: true, message: "Society configuration updated successfully", society: updatedSociety, openBillsUpdated });
   } catch (error) { return NextResponse.json({ error: "Internal server error", details: error.message }, { status: 500 }); }
 }

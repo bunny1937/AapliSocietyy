@@ -6,10 +6,13 @@ import Bill from "@/models/Bill";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import { parseFirstSheet } from "@/lib/excelParse";
 import { validateBillRows, classifyBillUploadRows } from "../../../../utils/excelValidator";
+import { authorize } from "@/lib/rbac/authorize";
 // Accepts merged "Wing-FlatNo" (new template) OR separate Wing+FlatNo (legacy)
 const REQUIRED_MERGED = ["Wing-FlatNo", "Period"];
 const REQUIRED_LEGACY = ["Wing", "FlatNo", "Period"];
 export async function POST(request) {
+  const gate = await authorize(request, "billing.bill.generate");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);

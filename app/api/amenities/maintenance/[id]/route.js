@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 // requires maintenance history to be retained permanently, and rewriting a past
 // window would silently rewrite reported downtime.
 export const PATCH = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_MAINTENANCE);
+  const g = await gate(request, CAPABILITY.MANAGE_MAINTENANCE);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid maintenance id");

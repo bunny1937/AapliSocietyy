@@ -4,8 +4,25 @@ import connectDB from "@/lib/mongodb";
 import Member from "@/models/Member";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import cache from "@/lib/cache";
+import { authorizeAny } from "@/lib/rbac/authorize";
+// Read by several finance/billing/commercial pages to resolve member names
+// against transactions, not just the dedicated View Members page — same
+// cross-page-dependency pattern as financial-years.
+const MEMBER_VIEW_IDS = [
+  "member.member.view",
+  "finance.receipts.view",
+  "finance.payments.view",
+  "finance.payment.view",
+  "finance.ledger.view",
+  "billing.config.view",
+  "billing.template.view",
+  "billing.dashboard.view",
+  "commercial.admin.view",
+];
 export async function GET(request) {
   try {
+    const gate = await authorizeAny(request, MEMBER_VIEW_IDS);
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting, requireAccountingClose } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 import {
   getPostingRuleById,
   updatePostingRule,
@@ -11,6 +12,8 @@ import {
 export async function GET(request, ctx) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await ctx.params;
@@ -32,6 +35,8 @@ export async function GET(request, ctx) {
 export async function PATCH(request, ctx) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.update");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await ctx.params;
@@ -54,6 +59,8 @@ export async function PATCH(request, ctx) {
 export async function DELETE(request, ctx) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.update");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await ctx.params;

@@ -8,9 +8,10 @@ import { requireRoles } from "@/lib/authz";
 import { logAudit } from "@/lib/audit-logger";
 import { buildProfileEditDecisionNotification } from "@/lib/profile-edit-notifications";
 import { sendInApp } from "@/lib/visitor-channels";
+import { authorize } from "@/lib/rbac/authorize";
 export async function POST(request, { params }) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "member.profileEditRequest.reject");
+  if (!gate.ok) return gate.response;
   const { id } = await params;
   if (!mongoose.Types.ObjectId.isValid(id))
     return NextResponse.json({ error: "Valid id required" }, { status: 400 });
@@ -20,14 +21,14 @@ export async function POST(request, { params }) {
     const reason = String(body.reason || "").trim();
     const editRequest = await ProfileEditRequest.findOne({
       _id: id,
-      societyId: auth.user.societyId,
+      societyId: gate.context.societyId,
       status: "Pending",
     });
     if (!editRequest)
       return NextResponse.json({ error: "No pending request found for that id" }, { status: 404 });
     const member = editRequest.shopId
       ? null
-      : await Member.findOne({ _id: editRequest.memberId, societyId: auth.user.societyId }).lean();
+      : await Member.findOne({ _id: editRequest.memberId, societyId: gate.context.societyId }).lean();
     editRequest.status = "Rejected";
     editRequest.rejectionReason = reason || undefined;
     await editRequest.save();
@@ -38,8 +39,8 @@ export async function POST(request, { params }) {
       rejectionReason: reason || undefined,
     });
     await sendInApp({
-      societyId: auth.user.societyId,
-      createdBy: auth.user.userId,
+      societyId: gate.context.societyId,
+      createdBy: gate.context.userId,
       createdByName: "Admin",
       type: notif.type,
       title: notif.title,
@@ -48,7 +49,7 @@ export async function POST(request, { params }) {
       recipientIds: [String(editRequest.shopId ? editRequest.requestedByUserId : editRequest.memberId)],
       metadata: { profileEditRequestId: String(editRequest._id) },
     });
-    await logAudit(auth.user.userId, auth.user.societyId, "PROFILE_EDIT_REQUEST_REJECTED", null, {
+    await logAudit(gate.context.userId, gate.context.societyId, "PROFILE_EDIT_REQUEST_REJECTED", null, {
       profileEditRequestId: String(editRequest._id),
       reason,
     });

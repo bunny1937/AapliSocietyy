@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { verifyToken, getTokenFromRequest } from "@/lib/jwt";
 import BillingHead from "@/models/BillingHead";
+import { authorize } from "@/lib/rbac/authorize";
 export async function GET(request) {
   try {
+    const gate = await authorize(request, "billing.config.view");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) {

@@ -8,32 +8,39 @@ import cache from "@/lib/cache";
 import { calculateMemberCharges } from "@/lib/calculate-member-bill";
 import { validateBillInvariants } from "@/lib/billing/invariants";
 import { correctBillHistorical } from "@/lib/billing/correctionService";
+import { authorizeAny } from "@/lib/rbac/authorize";
 export async function POST(request) {
   try {
+    // Also called from Generate Bills (inline area/parking fix before
+    // generating), not just View/Edit Members.
+    const gate = await authorizeAny(request, ["member.member.update", "billing.dashboard.view"]);
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const decoded = verifyToken(token);
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    if (decoded.role !== "Admin")
-      return NextResponse.json({ error: "Admin only" }, { status: 403 });
+    // Legacy "Admin only" check removed: authorize() above (member.member.update)
+    // is the real gate — it correctly allows any role RBAC granted this to,
+    // not just the literal legacy string "Admin".
+    const societyId = gate.context.societyId || decoded.societyId;
     const { memberId, carpetAreaSqft, parkingSlots, recalcBillPeriodId } = await request.json();
     if (!memberId) return NextResponse.json({ error: "memberId required" }, { status: 400 });
     const patch = {};
     if (carpetAreaSqft !== undefined) patch.carpetAreaSqft = Number(carpetAreaSqft);
     if (parkingSlots !== undefined) patch.parkingSlots = parkingSlots;
     const member = await Member.findOneAndUpdate(
-      { _id: memberId, societyId: decoded.societyId },
+      { _id: memberId, societyId },
       { $set: patch },
       { new: true },
     );
     if (!member) return NextResponse.json({ error: "Member not found" }, { status: 404 });
-    await cache.delPattern(`members:list:${decoded.societyId}:*`);
+    await cache.delPattern(`members:list:${societyId}:*`);
     let billRecalculated = false;
     if (recalcBillPeriodId) {
       const existingBill = await Bill.findOne({
         memberId,
-        societyId: decoded.societyId,
+        societyId,
         billPeriodId: recalcBillPeriodId,
         isDeleted: { $ne: true },
       });
@@ -48,7 +55,7 @@ export async function POST(request) {
       }
       if (existingBill) {
         const heads = await BillingHead.find({
-          societyId: decoded.societyId,
+          societyId,
           isActive: true,
           isDeleted: false,
         }).sort({ order: 1 }).lean();

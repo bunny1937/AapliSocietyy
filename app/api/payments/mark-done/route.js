@@ -4,6 +4,7 @@ import Bill from "@/models/Bill";
 import Member from "@/models/Member";
 import AuditLog from "@/models/AuditLog";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
+import { authorize } from "@/lib/rbac/authorize";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,9 +21,8 @@ export async function POST(request) {
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const decoded = verifyToken(token);
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    if (!["Admin", "Secretary"].includes(decoded.role)) {
-      return NextResponse.json({ error: "Only Admin or Secretary can mark payments done" }, { status: 403 });
-    }
+    const gate = await authorize(request, "finance.payment.record");
+    if (!gate.ok) return gate.response;
 
     const { memberId, amount, paymentMode, paymentDate, notes } = await request.json();
     if (!memberId || !amount) {

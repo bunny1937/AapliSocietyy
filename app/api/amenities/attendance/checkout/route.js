@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 // Accepts either an attendance id (row clicked in the register) or an
 // amenityId + memberId pair (guard closing out a resident by name).
 export const POST = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.RECORD_ATTENDANCE);
+  const g = await gate(request, CAPABILITY.RECORD_ATTENDANCE);
   if (!g.ok) return g.response;
 
   const parsed = checkOutSchema.safeParse(await request.json());
