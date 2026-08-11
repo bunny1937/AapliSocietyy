@@ -10,8 +10,11 @@ import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import cache from "@/lib/cache";
 import Bill from "@/models/Bill";
 import { getBillPayFinalDate } from "../../../../utils/interestUtils";
+import { authorize } from "@/lib/rbac/authorize";
 export async function GET(request) {
   try {
+    const gate = await authorize(request, "finance.payment.view");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) {

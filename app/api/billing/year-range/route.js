@@ -3,7 +3,16 @@ import connectDB from "@/lib/mongodb";
 import Bill from "@/models/Bill";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import cache from "@/lib/cache";
+import { authorizeAny } from "@/lib/rbac/authorize";
+// Read on every admin dashboard load to seed the FY selector — not just the
+// View Bills page, same cross-page-dependency pattern as financial-years.
 export async function GET(request) {
+  const gate = await authorizeAny(request, [
+    "billing.bill.view",
+    "dashboard.admin.view",
+    "dashboard.stats.view",
+  ]);
+  if (!gate.ok) return gate.response;
   try {
     const token = getTokenFromRequest(request);
     if (!token)

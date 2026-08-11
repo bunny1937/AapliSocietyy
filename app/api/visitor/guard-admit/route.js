@@ -10,8 +10,11 @@ import { requireSecurity } from "@/lib/authz";
 import { logAudit } from "@/lib/audit-logger";
 import { sendInApp } from "@/lib/visitor-channels";
 import { stopEscalation } from "@/lib/escalation";
+import { authorize } from "@/lib/rbac/authorize";
 const ADMITTABLE = ["Pending", "Approved", "Expired"];
 export async function PATCH(request) {
+  const gate = await authorize(request, "visitor.visitor.guardAdmit");
+  if (!gate.ok) return gate.response;
   const auth = requireSecurity(request);
   if (!auth.valid) return auth;
   try {

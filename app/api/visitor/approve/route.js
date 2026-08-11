@@ -9,7 +9,10 @@ import { requireAuth } from "@/lib/authz";
 import { logAudit } from "@/lib/audit-logger";
 import { notifyGuardDecision } from "@/lib/visitor-notify";
 import { stopEscalation } from "@/lib/escalation";
+import { authorize } from "@/lib/rbac/authorize";
 export async function POST(request) {
+  const gate = await authorize(request, "visitor.visitor.approve");
+  if (!gate.ok) return gate.response;
   const auth = requireAuth(request);
   if (!auth.valid) return auth;
   try {

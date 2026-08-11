@@ -6,18 +6,19 @@ import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { requireRoles } from "@/lib/authz";
 import { logAudit } from "@/lib/audit-logger";
+import { authorize } from "@/lib/rbac/authorize";
 function isPlausiblePhone(phone) {
   const digits = String(phone || "").replace(/\D/g, "");
   return digits.length >= 10 && digits.length <= 13;
 }
 export async function GET(request) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "security.guard.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const guards = await User.find({
       role: "Security",
-      societyId: auth.user.societyId,
+      societyId: gate.context.societyId,
       isDeleted: { $ne: true },
     })
       .sort({ createdAt: -1 })
@@ -30,8 +31,8 @@ export async function GET(request) {
   }
 }
 export async function POST(request) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "security.guard.create");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const body = await request.json();
@@ -80,12 +81,12 @@ export async function POST(request) {
       username,
       password: hashed,
       role: "Security",
-      societyId: auth.user.societyId,
+      societyId: gate.context.societyId,
       gateLabel: gateLabel || "Main Gate",
       phone,
       isActive: true,
     });
-    await logAudit(auth.user.userId, auth.user.societyId, "SECURITY_GUARD_CREATED", null, {
+    await logAudit(gate.context.userId, gate.context.societyId, "SECURITY_GUARD_CREATED", null, {
       id: guard._id.toString(),
       name: guard.name,
       username: guard.username,

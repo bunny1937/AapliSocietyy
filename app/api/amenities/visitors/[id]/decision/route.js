@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 // POST /api/amenities/visitors/:id/decision — approve or reject a pending
 // visitor when the amenity requires approval.
 export const POST = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.VERIFY_VISITORS);
+  const g = await gate(request, CAPABILITY.VERIFY_VISITORS);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid visitor id");

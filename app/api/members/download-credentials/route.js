@@ -2,9 +2,12 @@ import { NextResponse } from 'next/server';
 import ExcelJS from 'exceljs';
 import { verifyToken, getTokenFromRequest } from '@/lib/jwt';
 import jwt from 'jsonwebtoken';
+import { authorize } from "@/lib/rbac/authorize";
 // Auth: admin_token cookie (superadmin) or regular JWT cookie (admin/member)
 export async function POST(request) {
   try {
+    const gate = await authorize(request, "member.member.downloadCredentials");
+    if (!gate.ok) return gate.response;
     // Accept: regular JWT (admin/member cookie) OR superadmin admin_token cookie
     const adminToken = request.cookies.get("admin_token")?.value;
     const regularToken = getTokenFromRequest(request);

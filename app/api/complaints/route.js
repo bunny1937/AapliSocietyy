@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { verifyToken, getTokenFromRequest } from "@/lib/jwt";
+import { authorize } from "@/lib/rbac/authorize";
 import Complaint from "@/models/Complaint";
 import {
   generateAnonymousName,
@@ -11,6 +12,8 @@ import {
 // POST /api/complaints — Member creates a complaint
 export async function POST(request) {
   try {
+    const gate = await authorize(request, "complaint.complaint.create");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token)
@@ -101,6 +104,8 @@ export async function POST(request) {
 // GET /api/complaints — Public approved complaints (members + admin)
 export async function GET(request) {
   try {
+    const gate = await authorize(request, "complaint.complaint.view");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token)

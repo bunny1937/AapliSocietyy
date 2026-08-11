@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Member from "@/models/Member";
 import { requireRoles } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 export async function GET(request) {
-  const auth = requireRoles(request, ["Security"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "visitor.visitor.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
@@ -13,7 +14,7 @@ export async function GET(request) {
       return NextResponse.json({ success: true, flats: [] });
     }
     const flats = await Member.find({
-      societyId: auth.user.societyId,
+      societyId: gate.context.societyId,
       isDeleted: { $ne: true },
       $or: [
         { flatNo: { $regex: q, $options: "i" } },

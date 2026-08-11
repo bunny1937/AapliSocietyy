@@ -5,12 +5,12 @@ import User from "@/models/User";
 import { exportToAdminDB, logAdminActivity } from "@/lib/export-to-admin-db";
 import Transaction from "@/models/Transaction";
 import { requireRoles } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 export async function POST(request) {
   try {
-    await connectDB();
-    const auth = requireRoles(request, ["Admin"]);
-    if (!auth.valid) return auth;
-    const decoded = auth.user;
+    const gate = await authorize(request, "billing.bill.delete");
+    if (!gate.ok) return gate.response;
+    await connectDB();    const decoded = gate.context;
     const { billIds, reason } = await request.json();
     if (!billIds || !Array.isArray(billIds) || billIds.length === 0) {
       return NextResponse.json(

@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 // GET /api/amenities/incidents?amenityId=&status=&severity=&type=&open=1
 export const GET = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.VIEW_INCIDENTS);
+  const g = await gate(request, CAPABILITY.VIEW_INCIDENTS);
   if (!g.ok) return g.response;
 
   const sp = new URL(request.url).searchParams;
@@ -58,7 +58,7 @@ export const GET = withAmenityRoute(async (request) => {
 // POST — report an incident. Residents and security both use this (they hold
 // REPORT_INCIDENT), while assignment and resolution need MANAGE_INCIDENTS.
 export const POST = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.REPORT_INCIDENT);
+  const g = await gate(request, CAPABILITY.REPORT_INCIDENT);
   if (!g.ok) return g.response;
 
   const parsed = incidentCreateSchema.safeParse(await request.json());

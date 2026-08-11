@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { authorize } from "@/lib/rbac/authorize";
 import { calculateMonthlyInterest, roundInterest } from "../../../utils/interestUtils";
 import { allocatePayment } from "@/lib/billing/allocation-math";
 // ---------------------------------------------------------------------------
@@ -555,6 +556,8 @@ function buildTestCases(snapshots, config) {
 // ---------------------------------------------------------------------------
 export async function POST(request) {
   try {
+    const gate = await authorize(request, "billing.dashboard.view");
+    if (!gate.ok) return gate.response;
     const { config, member, actions } = await request.json();
     if (!member || !actions?.length) {
       return NextResponse.json(

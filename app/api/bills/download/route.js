@@ -11,6 +11,7 @@ import renderBillHtml from "@/lib/bill-renderer"; // ← default import NOT name
 import { FlexiblePDFGenerator } from "@/lib/pdf-generator";
 import { extractFileId, loadUploadedFile } from "@/lib/file-store";
 import { buildPdfFillData, buildOverlayBillData } from "@/lib/bill-pdf-fields";
+import { authorize } from "@/lib/rbac/authorize";
 function formatMoney(value) {
   return `Rs. ${Number(value || 0).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
@@ -111,6 +112,8 @@ async function appendReceiptPage(pdfDoc, receipt, bill, society, member) {
 }
 export async function GET(request) {
   try {
+    const gate = await authorize(request, "billing.bill.download");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) {

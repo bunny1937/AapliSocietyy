@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 // answering in the same time as a 40-flat society: the heavy work happened at
 // write time.
 export const GET = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.VIEW_ANALYTICS);
+  const g = await gate(request, CAPABILITY.VIEW_ANALYTICS);
   if (!g.ok) return g.response;
 
   const sp = new URL(request.url).searchParams;

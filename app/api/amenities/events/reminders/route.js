@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 // event records reminderSentAt, so calling this every five minutes sends each
 // reminder exactly once.
 export const POST = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.MANAGE_EVENTS);
+  const g = await gate(request, CAPABILITY.MANAGE_EVENTS);
   if (!g.ok) return g.response;
 
   const settings = await getSettings(g.societyId);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccountingClose } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 import {
   updateValidationRule,
   deleteValidationRule,
@@ -11,6 +12,8 @@ import {
 export async function PATCH(request, { params }) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.update");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await params;
@@ -33,6 +36,8 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.update");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await params;

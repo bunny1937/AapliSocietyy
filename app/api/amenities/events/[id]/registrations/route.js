@@ -30,7 +30,7 @@ const REGISTRATION_ERROR_STATUS = {
 // POST — desk/walk-in registration: an admin or guard registering a resident
 // who could not or did not use the app themselves (phone sign-up, kiosk).
 export const POST = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_REGISTRATIONS);
+  const g = await gate(request, CAPABILITY.MANAGE_REGISTRATIONS);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid event id");
@@ -86,7 +86,7 @@ export const POST = withAmenityRoute(async (request, { params }) => {
 // GET — the attendee sheet, with a live "has arrived" flag derived from
 // attendance rather than stored twice.
 export const GET = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_REGISTRATIONS);
+  const g = await gate(request, CAPABILITY.MANAGE_REGISTRATIONS);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid event id");
@@ -121,7 +121,7 @@ export const GET = withAmenityRoute(async (request, { params }) => {
 // PATCH — mark attended / no-show after the event, so "event attendance" in the
 // analytics reflects who actually turned up.
 export const PATCH = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_REGISTRATIONS);
+  const g = await gate(request, CAPABILITY.MANAGE_REGISTRATIONS);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid event id");

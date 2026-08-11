@@ -8,11 +8,14 @@ import Visitor from "@/models/Visitor";
 import Member from "@/models/Member";
 import cache from "@/lib/cache";
 import { requireSecurity } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 import { logAudit } from "@/lib/audit-logger";
 import { sendInApp } from "@/lib/visitor-channels";
 const MAX_ATTEMPTS = 5;
 const WINDOW_SECONDS = 300;
 export async function POST(request) {
+  const gate = await authorize(request, "visitor.pass.verify");
+  if (!gate.ok) return gate.response;
   const auth = requireSecurity(request);
   if (!auth.valid) return auth;
   try {

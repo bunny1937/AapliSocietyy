@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.VIEW_INCIDENTS);
+  const g = await gate(request, CAPABILITY.VIEW_INCIDENTS);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid incident id");
@@ -21,7 +21,7 @@ export const GET = withAmenityRoute(async (request, { params }) => {
 
 // PATCH — triage, assign, resolve, close.
 export const PATCH = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_INCIDENTS);
+  const g = await gate(request, CAPABILITY.MANAGE_INCIDENTS);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid incident id");

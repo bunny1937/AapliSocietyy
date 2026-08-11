@@ -20,12 +20,13 @@ import { logAudit } from "@/lib/audit-logger";
 import { generateTenantUsername } from "@/lib/tenant-username";
 import { buildTenantDecisionNotification } from "@/lib/tenant-notifications";
 import { sendInApp, sendEmail } from "@/lib/visitor-channels";
+import { authorize } from "@/lib/rbac/authorize";
 function generateTempPassword() {
   return crypto.randomBytes(8).toString("hex");
 }
 export async function POST(request, { params }) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "member.tenantRequest.approve");
+  if (!gate.ok) return gate.response;
   const { id } = await params;
   if (!mongoose.Types.ObjectId.isValid(id))
     return NextResponse.json({ error: "Valid id required" }, { status: 400 });
@@ -33,12 +34,12 @@ export async function POST(request, { params }) {
     await connectDB();
     const tenantRequest = await TenantRequest.findOne({
       _id: id,
-      societyId: auth.user.societyId,
+      societyId: gate.context.societyId,
       status: "Pending",
     });
     if (!tenantRequest)
       return NextResponse.json({ error: "No pending request found for that id" }, { status: 404 });
-    const member = await Member.findOne({ _id: tenantRequest.memberId, societyId: auth.user.societyId });
+    const member = await Member.findOne({ _id: tenantRequest.memberId, societyId: gate.context.societyId });
     if (!member) return NextResponse.json({ error: "Flat not found" }, { status: 404 });
     // Member has no societyName field of its own — look the real name up on
     // Society rather than leaving the tenant's profile.societyName blank.
@@ -87,7 +88,7 @@ export async function POST(request, { params }) {
     });
     await member.save();
     tenantRequest.status = "Approved";
-    tenantRequest.approvedBy = auth.user.userId;
+    tenantRequest.approvedBy = gate.context.userId;
     tenantRequest.approvedAt = new Date();
     await tenantRequest.save();
     const notif = buildTenantDecisionNotification({
@@ -96,8 +97,8 @@ export async function POST(request, { params }) {
       flatNo: member.flatNo,
     });
     await sendInApp({
-      societyId: auth.user.societyId,
-      createdBy: auth.user.userId,
+      societyId: gate.context.societyId,
+      createdBy: gate.context.userId,
       createdByName: "Admin",
       type: notif.type,
       title: notif.title,
@@ -113,7 +114,7 @@ export async function POST(request, { params }) {
       subject: "Your AapliSociety login",
       text: `Welcome! Your username is ${username} and your temporary password is ${tempPassword}. You'll be asked to change it on first login.`,
     });
-    await logAudit(auth.user.userId, auth.user.societyId, "TENANT_REQUEST_APPROVED", null, {
+    await logAudit(gate.context.userId, gate.context.societyId, "TENANT_REQUEST_APPROVED", null, {
       tenantRequestId: String(tenantRequest._id),
       memberId: String(member._id),
       tenantUserId: String(tenantUser._id),

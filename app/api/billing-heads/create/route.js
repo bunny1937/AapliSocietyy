@@ -4,8 +4,11 @@ import BillingHead from '@/models/BillingHead';
 import { getTokenFromRequest, verifyToken } from '@/lib/jwt';
 import { UNIT_CLASS_VALUES } from '@/lib/commercial/constants';
 import { normalizeUnitClassRates } from '@/lib/commercial/billingApplicability';
+import { authorize } from "@/lib/rbac/authorize";
 export async function POST(request) {
   try {
+    const gate = await authorize(request, "billing.head.create");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) {

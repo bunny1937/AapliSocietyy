@@ -7,7 +7,10 @@ import BillingHead from "@/models/BillingHead";
 import Transaction from "@/models/Transaction";
 import { safeConfigDate } from "../../../../utils/dateUtils";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
+import { authorize } from "@/lib/rbac/authorize";
 export async function POST(request) {
+  const gate = await authorize(request, "billing.bill.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);

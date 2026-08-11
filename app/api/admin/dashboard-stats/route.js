@@ -9,7 +9,10 @@ import Transaction from "@/models/Transaction";
 import Member from "@/models/Member";
 import mongoose from "mongoose";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
+import { authorize } from "@/lib/rbac/authorize";
 export async function GET(request) {
+  const gate = await authorize(request, "dashboard.stats.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);

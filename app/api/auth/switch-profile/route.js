@@ -5,6 +5,12 @@ import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import { signToken } from "@/lib/jwt";
 import { issueRefreshToken, setRefreshCookie } from "@/lib/refresh-token";
+import {
+  isStaffProfileId,
+  assignmentIdFromProfileId,
+  loadActiveAssignment,
+} from "@/lib/rbac/staff-profiles";
+import Society from "@/models/Society";
 export async function POST(request) {
   try {
     await connectDB();
@@ -42,7 +48,47 @@ export async function POST(request) {
     if (!user || !user.isActive) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-    // Find the requested profile
+
+    // Staff/management profile (backed by a RoleAssignment, not user.profiles[]).
+    if (isStaffProfileId(profileId)) {
+      const assignmentId = assignmentIdFromProfileId(profileId);
+      const assignment = await loadActiveAssignment(user._id, assignmentId);
+      if (!assignment) {
+        return NextResponse.json(
+          { error: "Role assignment not found or inactive" },
+          { status: 404 },
+        );
+      }
+      const society = await Society.findById(assignment.societyId).select("name").lean();
+      const newToken = signToken({
+        userId: user._id,
+        activeContext: { societyId: assignment.societyId, hat: "staff" },
+        // Root-level societyId, additive — see login/route.js CASE A comment.
+        societyId: assignment.societyId,
+        sessionEpoch: user.sessionEpoch || 0,
+      });
+      const response = NextResponse.json({
+        success: true,
+        activeProfile: {
+          profileId,
+          societyId: assignment.societyId,
+          societyName: society?.name || "",
+          kind: "Staff",
+        },
+        user: { id: user._id, name: user.name, username: user.username },
+      });
+      response.cookies.set("token", newToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 8,
+      });
+      setRefreshCookie(response, await issueRefreshToken(user._id));
+      return response;
+    }
+
+    // Find the requested member profile
     const profile = user.profiles.find(
       (p) => String(p.profileId) === String(profileId) && p.status === "Active",
     );

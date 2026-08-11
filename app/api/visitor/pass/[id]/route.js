@@ -5,8 +5,11 @@ import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import VisitorPass from "@/models/VisitorPass";
 import { requireAuth } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 import { logAudit } from "@/lib/audit-logger";
 export async function DELETE(request, { params }) {
+  const gate = await authorize(request, "visitor.pass.delete");
+  if (!gate.ok) return gate.response;
   const auth = requireAuth(request);
   if (!auth.valid) return auth;
   try {

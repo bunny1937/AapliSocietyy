@@ -2,7 +2,14 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Society from '@/models/Society';
 import { getTokenFromRequest, verifyToken } from '@/lib/jwt';
+import { authorizeAny } from '@/lib/rbac/authorize';
+// Read by Generate Bills too (template preview), not just Bill Template.
 export async function GET(request) {
+  const gate = await authorizeAny(request, [
+    "billing.template.view",
+    "billing.dashboard.view",
+  ]);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);

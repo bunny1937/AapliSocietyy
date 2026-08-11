@@ -6,6 +6,7 @@ import Society from "@/models/Society";
 import AuditReport from "@/models/AuditReport";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import { parseFirstSheet } from "@/lib/excelParse";
+import { authorize, authorizeAny } from "@/lib/rbac/authorize";
 // ─── Indian FY helpers ────────────────────────────────────────────────────────
 /**
  * Given a join month (1-12) and join year, returns the required audit window.
@@ -56,6 +57,8 @@ function expandWindow(fromMonth, fromYear, toMonth, toYear) {
 // ─── POST /api/admin/audit-report ─────────────────────────────────────────────
 // Body: multipart — file (xlsx), joinMonth (number), joinYear (number)
 export async function POST(request) {
+  const gate = await authorize(request, "audit.report.create");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);
@@ -371,6 +374,12 @@ export async function POST(request) {
 }
 // GET /api/admin/audit-report — fetch own society's report status
 export async function GET(request) {
+  const gate = await authorizeAny(request, [
+    "audit.page.view",
+    "audit.log.read",
+    "audit.report.view",
+  ]);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);

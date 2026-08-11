@@ -4,20 +4,21 @@ import { verifyToken, getTokenFromRequest } from "@/lib/jwt";
 import Notice from "@/models/Notice";
 import Member from "@/models/Member";
 import { notifyNoticePosted } from "@/lib/v1/notify";
+import { authorize } from "@/lib/rbac/authorize";
 // POST /api/notices — Admin creates notice
 export async function POST(request) {
   try {
+    const gate = await authorize(request, "notice.notice.create");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const decoded = verifyToken(token);
-    if (!decoded || !["Admin", "Secretary"].includes(decoded.role)) {
-      return NextResponse.json(
-        { error: "Only admin can create notices" },
-        { status: 403 },
-      );
+    if (!decoded) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
+    const societyId = gate.context.societyId || decoded.societyId;
     const {
       type,
       priority,
@@ -79,7 +80,7 @@ export async function POST(request) {
       expiresAt = parsed;
     }
     const notice = await Notice.create({
-      societyId: decoded.societyId,
+      societyId,
       createdBy: decoded.userId,
       createdByName: decoded.name || "Admin",
       type,
@@ -96,7 +97,7 @@ export async function POST(request) {
     try {
       await notifyNoticePosted({
         noticeId: notice._id,
-        societyId: decoded.societyId,
+        societyId,
         title: title.trim(),
         createdBy: decoded.userId,
         createdByName: decoded.name || "Admin",
@@ -119,6 +120,8 @@ export async function POST(request) {
 // GET /api/notices — List notices (members + admin)
 export async function GET(request) {
   try {
+    const gate = await authorize(request, "notice.notice.view");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token)
@@ -126,23 +129,25 @@ export async function GET(request) {
     const decoded = verifyToken(token);
     if (!decoded)
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    const societyId = gate.context.societyId || decoded.societyId;
     const searchParams = new URL(request.url).searchParams;
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const type = searchParams.get("type");
     const priority = searchParams.get("priority");
     const query = {
-      societyId: decoded.societyId,
+      societyId,
       isDeleted: false,
     };
     if (type && type !== "all") query.type = type;
     if (priority && priority !== "all") query.priority = priority;
-    // Total member count for view stats (admin only)
+    // Total member count for view stats — staff hat (any RBAC role that
+    // reached this point with notice.notice.view), not a hardcoded legacy
+    // role list.
+    const isStaffViewer = gate.context.hat === "staff";
     let totalMembers = 0;
-    if (["Admin", "Secretary"].includes(decoded.role)) {
-      totalMembers = await Member.countDocuments({
-        societyId: decoded.societyId,
-      });
+    if (isStaffViewer) {
+      totalMembers = await Member.countDocuments({ societyId });
     }
     const [notices, total] = await Promise.all([
       Notice.find(query)
@@ -156,7 +161,7 @@ export async function GET(request) {
     ]);
     // For admin: get view counts separately
     let enrichedNotices = notices;
-    if (["Admin", "Secretary"].includes(decoded.role)) {
+    if (isStaffViewer) {
       const ids = notices.map((n) => n._id);
       const fullNotices = await Notice.find({ _id: { $in: ids } })
         .select("_id viewedBy acknowledgedBy")

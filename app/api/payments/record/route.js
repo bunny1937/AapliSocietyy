@@ -13,6 +13,7 @@ import {
   recordPayment,
   PaymentServiceError,
 } from "@/lib/services/PaymentService";
+import { authorize } from "@/lib/rbac/authorize";
 
 // Business logic lives in lib/services/PaymentService.js as of Phase 2.1 of
 // the accounting-system revamp (docs/accounting-system-ARD.md §9). This route
@@ -20,6 +21,8 @@ import {
 
 export async function POST(request) {
   try {
+    const gate = await authorize(request, "finance.payment.record");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) {

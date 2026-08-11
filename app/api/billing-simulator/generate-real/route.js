@@ -4,6 +4,7 @@ import Transaction from "@/models/Transaction";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import { getFinancialYear } from "@/lib/date-utils";
 import { generateSimulatedBill } from "@/lib/billing/generationService";
+import { authorize } from "@/lib/rbac/authorize";
 
 // Ledger V2: THIN WRAPPER over the shared GenerationService. Contains no billing
 // math of its own. This is the SIMULATOR endpoint, so it is the only caller
@@ -12,6 +13,8 @@ import { generateSimulatedBill } from "@/lib/billing/generationService";
 // such parameter and can never inject balances.
 export async function POST(request) {
   try {
+    const gate = await authorize(request, "billing.bill.generate");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

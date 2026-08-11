@@ -6,10 +6,13 @@ import Receipt from "@/models/Receipt";
 import Society from "@/models/Society";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import { buildWorkbook, addSheetFromJson, workbookBuffer } from "@/lib/excelParse";
+import { authorize } from "@/lib/rbac/authorize";
 function twoDp(n) {
   return parseFloat((Number(n) || 0).toFixed(2));
 }
 export async function GET(request) {
+  const gate = await authorize(request, "finance.payment.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);

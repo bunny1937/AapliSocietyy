@@ -1,14 +1,9 @@
-"use client";
-// This page was folded into the unified /admin/payments dashboard (see
-// app/admin/payments/page.js — "Received" tab). Kept as a redirect so old
-// links/bookmarks to /admin/payments-received still land somewhere useful.
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { requirePagePermission } from "@/lib/rbac/page-guard";
+import PageClient from "./PageClient";
 
-export default function PaymentsReceivedRedirect() {
-  const router = useRouter();
-  useEffect(() => {
-    router.replace("/admin/payments");
-  }, [router]);
-  return null;
+export const dynamic = "force-dynamic";
+
+export default async function Page() {
+  await requirePagePermission("finance.paymentsReceived.view");
+  return <PageClient />;
 }

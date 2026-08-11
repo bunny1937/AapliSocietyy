@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 // GET /api/amenities/attendance?amenityId=&from=&to=&openOnly=1&attendeeType=&q=
 // The admin/guard attendance register.
 export const GET = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.VIEW_ALL_ATTENDANCE);
+  const g = await gate(request, CAPABILITY.VIEW_ALL_ATTENDANCE);
   if (!g.ok) return g.response;
 
   const sp = new URL(request.url).searchParams;
@@ -74,7 +74,7 @@ export const GET = withAmenityRoute(async (request) => {
 // which is exactly what the "QR + Manual Override" mode means; the override is
 // flagged on the row so audits can tell it from a scan.
 export const POST = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.RECORD_ATTENDANCE);
+  const g = await gate(request, CAPABILITY.RECORD_ATTENDANCE);
   if (!g.ok) return g.response;
 
   const parsed = checkInSchema.safeParse(await request.json());

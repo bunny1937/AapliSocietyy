@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import Expense from "@/models/Expense";
-import { requireRoles } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 import { logAudit } from "@/lib/audit-logger";
 
 const VALID_CATEGORIES = new Set([
@@ -27,8 +27,8 @@ const VALID_CATEGORIES = new Set([
 ]);
 
 export async function PUT(request, { params }) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "finance.expenditure.update");
+  if (!gate.ok) return gate.response;
   const { id } = await params;
   if (!mongoose.Types.ObjectId.isValid(id))
     return NextResponse.json({ error: "Valid id required" }, { status: 400 });
@@ -36,7 +36,7 @@ export async function PUT(request, { params }) {
     await connectDB();
     const expense = await Expense.findOne({
       _id: id,
-      societyId: auth.user.societyId,
+      societyId: gate.context.societyId,
       isDeleted: { $ne: true },
     });
     if (!expense)
@@ -65,7 +65,7 @@ export async function PUT(request, { params }) {
     if (body.referenceNo !== undefined) expense.referenceNo = String(body.referenceNo).trim();
     if (body.description !== undefined) expense.description = String(body.description).trim();
     await expense.save();
-    await logAudit(auth.user.userId, auth.user.societyId, "EXPENSE_UPDATED", null, {
+    await logAudit(gate.context.userId, gate.context.societyId, "EXPENSE_UPDATED", null, {
       expenseId: String(expense._id),
     });
     return NextResponse.json({
@@ -79,21 +79,21 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "finance.expenditure.delete");
+  if (!gate.ok) return gate.response;
   const { id } = await params;
   if (!mongoose.Types.ObjectId.isValid(id))
     return NextResponse.json({ error: "Valid id required" }, { status: 400 });
   try {
     await connectDB();
     const expense = await Expense.findOneAndUpdate(
-      { _id: id, societyId: auth.user.societyId, isDeleted: { $ne: true } },
+      { _id: id, societyId: gate.context.societyId, isDeleted: { $ne: true } },
       { $set: { isDeleted: true } },
       { new: true },
     );
     if (!expense)
       return NextResponse.json({ error: "Expense not found" }, { status: 404 });
-    await logAudit(auth.user.userId, auth.user.societyId, "EXPENSE_DELETED", null, {
+    await logAudit(gate.context.userId, gate.context.societyId, "EXPENSE_DELETED", null, {
       expenseId: String(expense._id),
     });
     return NextResponse.json({ success: true });

@@ -8,6 +8,7 @@ import { updateFiscalConfig, getFiscalConfig } from "@/lib/services/FiscalConfig
 import { seedDefaultPostingRules } from "@/lib/services/PostingRuleService";
 import { seedDefaultValidationRules } from "@/lib/services/ValidationRuleService";
 import { seedDefaultSchedules } from "@/lib/services/ScheduleService";
+import { authorize } from "@/lib/rbac/authorize";
 
 // One-shot orchestration for the Accounting Lab (single-page billing ->
 // accounting -> Balance Sheet simulator). Idempotent: safe to call repeatedly
@@ -110,6 +111,8 @@ export { STANDARD_ACCOUNTS };
 export async function GET(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const societyId = auth.user.societyId;
@@ -139,6 +142,8 @@ export async function GET(request) {
 export async function POST(request) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.update");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const societyId = auth.user.societyId;

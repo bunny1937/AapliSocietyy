@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting } from "@/lib/authz";
 import { createManualMatch, BankReconciliationServiceError } from "@/lib/services/BankReconciliationService";
+import { authorize } from "@/lib/rbac/authorize";
 
 // POST /api/accounting/reconciliation-matches — manually match one statement line to one journal line.
 // Body: { bankAccountId, bankStatementLineId, journalLineId, note? }
 export async function POST(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.update");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const body = await request.json();

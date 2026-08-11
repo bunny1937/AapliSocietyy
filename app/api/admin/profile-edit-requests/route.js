@@ -9,14 +9,15 @@ import ProfileEditRequest from "@/models/ProfileEditRequest";
 import Member from "@/models/Member";
 import Shop from "@/models/Shop";
 import { requireRoles } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 export async function GET(request) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "member.profileEditRequest.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || "Pending";
-    const query = { societyId: auth.user.societyId };
+    const query = { societyId: gate.context.societyId };
     if (status !== "all") query.status = status;
     const items = await ProfileEditRequest.find(query).sort({ createdAt: -1 }).limit(200).lean();
     const memberIds = [...new Set(items.filter((i) => i.memberId).map((i) => String(i.memberId)))];

@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Bill from "@/models/Bill";
 import Expense from "@/models/Expense";
-import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import mongoose from "mongoose";
+import { authorize } from "@/lib/rbac/authorize";
 // billMonth is 0-indexed: 0=Jan, 3=Apr, 11=Dec
 // FY Apr(3)→Mar(2): months 3..11 of fyStart year, then 0..2 of fyStart+1 year
 function fyMonths(fy) {
@@ -25,13 +25,14 @@ function monthLabel(month0, year) {
   return `${MONTH_NAMES[month0]} ${year}`;
 }
 export async function GET(request) {
-  const token = getTokenFromRequest(request);
-  const user = token ? verifyToken(token) : null;
-  if (!user || !["Admin", "SuperAdmin"].includes(user.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const gate = await authorize(request, "billing.balanceSheet.view");
+  if (!gate.ok) return gate.response;
+  // Society scope comes from authorize()'s already-verified context, not a
+  // second manual token decode — that's what previously hardcoded
+  // ["Admin","SuperAdmin"] as the only allowed *legacy* role, silently
+  // overriding whatever RBAC had just granted (e.g. Auditor: view).
   const { searchParams } = new URL(request.url);
-  const societyId = user.societyId || searchParams.get("societyId");
+  const societyId = gate.context.societyId || searchParams.get("societyId");
   const fy = parseInt(searchParams.get("fy") || (() => {
     const now = new Date();
     return now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;

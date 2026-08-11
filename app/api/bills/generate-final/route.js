@@ -14,6 +14,7 @@ import { notifyBillCreated } from "@/lib/v1/notify";
 import { mapLimit } from "@/lib/concurrency";
 import { ndjsonResponse } from "@/lib/ndjson-stream";
 import { transactionDeleteFilterForRegenerate } from "@/lib/billing/regenerateFilter";
+import { authorize } from "@/lib/rbac/authorize";
 
 // Each member's bill generation was previously awaited one at a time — for
 // 84 members at ~2.5s/member (several sequential Mongo round trips each,
@@ -31,6 +32,8 @@ const CONCURRENCY = 8;
 // amounts are ignored, same policy as /api/billing/generate.
 export async function POST(request) {
   try {
+    const gate = await authorize(request, "billing.bill.generate");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token)

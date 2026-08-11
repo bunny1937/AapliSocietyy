@@ -65,6 +65,26 @@ export async function GET(req) {
         }
         return NextResponse.json({ user });
       }
+      // ── RBAC staff-hat — RoleAssignment-backed profile (e.g. a member also
+      // granted "Auditor"), new token shape { activeContext:{societyId,hat} } ──
+      if (decoded.activeContext?.hat === "staff") {
+        const user = await User.findById(decoded.userId).select(
+          "name email username role isActive",
+        );
+        if (!user || !user.isActive) {
+          return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+        return NextResponse.json({
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            username: user.username,
+            role: "Staff",
+            societyId: decoded.activeContext.societyId,
+          },
+        });
+      }
       // ── Member — derive context from activeProfileId ──────────────────────
       // JWT contains only { userId, activeProfileId } — never trust societyId from token
       if (decoded.activeProfileId) {

@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import Bill from "@/models/Bill";
 import Member from "@/models/Member";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
+import { authorize } from "@/lib/rbac/authorize";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,6 +18,8 @@ export async function GET(request) {
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const decoded = verifyToken(token);
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    const gate = await authorize(request, "finance.payments.view");
+    if (!gate.ok) return gate.response;
 
     const bills = await Bill.find({
       societyId: decoded.societyId,

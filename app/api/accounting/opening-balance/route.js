@@ -9,11 +9,18 @@ import {
 import { AccountingEngineError } from "@/lib/accounting/AccountingEngine.js";
 import { AccountingEventError } from "@/lib/accounting/events.js";
 import { PostingRuleError } from "@/lib/accounting/postingRules/accountResolvers.js";
+import { authorize, authorizeAny } from "@/lib/rbac/authorize";
 
 // GET /api/accounting/opening-balance?financialYearId=  → status
+// Read by app/admin/opening-balances/PageClient.js — its actual, named page.
 export async function GET(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
+  const gate = await authorizeAny(request, [
+    "statements.openingBalances.view",
+    "society.systemTests.view",
+  ]);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
@@ -40,6 +47,11 @@ export async function GET(request) {
 export async function POST(request) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorizeAny(request, [
+    "statements.openingBalances.update",
+    "society.systemTests.update",
+  ]);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const body = await request.json();

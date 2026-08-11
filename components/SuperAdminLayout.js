@@ -44,7 +44,7 @@ export default function SuperAdminLayout({ children }) {
   const [navigating, setNavigating] = useState(false);
   const navTimeoutRef = useRef(null);
   useEffect(() => {
-    if (pathname.includes("/login")) return;
+    if (pathname.includes("/auth/login")) return;
     const fetchUser = async () => {
       try {
         const res = await fetch("/api/auth/me", { credentials: "include" });
@@ -52,7 +52,7 @@ export default function SuperAdminLayout({ children }) {
         const data = await res.json();
         setUser(data.user);
       } catch {
-        if (!pathname.includes("/login")) {
+        if (!pathname.includes("/auth/login")) {
           window.location.href = "/auth/login";
         }
       }

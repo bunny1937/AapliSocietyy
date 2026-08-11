@@ -9,6 +9,7 @@ import AuditLog from '@/models/AuditLog';
 import BillingHead from '@/models/BillingHead';
 import Receipt from '@/models/Receipt';
 import { requireRoles, SOCIETY_ADMIN_ROLES } from '@/lib/authz';
+import { authorize } from '@/lib/rbac/authorize';
 const modelMap = {
   society: Society,
   members: Member,
@@ -22,10 +23,9 @@ const modelMap = {
 // GET - Fetch data with filters
 export async function GET(request, { params }) {
   try {
-    await connectDB();
-    const auth = requireRoles(request, SOCIETY_ADMIN_ROLES);
-    if (!auth.valid) return auth;
-    const decoded = auth.user;
+    const gate = await authorize(request, "society.data.view");
+    if (!gate.ok) return gate.response;
+    await connectDB();    const decoded = gate.context;
     const { entity } = await params; // ← AWAIT HERE
     const Model = modelMap[entity];
     if (!Model) {

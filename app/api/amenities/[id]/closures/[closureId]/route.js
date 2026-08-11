@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // Cancels a closure. Deactivated rather than deleted so the activity log's
 // reference still resolves.
 export const DELETE = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_AVAILABILITY);
+  const g = await gate(request, CAPABILITY.MANAGE_AVAILABILITY);
   if (!g.ok) return g.response;
 
   const { id, closureId } = await params;

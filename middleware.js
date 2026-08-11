@@ -98,6 +98,11 @@ export async function middleware(request) {
       ) {
         return NextResponse.redirect(new URL("/admin/dashboard", request.url));
       }
+      // RBAC-only staff role (e.g. Auditor) — no legacy role string, and may
+      // not hold Dashboard access. /my-access always works.
+      if (payload?.activeContext?.hat === "staff") {
+        return NextResponse.redirect(new URL("/my-access", request.url));
+      }
       // Member token: new shape has activeProfileId, no role
       // Old shape: role === "Member"
       if (payload?.activeProfileId || payload?.role === "Member") {
@@ -135,11 +140,17 @@ export async function middleware(request) {
   // - Admin/Secretary: payload.role present
   // - Member (new JWT): payload.activeProfileId present, no role
   // - Member (old JWT): payload.role === "Member"
+  // - RBAC staff-hat (new JWT, from a RoleAssignment-backed profile, e.g. a
+  //   member who was also granted "Auditor"): payload.activeContext.hat==="staff",
+  //   no legacy role string at all. This is only a coarse, edge-safe gate
+  //   (no DB access here) — the real per-page permission check still happens
+  //   in lib/rbac/page-guard.js's requirePagePermission().
   const isAdmin =
     payload.role === "Admin" ||
     payload.role === "Secretary" ||
     payload.role === "Accountant" ||
-    payload.role === "SOCIETY_ADMIN";
+    payload.role === "SOCIETY_ADMIN" ||
+    payload.activeContext?.hat === "staff";
   const isMember = payload.role === "Member" || !!payload.activeProfileId;
   const isSecurity = payload.role === "Security";
   // /admin exact → redirect to dashboard

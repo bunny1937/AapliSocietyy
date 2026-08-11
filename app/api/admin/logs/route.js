@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { validateAdminRequest } from '@/lib/admin-middleware';
 import { getAdminModels } from '@/lib/admin-models';
+import { authorize } from '@/lib/rbac/authorize';
 export async function GET(request) {
+  const gate = await authorize(request, 'audit.log.read');
+  if (!gate.ok) return gate.response;
   const validation = validateAdminRequest(request);
   if (!validation.valid) {
     return validation;

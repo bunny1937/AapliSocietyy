@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 // Closes the window at *now* rather than deleting it, so recorded downtime
 // matches reality (the amenity really was shut for those hours).
 export const POST = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_MAINTENANCE);
+  const g = await gate(request, CAPABILITY.MANAGE_MAINTENANCE);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid maintenance id");

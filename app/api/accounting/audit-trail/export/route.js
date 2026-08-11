@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAuditor } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 import { getAuditTrail } from "@/lib/services/AuditorService";
 import { generateAuditTrailPdf } from "@/lib/accounting/auditTrailPdf";
 import Voucher from "@/models/Voucher";
@@ -11,6 +12,8 @@ import User from "@/models/User";
 export async function GET(request) {
   const auth = requireAuditor(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "audit.log.read");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);

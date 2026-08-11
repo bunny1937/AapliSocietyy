@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import connectDB from "@/lib/mongodb";
 import { requireAuth } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 import { storeUploadedFile } from "@/lib/file-store";
 
 export const runtime = "nodejs";
@@ -15,6 +16,8 @@ export const runtime = "nodejs";
 // validation strict (type + magic bytes + size) rather than restricting by role.
 export async function POST(request) {
   try {
+    const gate = await authorize(request, "visitor.visitor.enter");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const auth = requireAuth(request);
     if (!auth.valid) return auth;

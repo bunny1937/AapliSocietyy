@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 import {
   getFinancialYearById,
   FinancialYearServiceError,
@@ -10,6 +11,8 @@ import {
 export async function GET(request, ctx) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await ctx.params;

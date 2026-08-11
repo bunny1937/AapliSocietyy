@@ -7,8 +7,11 @@ import User from "@/models/User";
 void User;
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import cache from "@/lib/cache";
+import { authorize } from "@/lib/rbac/authorize";
 export async function GET(request) {
   try {
+    const gate = await authorize(request, "finance.payment.view");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) {

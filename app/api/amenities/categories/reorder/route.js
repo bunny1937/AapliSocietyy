@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // One call for the whole drag-and-drop result. Sending N separate PATCHes would
 // leave the sidebar in a half-ordered state if the network dropped mid-way.
 export const POST = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.MANAGE_CATEGORIES);
+  const g = await gate(request, CAPABILITY.MANAGE_CATEGORIES);
   if (!g.ok) return g.response;
 
   const parsed = reorderSchema.safeParse(await request.json());

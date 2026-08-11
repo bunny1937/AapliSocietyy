@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 // GET — token history and recent scan outcomes. The plaintext token is never
 // returned here; only the generation response carries it.
 export const GET = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.CONFIGURE_QR);
+  const g = await gate(request, CAPABILITY.CONFIGURE_QR);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid amenity id");
@@ -30,7 +30,7 @@ export const GET = withAmenityRoute(async (request, { params }) => {
 // POST — mint a token. The plaintext is returned exactly once: the client must
 // render/print it now, because only its hash is stored.
 export const POST = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.CONFIGURE_QR);
+  const g = await gate(request, CAPABILITY.CONFIGURE_QR);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid amenity id");
@@ -85,7 +85,7 @@ export const POST = withAmenityRoute(async (request, { params }) => {
 // DELETE ?tokenId= — revoke a printed code (e.g. the sticker was photographed
 // and shared in a WhatsApp group).
 export const DELETE = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.CONFIGURE_QR);
+  const g = await gate(request, CAPABILITY.CONFIGURE_QR);
   if (!g.ok) return g.response;
   const { id } = await params;
   const tokenId = new URL(request.url).searchParams.get("tokenId");

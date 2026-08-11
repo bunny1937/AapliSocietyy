@@ -19,6 +19,7 @@ import Shop from "@/models/Shop";
 import Bill from "@/models/Bill";
 import Transaction from "@/models/Transaction";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
+import { authorize } from "@/lib/rbac/authorize";
 import { computeBill, resolveOpeningBalances } from "@/lib/billing/generationService";
 import { listActiveCommercialHeads } from "@/lib/commercial/commercialBillingHeadService";
 import { getSettings } from "@/lib/commercial/commercialSettingsService";
@@ -35,6 +36,8 @@ export async function POST(request) {
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const decoded = verifyToken(token);
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    const gate = await authorize(request, "commercial.admin.update");
+    if (!gate.ok) return gate.response;
 
     const body = await request.json();
     // `memberIds` is kept as the field name so the existing wizard keeps working;

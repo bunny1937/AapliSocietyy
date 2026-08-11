@@ -8,6 +8,7 @@ import Member from "@/models/Member";
 import Asset from "@/models/Asset";
 import JournalLine from "@/models/JournalLine";
 import Voucher from "@/models/Voucher";
+import { authorize } from "@/lib/rbac/authorize";
 
 // POST /api/accounting/lab/reset — wipes the simulated data for THIS society so
 // the master simulator can be replayed from a clean slate.
@@ -22,6 +23,8 @@ import Voucher from "@/models/Voucher";
 export async function POST(request) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.update");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const societyId = auth.user.societyId;

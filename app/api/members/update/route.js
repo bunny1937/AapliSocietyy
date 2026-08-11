@@ -6,8 +6,11 @@ import AuditLog from "@/models/AuditLog";
 import { memberSchema } from "@/lib/validators";
 import cache from "@/lib/cache";
 import { requireRoles, SOCIETY_ADMIN_ROLES } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 export async function PUT(request) {
   try {
+    const gate = await authorize(request, "member.member.update");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const auth = requireRoles(request, SOCIETY_ADMIN_ROLES);
     if (!auth.valid) return auth;
@@ -85,11 +88,11 @@ export async function PUT(request) {
   }
 }
 export async function DELETE(request) {
+  const gate = await authorize(request, "member.member.delete");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
-    const auth = requireRoles(request, ["Admin"]);
-    if (!auth.valid) return auth;
-    const decoded = auth.user;
+    const decoded = gate.context;
     const { searchParams } = new URL(request.url);
     const memberId = searchParams.get("memberId");
     if (!memberId) {

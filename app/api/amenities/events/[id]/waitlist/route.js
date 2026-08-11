@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_REGISTRATIONS);
+  const g = await gate(request, CAPABILITY.MANAGE_REGISTRATIONS);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid event id");
@@ -24,7 +24,7 @@ export const GET = withAmenityRoute(async (request, { params }) => {
 // is the manual lever for the case where an admin has just freed capacity by
 // other means, or wants to fill remaining seats before the doors open.
 export const POST = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.MANAGE_REGISTRATIONS);
+  const g = await gate(request, CAPABILITY.MANAGE_REGISTRATIONS);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid event id");

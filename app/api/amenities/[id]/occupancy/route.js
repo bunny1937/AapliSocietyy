@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 // GET — live occupancy panel: who is inside right now.
 export const GET = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.VIEW_AMENITIES);
+  const g = await gate(request, CAPABILITY.VIEW_AMENITIES);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid amenity id");
@@ -34,7 +34,7 @@ export const GET = withAmenityRoute(async (request, { params }) => {
 // POST — maintenance actions on the counter: recompute from attendance rows,
 // and/or close sessions nobody checked out of.
 export const POST = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.ADJUST_ATTENDANCE);
+  const g = await gate(request, CAPABILITY.ADJUST_ATTENDANCE);
   if (!g.ok) return g.response;
   const { id } = await params;
   if (!isId(id)) return fail(400, "Invalid amenity id");

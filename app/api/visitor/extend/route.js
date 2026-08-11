@@ -11,7 +11,10 @@ import { requireSecurity } from "@/lib/authz";
 import { logAudit } from "@/lib/audit-logger";
 import { notifyVisitorApproval } from "@/lib/visitor-notify";
 import { APPROVAL_WINDOW_MS } from "@/lib/visitor-config";
+import { authorize } from "@/lib/rbac/authorize";
 export async function PATCH(request) {
+  const gate = await authorize(request, "visitor.visitor.extend");
+  if (!gate.ok) return gate.response;
   const auth = requireSecurity(request);
   if (!auth.valid) return auth;
   try {

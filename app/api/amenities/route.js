@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 // GET /api/amenities
 // Filters: categoryId, status, search, includeInactive, attendanceMode, page, limit
 export const GET = withAmenityRoute(async (request) => {
- const g = gate(request, CAPABILITY.VIEW_AMENITIES);
+ const g = await gate(request, CAPABILITY.VIEW_AMENITIES);
 if (!g.ok) return g.response;
 
   const { searchParams } = new URL(request.url);
@@ -55,7 +55,7 @@ if (!g.ok) return g.response;
 
 // POST /api/amenities
 export const POST = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.MANAGE_AMENITIES);
+  const g = await gate(request, CAPABILITY.MANAGE_AMENITIES);
   if (!g.ok) return g.response;
 
   const parsed = amenityCreateSchema.safeParse(await request.json());

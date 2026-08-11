@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 // Read-only by design: there is no write, edit or delete endpoint for the audit
 // trail, which is what makes it worth trusting.
 export const GET = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.VIEW_ACTIVITY_LOG);
+  const g = await gate(request, CAPABILITY.VIEW_ACTIVITY_LOG);
   if (!g.ok) return g.response;
 
   const sp = new URL(request.url).searchParams;

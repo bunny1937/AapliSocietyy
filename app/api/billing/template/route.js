@@ -2,7 +2,16 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Society from "@/models/Society";
 import { verifyToken, getTokenFromRequest } from "@/lib/jwt";
+import { authorizeAny } from "@/lib/rbac/authorize";
+// Only real caller today is the Billing Config page (peripheral template
+// preview) — broadened rather than left pointing at the dead billTemplate id.
 export async function GET(request) {
+  const gate = await authorizeAny(request, [
+    "billing.template.view",
+    "billing.config.view",
+    "billing.head.view",
+  ]);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);

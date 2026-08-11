@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { verifyToken, getTokenFromRequest } from "@/lib/jwt";
+import { authorize } from "@/lib/rbac/authorize";
 import Complaint from "@/models/Complaint";
 import ComplaintReply from "@/models/ComplaintReply";
 import { hasBlockedContent, hasProfanity } from "@/lib/complaintUtils";
 export async function POST(request, { params }) {
   try {
+    const gate = await authorize(request, "complaint.complaint.reply");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token)
@@ -29,7 +32,7 @@ export async function POST(request, { params }) {
     }
     const complaint = await Complaint.findOne({
       _id: id,
-      societyId: decoded.societyId,
+      societyId: gate.context.societyId || decoded.societyId,
     });
     if (!complaint)
       return NextResponse.json(
@@ -70,7 +73,7 @@ export async function POST(request, { params }) {
     }
     const reply = await ComplaintReply.create({
       complaintId: id,
-      societyId: decoded.societyId,
+      societyId: gate.context.societyId || decoded.societyId,
       authorId: decoded.userId,
       authorRole: decoded.role,
       displayName:

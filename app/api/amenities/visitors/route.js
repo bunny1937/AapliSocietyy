@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 // GET /api/amenities/visitors — guard/admin register of amenity visitors.
 export const GET = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.VERIFY_VISITORS);
+  const g = await gate(request, CAPABILITY.VERIFY_VISITORS);
   if (!g.ok) return g.response;
 
   const sp = new URL(request.url).searchParams;
@@ -39,7 +39,7 @@ export const GET = withAmenityRoute(async (request) => {
 // visitor policy so the rules the admin configured are the rules applied,
 // rather than being re-typed into the guard app.
 export const POST = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.VERIFY_VISITORS);
+  const g = await gate(request, CAPABILITY.VERIFY_VISITORS);
   if (!g.ok) return g.response;
 
   const parsed = amenityVisitorCreateSchema.safeParse(await request.json());

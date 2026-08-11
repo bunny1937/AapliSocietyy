@@ -9,6 +9,7 @@ import AuditLog from '@/models/AuditLog';
 import BillingHead from '@/models/BillingHead';
 import Receipt from '@/models/Receipt';
 import { requireRoles } from '@/lib/authz';
+import { authorize } from '@/lib/rbac/authorize';
 const modelMap = {
   society: Society,
   members: Member,
@@ -21,10 +22,9 @@ const modelMap = {
 };
 export async function DELETE(request, { params }) {
   try {
-    await connectDB();
-    const auth = requireRoles(request, ['Admin']);
-    if (!auth.valid) return auth;
-    const decoded = auth.user;
+    const gate = await authorize(request, 'society.data.reset');
+    if (!gate.ok) return gate.response;
+    await connectDB();    const decoded = gate.context;
     const { entity } =  await params;
     const Model = modelMap[entity];
     if (!Model) {

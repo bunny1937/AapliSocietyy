@@ -3,17 +3,27 @@ import connectDB from '@/lib/mongodb';
 import { verifyToken, getTokenFromRequest } from '@/lib/jwt';
 import Member from '@/models/Member';
 import AuditLog from '@/models/AuditLog';
+import { authorizeAny } from "@/lib/rbac/authorize";
+// This action lives inside the DB Manager page's toolkit, so its own
+// permission (society.databaseManager manage tier) is accepted alongside
+// the direct member-edit permission.
+const FIX_DUPLICATES_IDS = ["member.member.update", "society.data.import", "society.data.reset"];
 export async function POST(request) {
   try {
+    const gate = await authorizeAny(request, FIX_DUPLICATES_IDS);
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const decoded = verifyToken(token);
-    if (!decoded || decoded.role !== 'Admin') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    if (!decoded) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    // Legacy "Admin only" role check removed: authorizeAny() above is the
+    // real gate now — it correctly allows any RBAC role granted this, not
+    // just the literal legacy string "Admin".
     // Find all members with duplicate membershipNumber
     const duplicates = await Member.aggregate([
       {
@@ -101,6 +111,8 @@ export async function POST(request) {
 }
 // GET endpoint to view duplicates
 export async function GET(request) {
+  const gate = await authorizeAny(request, FIX_DUPLICATES_IDS);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);
@@ -108,8 +120,8 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const decoded = verifyToken(token);
-    if (!decoded || decoded.role !== 'Admin') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    if (!decoded) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const duplicates = await Member.aggregate([
       {

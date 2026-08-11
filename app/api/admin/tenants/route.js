@@ -8,17 +8,17 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Member from "@/models/Member";
 import TenantRequest from "@/models/TenantRequest";
-import { requireRoles } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "member.tenantRequests.view");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
-    const societyId = auth.user.societyId;
+    const societyId = gate.context.societyId;
 
     const [members, requests] = await Promise.all([
       Member.find({ societyId, isDeleted: { $ne: true } })

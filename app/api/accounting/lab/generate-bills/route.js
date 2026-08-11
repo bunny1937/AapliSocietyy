@@ -7,6 +7,7 @@ import { generateBill } from "@/lib/billing/generationService";
 import { recordPayment } from "@/lib/services/PaymentService";
 import { outstandingForBills, twoDp } from "@/lib/billing/paymentApplication";
 import { isCommercialUnit } from "@/lib/commercial/constants";
+import { authorize } from "@/lib/rbac/authorize";
 
 // POST /api/accounting/lab/generate-bills — the "run a year of billing" step of
 // the Accounting Lab master simulator.
@@ -101,6 +102,8 @@ async function currentOutstanding(societyId, memberId) {
 export async function POST(request) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "society.systemTests.update");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const societyId = auth.user.societyId;

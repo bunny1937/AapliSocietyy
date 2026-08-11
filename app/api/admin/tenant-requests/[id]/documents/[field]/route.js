@@ -8,6 +8,7 @@ import connectDB from "@/lib/mongodb";
 import TenantRequest from "@/models/TenantRequest";
 import { requireRoles } from "@/lib/authz";
 import { presignTenantDocumentDownload } from "@/lib/tenant-storage";
+import { authorize } from "@/lib/rbac/authorize";
 const FIELD_TO_KEY = {
   contract: "contractKey",
   signature: "signatureKey",
@@ -15,8 +16,8 @@ const FIELD_TO_KEY = {
   policeVerification: "policeVerificationKey",
 };
 export async function GET(request, { params }) {
-  const auth = requireRoles(request, ["Admin", "Secretary"]);
-  if (!auth.valid) return auth;
+  const gate = await authorize(request, "member.tenantRequest.view");
+  if (!gate.ok) return gate.response;
   const { id, field } = await params;
   const keyField = FIELD_TO_KEY[field];
   if (!keyField) return NextResponse.json({ error: "Unknown document field" }, { status: 400 });
@@ -26,7 +27,7 @@ export async function GET(request, { params }) {
     await connectDB();
     const tenantRequest = await TenantRequest.findOne({
       _id: id,
-      societyId: auth.user.societyId,
+      societyId: gate.context.societyId,
     }).lean();
     if (!tenantRequest) return NextResponse.json({ error: "Not found" }, { status: 404 });
     const key = tenantRequest.documents?.[keyField];

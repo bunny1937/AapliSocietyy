@@ -12,14 +12,22 @@ import Member from "@/models/Member";
 // populate() runs or Mongoose throws MissingSchemaError on cold starts.
 import User from "@/models/User";
 void User;
-import { requireRoles } from "@/lib/authz";
+import { authorizeAny } from "@/lib/rbac/authorize";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
-  const auth = requireRoles(request, ["Admin", "Secretary", "Treasurer"]);
-  if (!auth.valid) return auth;
+  // This route was missed in the original RBAC migration pass. It's now
+  // fully RBAC-gated below — the old requireRoles(["Admin","Secretary",
+  // "Treasurer"]) call used to run first and block every RBAC-only staff
+  // role outright, before this check ever ran. Backs the "Payments
+  // Received" section folded into the unified /admin/payments page.
+  const gate = await authorizeAny(request, [
+    "finance.payments.view",
+    "finance.paymentsReceived.view",
+  ]);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
@@ -31,7 +39,7 @@ export async function GET(request) {
     const to = searchParams.get("to");
     const includeReversed = searchParams.get("includeReversed") === "1";
 
-    const query = { societyId: auth.user.societyId, category: "Payment" };
+    const query = { societyId: gate.context.societyId, category: "Payment" };
     if (memberId) query.memberId = memberId;
     if (mode) query.paymentMode = mode;
     if (!includeReversed) query.isReversed = { $ne: true };

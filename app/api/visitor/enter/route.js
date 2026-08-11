@@ -8,7 +8,10 @@ import Member from "@/models/Member";
 import { requireSecurity } from "@/lib/authz";
 import { logAudit } from "@/lib/audit-logger";
 import { sendInApp } from "@/lib/visitor-channels";
+import { authorize } from "@/lib/rbac/authorize";
 export async function PATCH(request) {
+  const gate = await authorize(request, "visitor.visitor.enter");
+  if (!gate.ok) return gate.response;
   const auth = requireSecurity(request);
   if (!auth.valid) return auth;
   try {

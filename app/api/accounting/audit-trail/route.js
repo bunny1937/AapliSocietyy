@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAuditor, requireAuditorWrite } from "@/lib/authz";
+import { authorize } from "@/lib/rbac/authorize";
 import { getAuditTrail, createAdjustment, AuditorServiceError } from "@/lib/services/AuditorService";
 import { AccountingEngineError } from "@/lib/accounting/AccountingEngine.js";
 import { AccountingEventError } from "@/lib/accounting/events.js";
@@ -10,6 +11,8 @@ import { PostingRuleError } from "@/lib/accounting/postingRules/accountResolvers
 export async function GET(request) {
   const auth = requireAuditor(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "audit.log.read");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
@@ -32,6 +35,8 @@ export async function GET(request) {
 export async function POST(request) {
   const auth = requireAuditorWrite(request);
   if (!auth.valid) return auth;
+  const gate = await authorize(request, "audit.report.create");
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const body = await request.json();

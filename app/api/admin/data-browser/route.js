@@ -6,6 +6,7 @@ import Transaction from "@/models/Transaction";
 import BillingHead from "@/models/BillingHead";
 import { validateAdminRequest } from "@/lib/admin-middleware";
 import { logAdminActivity } from "@/lib/export-to-admin-db";
+import { authorize } from "@/lib/rbac/authorize";
 const COLLECTIONS = {
   bills: Bill,
   members: Member,
@@ -13,6 +14,8 @@ const COLLECTIONS = {
   billingheads: BillingHead,
 };
 export async function GET(request) {
+  const gate = await authorize(request, "society.data.view");
+  if (!gate.ok) return gate.response;
   const validation = validateAdminRequest(request);
   if (!validation.valid) return validation;
   try {
@@ -53,6 +56,8 @@ export async function GET(request) {
   }
 }
 export async function POST(request) {
+  const gate = await authorize(request, "society.data.delete");
+  if (!gate.ok) return gate.response;
   const validation = validateAdminRequest(request);
   if (!validation.valid) return validation;
   try {

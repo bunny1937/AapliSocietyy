@@ -15,6 +15,7 @@ import Society from "@/models/Society";
 import Member from "@/models/Member";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import { logAudit } from "@/lib/audit-logger";
+import { authorizeAny } from "@/lib/rbac/authorize";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,29 +23,23 @@ export const dynamic = "force-dynamic";
 const BASES = ["carpet", "builtup"];
 const LABEL = { carpet: "Carpet area", builtup: "Built-up area" };
 
-async function auth(request) {
+async function auth(request, level) {
   await connectDB();
   const token = getTokenFromRequest(request);
   if (!token) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   const decoded = verifyToken(token);
   if (!decoded) return { error: NextResponse.json({ error: "Invalid token" }, { status: 401 }) };
-  if (!["admin", "superadmin", "Admin", "SuperAdmin"].includes(decoded.role)) {
-    return {
-      error: NextResponse.json(
-        {
-          error: "Only an admin can change how bills are measured.",
-          code: "FORBIDDEN",
-          hint: "Ask a committee admin to change this setting.",
-        },
-        { status: 403 },
-      ),
-    };
-  }
-  return { decoded };
+  // Also read/written from the Commercial page (peripheral — shop area rules
+  // reference this switch), not just Billing Config — same
+  // cross-page-dependency pattern as financial-years.
+  const action = level === "manage" ? "update" : "view";
+  const gate = await authorizeAny(request, [`billing.config.${action}`, `commercial.admin.${action}`]);
+  if (!gate.ok) return { error: gate.response };
+  return { decoded: { ...decoded, societyId: gate.context.societyId || decoded.societyId, userId: gate.context.userId } };
 }
 
 export async function GET(request) {
-  const { error, decoded } = await auth(request);
+  const { error, decoded } = await auth(request, "view");
   if (error) return error;
 
   const societyId = decoded.societyId;
@@ -75,7 +70,7 @@ export async function GET(request) {
 }
 
 export async function PUT(request) {
-  const { error, decoded } = await auth(request);
+  const { error, decoded } = await auth(request, "manage");
   if (error) return error;
 
   const societyId = decoded.societyId;

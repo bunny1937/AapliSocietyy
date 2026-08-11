@@ -22,7 +22,7 @@ function csvCell(value) {
 // libraries already in this project, so the server does not need a headless
 // browser and the exported document matches what the admin sees on screen.
 export const GET = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.EXPORT_ANALYTICS);
+  const g = await gate(request, CAPABILITY.EXPORT_ANALYTICS);
   if (!g.ok) return g.response;
 
   const sp = new URL(request.url).searchParams;

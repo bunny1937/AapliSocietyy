@@ -5,8 +5,11 @@ import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import cache from "@/lib/cache";
 import { UNIT_CLASS_VALUES } from "@/lib/commercial/constants";
 import { normalizeUnitClassRates } from "@/lib/commercial/billingApplicability";
+import { authorize } from "@/lib/rbac/authorize";
 export async function PUT(request, { params }) {
   try {
+    const gate = await authorize(request, "billing.head.update");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) {

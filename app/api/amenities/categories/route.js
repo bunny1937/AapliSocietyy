@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 // GET /api/amenities/categories?includeInactive=true&withCounts=true
 export const GET = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.VIEW_AMENITIES);
+  const g = await gate(request, CAPABILITY.VIEW_AMENITIES);
   if (!g.ok) return g.response;
 
   const { searchParams } = new URL(request.url);
@@ -44,7 +44,7 @@ export const GET = withAmenityRoute(async (request) => {
 
 // POST /api/amenities/categories
 export const POST = withAmenityRoute(async (request) => {
-  const g = gate(request, CAPABILITY.MANAGE_CATEGORIES);
+  const g = await gate(request, CAPABILITY.MANAGE_CATEGORIES);
   if (!g.ok) return g.response;
 
   const parsed = categoryCreateSchema.safeParse(await request.json());

@@ -6,7 +6,10 @@ import connectDB from "@/lib/mongodb";
 import Visitor from "@/models/Visitor";
 import { requireSecurity } from "@/lib/authz";
 import { logAudit } from "@/lib/audit-logger";
+import { authorize } from "@/lib/rbac/authorize";
 export async function PATCH(request) {
+  const gate = await authorize(request, "visitor.visitor.exit");
+  if (!gate.ok) return gate.response;
   const auth = requireSecurity(request);
   if (!auth.valid) return auth;
   try {

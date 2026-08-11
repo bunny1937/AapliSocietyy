@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { verifyToken, getTokenFromRequest } from "@/lib/jwt";
+import { authorize } from "@/lib/rbac/authorize";
 import Transaction from "@/models/Transaction";
 // Registers the User schema in this lambda so populate("createdBy") cannot
 // throw MissingSchemaError (was returning 500 on ledger/payment fetches).
@@ -9,6 +10,8 @@ void User;
 import BillingHead from "@/models/BillingHead";
 export async function GET(request, { params }) {
   try {
+    const gate = await authorize(request, "finance.ledger.view");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) {

@@ -6,7 +6,10 @@ import connectDB from "@/lib/mongodb";
 import Visitor from "@/models/Visitor";
 import { requireAuth } from "@/lib/authz";
 import { VISITOR_STATUSES } from "@/lib/visitor-config";
+import { authorize } from "@/lib/rbac/authorize";
 export async function GET(request) {
+  const gate = await authorize(request, "visitor.visitor.view");
+  if (!gate.ok) return gate.response;
   const auth = requireAuth(request);
   if (!auth.valid) return auth;
   try {

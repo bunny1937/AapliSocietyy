@@ -7,6 +7,7 @@ import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import { getFinancialYear } from "@/lib/date-utils";
 import { applyPaymentToBill } from "@/lib/billing/allocationService";
 import { postPaymentToLedger } from "@/lib/accounting/paymentLedgerPosting";
+import { authorize } from "@/lib/rbac/authorize";
 
 function twoDp(n) {
   return parseFloat((Number(n) || 0).toFixed(2));
@@ -18,6 +19,8 @@ function twoDp(n) {
 // credit Transaction from the engine's result.
 export async function POST(request) {
   try {
+    const gate = await authorize(request, "finance.payment.record");
+    if (!gate.ok) return gate.response;
     await connectDB();
     const token = getTokenFromRequest(request);
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

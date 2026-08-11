@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 // from the generic PATCH because it notifies the whole society — that is a
 // deliberate act, never a side effect.
 export const POST = withAmenityRoute(async (request, { params }) => {
-  const g = gate(request, CAPABILITY.CHANGE_STATUS);
+  const g = await gate(request, CAPABILITY.CHANGE_STATUS);
   if (!g.ok) return g.response;
 
   const { id } = await params;
