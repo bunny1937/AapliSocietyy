@@ -11,10 +11,27 @@ const ReceiptSchema = new mongoose.Schema(
       required: true,
     },
     billPeriodId: { type: String, required: true },
+    // A COMMERCIAL receipt belongs to a SHOP, and a shop may be owned by a
+    // non-resident who has no Member record at all. `required: true` therefore
+    // made it impossible to record a payment against a commercial bill — the
+    // same reason models/Bill.js already makes memberId conditional. The rule is
+    // mirrored here rather than relaxed: residential receipts still must name a
+    // member.
     memberId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Member",
-      required: true,
+      required: function () {
+        return this.billSeries !== "COMMERCIAL";
+      },
+      default: null,
+      index: true,
+    },
+    // Mirrors Bill.shopId / Transaction.shopId so a shop's payment history can
+    // be read without going through a member.
+    shopId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Shop",
+      default: null,
       index: true,
     },
     societyId: {
@@ -45,5 +62,7 @@ const ReceiptSchema = new mongoose.Schema(
   { timestamps: true },
 );
 ReceiptSchema.index({ memberId: 1, societyId: 1, paidAt: -1 });
+// The commercial equivalent: "this shop's receipts, newest first".
+ReceiptSchema.index({ shopId: 1, societyId: 1, paidAt: -1 });
 export default mongoose.models.Receipt ||
   mongoose.model("Receipt", ReceiptSchema);

@@ -22,6 +22,9 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Card, CardHead, Pill, Segmented, Table, Btn, StatTile } from "../_ui";
+// Owner invite + resident-facing storefront. Kept in its own file so this
+// screen keeps its single job (the unit record) and gains only a column.
+import ShopCommerceAdmin, { ShopVisibilityCell } from "./ShopCommerceAdmin";
 
 const FILTERS = [
   { value: "ALL", label: "All" },
@@ -333,6 +336,7 @@ export default function CommercialShopsPage() {
     { key: "area", label: "Area" },
     { key: "trade", label: "Business" },
     { key: "status", label: "Status" },
+    { key: "residents", label: "Residents" },
   ];
 
   const rows = visible.map((s) => ({
@@ -366,6 +370,9 @@ export default function CommercialShopsPage() {
       ) : (
         <Pill tone="active">In billing</Pill>
       ),
+      // Billing status and resident visibility are different questions: a
+      // shop can be billed for months and still be invisible in the app.
+      <ShopVisibilityCell key="residents" shop={s} />,
     ],
     expanded: s.problems.length ? (
       <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--cx-warning)" }}>

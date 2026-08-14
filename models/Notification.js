@@ -59,7 +59,16 @@ const NotificationSchema = new mongoose.Schema(
         "TENANT_REQUEST_REJECTED", // owner: their tenant request was rejected
         // ── profile edit requests ──
         "PROFILE_EDIT_REQUEST_APPROVED", // owner: their Contact/Family/EmergencyContact change was approved
-        "PROFILE_EDIT_REQUEST_REJECTED", // owner: their Contact/Family/EmergencyContact change was rejected
+        "PROFILE_EDIT_REQUEST_REJECTED",
+        // ── society shops (commercial) ──
+        // These are required, not cosmetic: models/Notification.js validates
+        // `type` against this enum, and lib/visitor-channels.js#sendInApp
+        // swallows its own errors. A missing value would mean the shop never
+        // hears about a new order and nobody would see an error anywhere.
+        "SHOP_PROFILE_ADDED",   // resident: a shop was linked to their account
+        "SHOP_ORDER_PLACED",    // shop owner: a resident placed an order
+        "SHOP_ORDER_UPDATED",   // resident: their order moved (accepted/ready/…)
+        "SHOP_ORDER_CANCELLED", // shop owner: the resident cancelled // owner: their Contact/Family/EmergencyContact change was rejected
       ],
       index: true,
     },

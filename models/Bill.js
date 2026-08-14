@@ -204,9 +204,33 @@ billPdfUrl: String,
   },
 );
 // ✅ ALL INDEXES DEFINED HERE (single place)
+// One bill per member per period — but ONLY for residential bills.
+//
+// This index used to have no partial filter, and commercial bills store
+// `memberId: null` (a shop can be owned by a non-resident with no Member
+// record). In MongoDB a unique index treats missing/null as a value, so the
+// FIRST commercial bill in a period inserted fine and the SECOND one failed
+// with E11000 — bill generation for a society with two or more shops could not
+// complete. Splitting it fixes that without weakening either guarantee.
+//
+// NOTE: adding a partial filter to an EXISTING index is not applied by Mongo on
+// its own. Run scripts/fix-commercial-bill-indexes.mjs once per database.
 BillSchema.index(
   { societyId: 1, billPeriodId: 1, memberId: 1 },
-  { unique: true },
+  {
+    unique: true,
+    partialFilterExpression: { memberId: { $type: "objectId" } },
+    name: "uniq_residential_bill_per_period",
+  },
+);
+// And one bill per shop per period, the commercial half of the same rule.
+BillSchema.index(
+  { societyId: 1, billPeriodId: 1, shopId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { shopId: { $type: "objectId" } },
+    name: "uniq_commercial_bill_per_period",
+  },
 );
 BillSchema.index({ societyId: 1, status: 1, dueDate: 1 });
 BillSchema.index({ status: 1, scheduledPushDate: 1 }); // for cron job query

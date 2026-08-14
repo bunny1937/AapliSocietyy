@@ -41,6 +41,32 @@ export const GET = withRoute(async (req) => {
     });
   }
 
+  // ── Commercial (shop) profile ──
+  // models/Transaction.js already carries shopId (mirroring Bill.shopId), so the
+  // shop's own statement is a direct query. Scheduled (not yet pushed) bills are
+  // hidden here exactly as they are for residents — an owner must not see a
+  // charge the society has not sent out yet.
+  if (claims.shopId) {
+    const [txns, scheduled] = await Promise.all([
+      Transaction.find({ societyId, shopId: claims.shopId })
+        .sort({ date: -1, createdAt: -1 })
+        .limit(200)
+        .lean(),
+      Bill.find({ societyId, shopId: claims.shopId, status: "Scheduled", isDeleted: { $ne: true } })
+        .select("_id billPeriodId")
+        .lean(),
+    ]);
+    const hiddenIds = new Set(scheduled.map((b) => String(b._id)));
+    const hiddenPeriodIds = new Set(scheduled.map((b) => b.billPeriodId).filter(Boolean));
+    const visibleTxns = txns.filter((t) => {
+      const ref = t.referenceId ? String(t.referenceId) : null;
+      return !(ref && hiddenIds.has(ref)) && !hiddenPeriodIds.has(t.billPeriodId);
+    });
+    return json({
+      transactions: visibleTxns.map((t) => ({ ...t, _id: String(t._id), periodLabel: periodLabelFrom(t) })),
+    });
+  }
+
   if (!claims.memberId) return json({ transactions: [] });
 
   const { txns, hiddenBillIds, hiddenPeriods } = await cache.getOrSetSWR(

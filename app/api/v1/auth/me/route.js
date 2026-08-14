@@ -61,8 +61,34 @@ export const GET = withRoute(async (req) => {
   return json({
     capabilities: {
       commercialDirectory: commercialFlags.directoryEnabled === true,
+      // LEGACY capability, unchanged: it gates the old BusinessProfile editor
+      // only. Left exactly as it was because that module is being retired, not
+      // migrated, and changing it would alter behaviour we were asked to keep.
       manageBusinessProfile:
         ownsCommercialUnit && commercialFlags.ownerEditingEnabled === true,
+
+      // FIXED 2026-08-14 — the shop-owner capability.
+      //
+      // The old rule was "owns a commercial unit", derived from the MEMBER
+      // record. That is true for a resident who owns a shop even while they
+      // are signed in on their HOME profile, so the app offered shop-owner
+      // management from a residential session, where claims.shopId is null and
+      // every shop endpoint would then 403/404 — a dead entry point.
+      //
+      // The correct rule is all four of:
+      //   1. the ACTIVE profile is Commercial   (claims.kind)
+      //   2. that profile names a shop          (claims.shopId)
+      //   3. the society has owner editing on   (feature flag)
+      //   4. the shop still exists and is live  (`shop` was loaded above from
+      //      claims only, and is null for a deleted or cross-society id)
+      manageShop:
+        claims.kind === "Commercial" &&
+        Boolean(claims.shopId) &&
+        Boolean(shop) &&
+        commercialFlags.ownerEditingEnabled === true,
+
+      // Lets the app show the "Society Shops" entry point without a probe call.
+      shopDirectory: commercialFlags.directoryEnabled === true,
     },
     businessProfile,
     user: {

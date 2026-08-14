@@ -5,6 +5,7 @@ import { Bill, Member } from "@/lib/v1/models";
 import { BILLING_WRITE_ROLES } from "@/lib/v1/constants";
 import { billWritesEnabled } from "@/lib/v1/config";
 import { normalizeBill } from "@/lib/v1/billUtils";
+import Shop from "@/models/Shop";
 import { notifyBillCreated } from "@/lib/v1/notify";
 import cache from "@/lib/cache";
 
@@ -55,6 +56,40 @@ export const GET = withRoute(async (req) => {
     const members = await Member.find({ _id: { $in: memberIds } }).select("flatNo wing ownerName carpetAreaSqft builtUpAreaSqft").lean();
     const byId = new Map(members.map((m) => [String(m._id), m]));
     return json({ bills: bills.map((b) => normalizeBill(b, byId.get(String(b.memberId)))) });
+  }
+
+  // ── Commercial (shop) profile ──
+  // Commercial bills are keyed on shopId (models/Bill.js), never on memberId —
+  // a shop may be owned by a non-resident with no Member record at all.
+  //
+  // Deliberately NOT cached, unlike the resident branch below. The
+  // invalidation hooks in billing/generate, bills/push-scheduled and
+  // payments/record clear only `v1:bills:<societyId>:member:<memberId>` keys, so
+  // a shop-scoped cache entry could outlive a payment by up to six hours and
+  // show an owner a bill they had already paid. Shops number in the dozens per
+  // society, so reading Mongo directly is cheap and always correct.
+  if (claims.shopId) {
+    const [bills, shop] = await Promise.all([
+      Bill.find({ societyId, shopId: claims.shopId, status: { $ne: "Scheduled" } })
+        .sort({ createdAt: -1 })
+        .limit(200)
+        .lean(),
+      Shop.findOne({ _id: claims.shopId, societyId })
+        .select("shopNo wing tradeName areaSqft")
+        .lean(),
+    ]);
+    // normalizeBill's "member" block is really the UNIT the bill is addressed
+    // to. For a shop that is its unit number and trade name, which is what the
+    // owner expects to see on their own bill.
+    const unit = shop
+      ? {
+          flatNo: shop.shopNo ?? null,
+          wing: shop.wing ?? null,
+          ownerName: shop.tradeName ?? null,
+          carpetAreaSqft: shop.areaSqft ?? null,
+        }
+      : null;
+    return json({ bills: bills.map((b) => normalizeBill(b, unit)) });
   }
 
   if (!claims.memberId) return json({ bills: [] });

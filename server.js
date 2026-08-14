@@ -1,3 +1,4 @@
+import "dotenv/config";
 // Must be the first import: loads .env.local (dotenv/config only reads a
 // plain ".env", which this project doesn't have — real config lives in
 // .env.local and was silently never being loaded by this custom server,

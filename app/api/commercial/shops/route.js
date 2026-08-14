@@ -1,5 +1,6 @@
 import { adminCommercialRoute } from "@/lib/commercial/adminRoute";
 import { listShops, createShop } from "@/lib/commercial/shopService";
+import { autoInviteAfterSave } from "@/lib/commercial/shopOwnerInvite";
 
 // GET  /api/commercial/shops            -> every live shop in the society
 // GET  /api/commercial/shops?q=103      -> search by shop no / wing / owner / trade
@@ -76,11 +77,18 @@ export const POST = adminCommercialRoute(
     }
 
     const result = await createShop({ societyId, userId, input: body });
-    return {
-      id: result.id,
-      nextStep:
-        "Shop saved. It will now appear in the Commercial bill run. Check the Rate Card if you have not set the charges yet.",
-    };
+
+    // Saving IS the invite. Requiring a second button meant shops were created
+    // and their owners never invited, which is how a shop ends up linked to a
+    // member who has no Commercial profile and received no email.
+    const { invite, note } = await autoInviteAfterSave({
+      shopId: result.id,
+      societyId,
+      userId,
+      savedNote: "Shop saved. It will now appear in the Commercial bill run.",
+    });
+
+    return { id: result.id, invite, nextStep: note };
   },
   { requireFlag: "enabled" },
 );

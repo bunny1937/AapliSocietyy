@@ -27,6 +27,18 @@ export const GET = withRoute(async (req) => {
     });
   }
 
+  // ── Commercial (shop) profile ── same reasoning as v1/bills: shop-scoped,
+  // uncached because no existing payment route invalidates a shop key.
+  if (claims.shopId) {
+    const receipts = await Receipt.find({ societyId, shopId: claims.shopId })
+      .sort({ paidAt: -1, createdAt: -1 })
+      .limit(200)
+      .lean();
+    return json({
+      receipts: receipts.map((r) => ({ ...r, _id: String(r._id), periodLabel: periodLabelFrom(r) })),
+    });
+  }
+
   if (!claims.memberId) return json({ receipts: [] });
 
   const receipts = await cache.getOrSetSWR(
