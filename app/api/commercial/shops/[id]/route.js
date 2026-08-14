@@ -1,5 +1,6 @@
 import { adminCommercialRoute } from "@/lib/commercial/adminRoute";
 import { getShop, updateShop, deleteShop } from "@/lib/commercial/shopService";
+import { autoInviteAfterSave } from "@/lib/commercial/shopOwnerInvite";
 
 // GET    /api/commercial/shops/:id  -> one shop
 // PATCH  /api/commercial/shops/:id  -> edit it
@@ -51,7 +52,17 @@ export const PATCH = adminCommercialRoute(
     }
 
     const result = await updateShop({ societyId, userId, id: params.id, input: body });
-    return { id: result.id };
+
+    // Same rule as creating: an admin who links an owner expects the owner to
+    // be told. This is a no-op when the owner already holds the shop profile.
+    const { invite, note } = await autoInviteAfterSave({
+      shopId: result.id,
+      societyId,
+      userId,
+      savedNote: "Changes saved.",
+    });
+
+    return { id: result.id, invite, nextStep: note };
   },
   { requireFlag: "enabled" },
 );

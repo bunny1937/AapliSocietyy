@@ -138,3 +138,7 @@ screenshots
 
 # Subagent-driven-development scratch workspace (ledgers, briefs, review packages)
 .superpowers/
+hardcoretestsresults/
+COMMERCIAL_WEB_IMPLEMENTATION.md
+COMMERCIAL_WEB_MASTER.md
+README-INTEGRATION.md

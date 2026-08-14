@@ -3,27 +3,49 @@ import { getClaims, requireTenant } from "@/lib/v1/auth";
 import { Receipt } from "@/lib/v1/models";
 import { BILLING_WRITE_ROLES } from "@/lib/v1/constants";
 import { periodLabelFrom } from "@/lib/v1/periodLabel";
+import cache from "@/lib/cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // GET /v1/receipts — residents see their own receipts; admins may pass
-// ?memberId=.
+// ?memberId=. A receipt is created once, at payment time, and never changes
+// after — the longest-lived of the three billing caches is appropriate
+// here. Invalidated by the same payment-recording routes as bills/ledger.
 export const GET = withRoute(async (req) => {
   const claims = getClaims(req);
   const societyId = requireTenant(claims);
   const url = new URL(req.url);
 
-  const query = { societyId };
   if (BILLING_WRITE_ROLES.includes(claims.role)) {
+    const query = { societyId };
     const memberId = url.searchParams.get("memberId");
     if (memberId) query.memberId = memberId;
-  } else {
-    if (!claims.memberId) return json({ receipts: [] });
-    query.memberId = claims.memberId;
+    const receipts = await Receipt.find(query).sort({ paidAt: -1, createdAt: -1 }).limit(200).lean();
+    return json({
+      receipts: receipts.map((r) => ({ ...r, _id: String(r._id), periodLabel: periodLabelFrom(r) })),
+    });
   }
 
-  const receipts = await Receipt.find(query).sort({ paidAt: -1, createdAt: -1 }).limit(200).lean();
+  // ── Commercial (shop) profile ── same reasoning as v1/bills: shop-scoped,
+  // uncached because no existing payment route invalidates a shop key.
+  if (claims.shopId) {
+    const receipts = await Receipt.find({ societyId, shopId: claims.shopId })
+      .sort({ paidAt: -1, createdAt: -1 })
+      .limit(200)
+      .lean();
+    return json({
+      receipts: receipts.map((r) => ({ ...r, _id: String(r._id), periodLabel: periodLabelFrom(r) })),
+    });
+  }
+
+  if (!claims.memberId) return json({ receipts: [] });
+
+  const receipts = await cache.getOrSetSWR(
+    `v1:receipts:${societyId}:member:${claims.memberId}`,
+    () => Receipt.find({ societyId, memberId: claims.memberId }).sort({ paidAt: -1, createdAt: -1 }).limit(200).lean(),
+    { softTtlSeconds: 21600, hardTtlSeconds: 86400 },
+  );
   return json({
     receipts: receipts.map((r) => ({ ...r, _id: String(r._id), periodLabel: periodLabelFrom(r) })),
   });

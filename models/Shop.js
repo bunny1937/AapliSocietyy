@@ -101,9 +101,16 @@ const ShopSchema = new mongoose.Schema(
 
     // ---- Trade details ---------------------------------------------------
     tradeName: { type: String, trim: true, maxlength: 160, default: null },
+    // FIXED 2026-08-14: this said ref: "BusinessCategory", a model that is not
+    // registered anywhere. The live category model is CommercialCategory
+    // (models/CommercialCategory.js), which is what the admin picker and the
+    // member directory filter both read. The wrong ref meant any populate() of
+    // a shop's category threw MissingSchemaError, which is why nothing had
+    // ever populated it. Storage format is unchanged — this is a reference fix,
+    // not a data change.
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "BusinessCategory",
+      ref: "CommercialCategory",
       default: null,
     },
     gstin: { type: String, trim: true, uppercase: true, maxlength: 15, default: null },
@@ -130,6 +137,115 @@ const ShopSchema = new mongoose.Schema(
 
     emergencyContactName: { type: String, trim: true, maxlength: 120, default: null },
     emergencyContactPhone: { type: String, trim: true, maxlength: 20, default: null },
+
+    // ---- Public storefront (member-facing) -------------------------------
+    // ADDED 2026-08-14 for the member "Society Shops" experience.
+    //
+    // This is deliberately a sub-document on Shop, NOT a migration of the old
+    // BusinessProfile module. Shop is already the canonical commercial unit:
+    // ownership, the Commercial login profile (claims.shopId), owner profile
+    // edit requests and commercial bill generation all key off it. Putting the
+    // public fields anywhere else would recreate the two-sources-of-truth
+    // problem the Shop model was introduced to end.
+    //
+    // Every field is optional and every default is the CURRENT behaviour: an
+    // existing shop loads with isPublished false and therefore does not appear
+    // in the member directory until an admin publishes it.
+    storefront: {
+      // Publication is an ADMIN decision (approved product rule). An owner can
+      // request changes, but only the society decides what residents see.
+      isPublished: { type: Boolean, default: false },
+      publishedAt: { type: Date, default: null },
+      publishedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+
+      tagline: { type: String, trim: true, maxlength: 120, default: null },
+      description: { type: String, trim: true, maxlength: 2000, default: null },
+
+      // Hours are wall-clock hours in this timezone. The SERVER decides whether
+      // a shop is open (lib/commercial/shopStorefront.js) so a device with a
+      // wrong clock can never show a closed shop as open.
+      timezone: { type: String, trim: true, maxlength: 64, default: "Asia/Kolkata" },
+      weeklyHours: {
+        type: [
+          new mongoose.Schema(
+            {
+              dayOfWeek: { type: Number, min: 0, max: 6, required: true },
+              isClosed: { type: Boolean, default: false },
+              intervals: {
+                type: [
+                  new mongoose.Schema(
+                    {
+                      opensAt: { type: String, required: true, maxlength: 5 },
+                      closesAt: { type: String, required: true, maxlength: 5 },
+                    },
+                    { _id: false },
+                  ),
+                ],
+                default: [],
+              },
+            },
+            { _id: false },
+          ),
+        ],
+        default: [],
+      },
+      // Dated exceptions (festival closure, one-off late opening). An override
+      // for today always beats the weekly pattern.
+      hourOverrides: {
+        type: [
+          new mongoose.Schema(
+            {
+              date: { type: String, required: true, maxlength: 10 }, // YYYY-MM-DD, local
+              label: { type: String, trim: true, maxlength: 80, default: null },
+              isClosed: { type: Boolean, default: true },
+              intervals: {
+                type: [
+                  new mongoose.Schema(
+                    {
+                      opensAt: { type: String, required: true, maxlength: 5 },
+                      closesAt: { type: String, required: true, maxlength: 5 },
+                    },
+                    { _id: false },
+                  ),
+                ],
+                default: [],
+              },
+            },
+            { _id: false },
+          ),
+        ],
+        default: [],
+      },
+      // Owner's "closed right now" switch: higher precedence than any hours,
+      // because a shut shutter is a fact and a schedule is only a plan.
+      manualClosed: { type: Boolean, default: false },
+      manualClosedNote: { type: String, trim: true, maxlength: 160, default: null },
+
+      // Fulfilment is per shop. A member may only pick a mode the shop offers.
+      pickupEnabled: { type: Boolean, default: false },
+      deliveryEnabled: { type: Boolean, default: false },
+      deliveryNote: { type: String, trim: true, maxlength: 240, default: null },
+      minOrderAmount: { type: Number, min: 0, default: null },
+
+      // Offline payment only in V1. The shop declares what it accepts.
+      offlinePaymentMethods: {
+        type: [{ type: String, enum: ["PAY_AT_SHOP", "PAY_ON_DELIVERY", "UPI_ON_PICKUP", "UPI_ON_DELIVERY"] }],
+        default: [],
+      },
+
+      // Public contact details, kept separate from ownerPhone/ownerEmail so
+      // publishing a storefront never exposes the owner's private contact.
+      publicPhone: { type: String, trim: true, maxlength: 20, default: null },
+      publicWhatsapp: { type: String, trim: true, maxlength: 20, default: null },
+      publicEmail: { type: String, trim: true, lowercase: true, maxlength: 160, default: null },
+
+      logoKey: { type: String, trim: true, maxlength: 300, default: null },
+      coverKey: { type: String, trim: true, maxlength: 300, default: null },
+      mediaVersion: { type: Number, default: 0 },
+
+      updatedAt: { type: Date, default: null },
+      updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    },
 
     // ---- Commercial ledger openings -------------------------------------
     // A shop's dues are ITS OWN. The A-103 bug was the commercial run
@@ -158,6 +274,12 @@ ShopSchema.index(
 );
 ShopSchema.index({ societyId: 1, isDeleted: 1, isActive: 1 });
 ShopSchema.index({ societyId: 1, ownerMemberId: 1 });
+ShopSchema.index({ societyId: 1, ownerUserId: 1 });
+// The member directory's only query shape: published + live shops in one
+// society, ordered by trade name. Without this it is a collection scan on the
+// most frequently opened member screen after the dashboard.
+ShopSchema.index({ societyId: 1, "storefront.isPublished": 1, isActive: 1, tradeName: 1 });
+ShopSchema.index({ societyId: 1, "storefront.isPublished": 1, categoryId: 1 });
 
 // Label used on bills and screens: "A-103 (Shop)" or "103 (Shop)".
 ShopSchema.virtual("unitLabel").get(function () {

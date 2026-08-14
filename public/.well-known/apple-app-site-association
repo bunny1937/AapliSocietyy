@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appID": "REPLACE_TEAMID.REPLACE_BUNDLE_ID",
+        "appID": "6Y6Q229854.com.example.aapliSociety",
         "paths": [
           "/onboarding/*",
           "/onboarding",
