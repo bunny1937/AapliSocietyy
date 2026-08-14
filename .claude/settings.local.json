@@ -125,7 +125,11 @@
       "Bash(cd *)",
       "Bash(vercel --version)",
       "Bash(awk '{print $6/1024\" MB\", $11, $12, $13}')",
-      "Bash(node --check next.config.js)"
+      "Bash(node --check next.config.js)",
+      "Bash(node --input-type=module --check)",
+      "Bash(flutter analyze *)",
+      "Bash(npx next *)",
+      "Bash(npx eslint *)"
     ]
   },
   "enableAllProjectMcpServers": true,

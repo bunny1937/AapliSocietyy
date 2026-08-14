@@ -99,5 +99,14 @@ module.exports = process.env.VERCEL
       authToken: process.env.SENTRY_AUTH_TOKEN,
       disableLogger: true,
       widenClientFileUpload: false,
+      // instrumentation.js's onRequestError hook (Next's own native
+      // error-reporting API) already captures every request error globally.
+      // Sentry's per-route auto-wrapping is redundant on top of that and is
+      // the expensive part of the build (transforms all 300+ route files) —
+      // ~2 of the ~4 minutes this build step takes. Turning it off loses no
+      // coverage, just build time.
+      autoInstrumentServerFunctions: false,
+      autoInstrumentAppDirectory: false,
+      autoInstrumentMiddleware: false,
     })
   : nextConfig;
