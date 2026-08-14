@@ -86,7 +86,7 @@ export async function GET(request) {
   } catch (error) {
     console.error("Retention archives list error:", error);
     return NextResponse.json(
-      { error: "Failed to load archives", details: error.message },
+      { error: "Failed to load archives" },
       { status: 500 },
     );
   }

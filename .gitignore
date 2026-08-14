@@ -153,3 +153,10 @@ context.md
 # One-off test artifacts / screenshots taken during manual testing
 Bill-A-101-*.pdf
 Screenshot *.png
+
+.clinerules/
+.cursor/
+.github/
+.opencode/
+.windsurf/
+AGENTS.md

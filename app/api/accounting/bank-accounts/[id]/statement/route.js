@@ -24,7 +24,7 @@ export async function GET(request, { params }) {
   } catch (error) {
     console.error("List statement lines error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }
@@ -51,7 +51,7 @@ export async function POST(request, { params }) {
     }
     console.error("Import bank statement error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

@@ -193,6 +193,10 @@ export async function POST(request) {
     await cache.del(`billing:generated:${decoded.societyId}`);
     await cache.del(`payments:outstanding:${decoded.societyId}`);
     await cache.del(`admin:stats:global`);
+    // New/updated bills for potentially every member in the society - the
+    // mobile app's per-member bill/ledger cache is stale until this clears.
+    await cache.delPattern(`v1:bills:${decoded.societyId}:member:*`);
+    await cache.delPattern(`v1:ledger:${decoded.societyId}:member:*`);
 
     return NextResponse.json({
       success: true,
@@ -203,6 +207,6 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("Bill generation error:", error);
-    return NextResponse.json({ error: "Failed to generate bills", details: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Failed to generate bills" }, { status: 500 });
   }
 }

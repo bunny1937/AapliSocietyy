@@ -112,7 +112,20 @@
       "Bash(npx --no-install eslint app/superadmin/societies/BulkImportWizard.jsx lib/import/validateWorkbook.js)",
       "Bash(node --check node_modules/.bin/../../node_modules/next/dist/bin/next)",
       "Bash(node -e ' *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(xargs -I{} echo {})",
+      "Artifact",
+      "WebFetch(domain:claude.ai)",
+      "Bash(node - --dry-run)",
+      "Bash(node -)",
+      "Bash(vm_stat)",
+      "Bash(sysctl hw.memsize)",
+      "Bash(sort -rk 4)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npm run build)",
+      "Bash(cd *)",
+      "Bash(vercel --version)",
+      "Bash(awk '{print $6/1024\" MB\", $11, $12, $13}')",
+      "Bash(node --check next.config.js)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -81,4 +81,23 @@ const nextConfig = {
     return [{ source: "/v1/:path*", destination: "/api/v1/:path*" }];
   },
 };
-module.exports = nextConfig;
+
+// withSentryConfig's webpack plugin does real work during `next build`
+// (auto-instrumenting every route handler) independent of whether
+// SENTRY_AUTH_TOKEN is set — that's expensive enough to OOM a `next build`
+// on a memory-constrained dev machine. Vercel sets VERCEL=1 automatically in
+// its build environment and has the RAM for it; a local build doesn't set
+// that var, so it gets the plain, unwrapped config instead. Runtime error
+// capture (instrumentation.js / instrumentation-client.js) is unaffected —
+// those only key off NEXT_PUBLIC_SENTRY_DSN, not this.
+const { withSentryConfig } = require("@sentry/nextjs");
+module.exports = process.env.VERCEL
+  ? withSentryConfig(nextConfig, {
+      silent: true,
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      disableLogger: true,
+      widenClientFileUpload: false,
+    })
+  : nextConfig;

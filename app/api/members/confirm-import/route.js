@@ -194,7 +194,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("Confirm import error:", error);
     return NextResponse.json(
-      { error: "Import failed", details: error.message },
+      { error: "Import failed" },
       { status: 500 },
     );
   }

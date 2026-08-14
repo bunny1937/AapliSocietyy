@@ -6,6 +6,7 @@ import { exportToAdminDB, logAdminActivity } from "@/lib/export-to-admin-db";
 import Transaction from "@/models/Transaction";
 import { requireRoles } from "@/lib/authz";
 import { authorize } from "@/lib/rbac/authorize";
+import cache from "@/lib/cache";
 export async function POST(request) {
   try {
     const gate = await authorize(request, "billing.bill.delete");
@@ -104,6 +105,10 @@ export async function POST(request) {
       },
     });
     console.log(`✅ Deleted ${billsToDelete.length} bills`);
+    // A deleted bill (and its reversed transaction) must never keep showing
+    // up in the mobile app for the members it belonged to.
+    await cache.delPattern(`v1:bills:${decoded.societyId}:member:*`);
+    await cache.delPattern(`v1:ledger:${decoded.societyId}:member:*`);
     return NextResponse.json({
       success: true,
       message: `${billsToDelete.length} bills deleted and exported to admin database`,
@@ -113,7 +118,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("Delete bills error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

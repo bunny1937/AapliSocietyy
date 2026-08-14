@@ -5,6 +5,7 @@ import Member from "@/models/Member";
 import AuditLog from "@/models/AuditLog";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import { authorize } from "@/lib/rbac/authorize";
+import cache from "@/lib/cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -75,6 +76,8 @@ export async function POST(request) {
       },
       timestamp: new Date(),
     });
+
+    await cache.del(`v1:bills:${decoded.societyId}:member:${memberId}`);
 
     return NextResponse.json(
       {

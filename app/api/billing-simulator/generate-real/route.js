@@ -5,6 +5,7 @@ import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import { getFinancialYear } from "@/lib/date-utils";
 import { generateSimulatedBill } from "@/lib/billing/generationService";
 import { authorize } from "@/lib/rbac/authorize";
+import cache from "@/lib/cache";
 
 // Ledger V2: THIN WRAPPER over the shared GenerationService. Contains no billing
 // math of its own. This is the SIMULATOR endpoint, so it is the only caller
@@ -63,6 +64,14 @@ export async function POST(request) {
       billPeriodId: bill.billPeriodId,
       financialYear: getFinancialYear(txDate),
     });
+
+    // "real-mode" writes an actual production Bill/Transaction for this
+    // member (despite living behind the simulator UI) - must not leave the
+    // mobile app showing last period's bill.
+    await cache.del(
+      `v1:bills:${decoded.societyId}:member:${memberId}`,
+      `v1:ledger:${decoded.societyId}:member:${memberId}`,
+    );
 
     return NextResponse.json({
       success: true,

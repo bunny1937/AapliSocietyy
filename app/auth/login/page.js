@@ -60,10 +60,9 @@ export default function LoginPage() {
             `Unable to resolve role (${resolveRoleRes.status})`,
         );
       }
-      const loginEndpoint =
-        resolveRoleData.role === "Security"
-          ? "/api/security/auth/login"
-          : "/api/auth/login";
+      const loginEndpoint = resolveRoleData.isSecurity
+        ? "/api/security/auth/login"
+        : "/api/auth/login";
       const res = await fetch(loginEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -79,7 +78,7 @@ export default function LoginPage() {
         throw new Error(data.error || `Login failed (${res.status})`);
       }
       if (
-        resolveRoleData.role === "Security" ||
+        resolveRoleData.isSecurity ||
         data.user?.role === "Security"
       ) {
         router.replace("/security/dashboard");

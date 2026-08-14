@@ -21,7 +21,7 @@ export async function GET(request, { params }) {
     }
     console.error("Get bank account error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

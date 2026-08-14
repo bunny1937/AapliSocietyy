@@ -40,7 +40,7 @@ export async function POST(request) {
     }
     console.error("Transfer between funds error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

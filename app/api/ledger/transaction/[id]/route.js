@@ -98,7 +98,7 @@ export async function GET(request, { params }) {
   } catch (error) {
     console.error("Transaction details error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch transaction details", details: error.message },
+      { error: "Failed to fetch transaction details" },
       { status: 500 },
     );
   }

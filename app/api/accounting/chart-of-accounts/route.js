@@ -30,7 +30,7 @@ export async function GET(request) {
   } catch (error) {
     console.error("List chart of accounts error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }
@@ -53,7 +53,7 @@ export async function POST(request) {
     }
     console.error("Create chart of account error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

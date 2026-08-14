@@ -73,7 +73,7 @@ export async function GET(request, { params }) {
   } catch (error) {
     console.error("Get complaint error:", error);
     return NextResponse.json(
-      { error: "Server error", details: error.message },
+      { error: "Server error" },
       { status: 500 },
     );
   }

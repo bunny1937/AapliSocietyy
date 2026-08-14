@@ -8,6 +8,7 @@ import { getFinancialYear } from "@/lib/date-utils";
 import { applyPaymentToBill } from "@/lib/billing/allocationService";
 import { postPaymentToLedger } from "@/lib/accounting/paymentLedgerPosting";
 import { authorize } from "@/lib/rbac/authorize";
+import cache from "@/lib/cache";
 
 function twoDp(n) {
   return parseFloat((Number(n) || 0).toFixed(2));
@@ -102,6 +103,12 @@ export async function POST(request) {
       notes: remarks,
       actorUserId: decoded.userId,
     });
+
+    // Real payment against a real bill, same as the non-simulator pay route.
+    await cache.del(
+      `v1:bills:${decoded.societyId}:member:${memberId}`,
+      `v1:ledger:${decoded.societyId}:member:${memberId}`,
+    );
 
     return NextResponse.json({
       success: true,

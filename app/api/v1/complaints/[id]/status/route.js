@@ -5,6 +5,7 @@ import { Complaint } from "@/lib/v1/models";
 import { SOCIETY_ADMIN_ROLES } from "@/lib/v1/constants";
 import { complaintStatusWritesEnabled } from "@/lib/v1/config";
 import { notifyComplaintDecision } from "@/lib/v1/notify";
+import cache from "@/lib/cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,5 +37,11 @@ export const PATCH = withRoute(async (req, ctx) => {
     memberId: complaint.memberId,
     status: complaint.status,
   });
+  // Both the admin queue and the filer's own list carry the old status
+  // until these are cleared — a decision should be visible right away.
+  await cache.del(
+    `v1:complaints:${societyId}:all`,
+    `v1:complaints:${societyId}:member:${complaint.memberId}`,
+  );
   return json({ complaint: { _id: String(complaint._id), status: complaint.status } });
 });

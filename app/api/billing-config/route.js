@@ -29,7 +29,6 @@ export async function GET(request) {
     return NextResponse.json(
       {
         error: "Failed to fetch billing configuration",
-        details: error.message,
       },
       { status: 500 }
     );

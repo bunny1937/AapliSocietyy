@@ -138,7 +138,7 @@ export async function GET(request) {
   } catch (error) {
     console.error("Ledger fetch error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch ledger", details: error.message },
+      { error: "Failed to fetch ledger" },
       { status: 500 },
     );
   }

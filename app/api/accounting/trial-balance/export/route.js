@@ -28,7 +28,7 @@ export async function GET(request) {
     }
     console.error("Trial balance export error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

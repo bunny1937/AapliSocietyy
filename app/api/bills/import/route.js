@@ -13,6 +13,7 @@ import { validateBillInvariants } from "@/lib/billing/invariants";
 import { getSocietySnapshot, getBilledSet } from "@/lib/import/societySnapshot";
 import ImportStaging from "@/models/ImportStaging";
 import { authorize } from "@/lib/rbac/authorize";
+import cache from "@/lib/cache";
 
 const twoDp = (n) => parseFloat((Number(n) || 0).toFixed(2));
 export async function POST(request) {
@@ -330,7 +331,11 @@ export async function POST(request) {
           errors.push({ rowNumber: row.rowNumber, error: err.message });
         }
       }
-      if (billsToInsert.length > 0) await Bill.insertMany(billsToInsert);
+      if (billsToInsert.length > 0) {
+        await Bill.insertMany(billsToInsert);
+        await cache.delPattern(`v1:bills:${cachedSocietyId}:member:*`);
+        await cache.delPattern(`v1:ledger:${cachedSocietyId}:member:*`);
+      }
       return NextResponse.json({
         success: true,
         imported: billsToInsert.length,
@@ -345,7 +350,6 @@ export async function POST(request) {
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error.message,
       },
       { status: 500 },
     );

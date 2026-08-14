@@ -29,7 +29,7 @@ export async function GET(request) {
   } catch (error) {
     console.error("Users list error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch users", details: error.message },
+      { error: "Failed to fetch users" },
       { status: 500 }
     );
   }

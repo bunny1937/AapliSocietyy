@@ -384,7 +384,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("collection-sheet/verify error:", error);
     return NextResponse.json(
-      { error: "Verification failed", details: error.message },
+      { error: "Verification failed" },
       { status: 500 },
     );
   }

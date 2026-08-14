@@ -234,7 +234,6 @@ export async function POST(request) {
         error: "The preview could not be built.",
         code: "PREVIEW_FAILED",
         hint: "Try again. If it keeps failing, check the Rate Card has at least one active charge and that your shops have areas.",
-        details: error.message,
       },
       { status: 500 },
     );

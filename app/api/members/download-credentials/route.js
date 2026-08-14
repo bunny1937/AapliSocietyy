@@ -81,8 +81,7 @@ const instructionRow = worksheet.addRow(['INSTRUCTIONS:', '', '', '', '', '', ''
   } catch (error) {
     console.error('Download credentials error:', error);
     return NextResponse.json({ 
-      error: 'Download failed', 
-      details: error.message 
+      error: 'Download failed' 
     }, { status: 500 });
   }
 }

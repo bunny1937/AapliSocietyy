@@ -8,6 +8,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Member from "@/models/Member";
+import cache from "@/lib/cache";
 import Bill from "@/models/Bill";
 import Society from "@/models/Society";
 import AuditReport from "@/models/AuditReport";
@@ -213,6 +214,10 @@ export async function POST(request) {
     );
   } catch (auditErr) {
     console.error("[bill-history-import] AuditReport create failed:", auditErr.message);
+  }
+  if (created.length > 0) {
+    await cache.delPattern(`v1:bills:${sid}:member:*`);
+    await cache.delPattern(`v1:ledger:${sid}:member:*`);
   }
   return NextResponse.json({
     success: true,

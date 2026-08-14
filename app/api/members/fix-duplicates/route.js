@@ -104,8 +104,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('Fix duplicates error:', error);
     return NextResponse.json({
-      error: 'Failed to fix duplicates',
-      details: error.message
+      error: 'Failed to fix duplicates'
     }, { status: 500 });
   }
 }
@@ -157,8 +156,7 @@ export async function GET(request) {
   } catch (error) {
     console.error('Check duplicates error:', error);
     return NextResponse.json({
-      error: 'Failed to check duplicates',
-      details: error.message
+      error: 'Failed to check duplicates'
     }, { status: 500 });
   }
 }

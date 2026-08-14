@@ -52,7 +52,7 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error("Data browser fetch error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 export async function POST(request) {
@@ -127,6 +127,6 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("Delete with export error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

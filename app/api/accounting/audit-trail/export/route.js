@@ -49,7 +49,7 @@ export async function GET(request) {
   } catch (error) {
     console.error("Export audit trail error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

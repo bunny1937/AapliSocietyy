@@ -1,6 +1,8 @@
 // middleware.js
 import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import cache from "@/lib/cache";
+import { getSessionEpochFloor } from "@/lib/session-epoch";
 const ALLOWED_ORIGIN =
   process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 // Extra CSRF-allowed origins (comma-separated). Use for tunnels like ngrok.
@@ -18,10 +20,39 @@ async function parseJwt(t, secretEnvKey = "JWT_SECRET") {
     return null;
   }
 }
+// Single choke point for the logout/session-revocation denylist (see
+// app/api/auth/logout and app/api/v1/auth/logout, which write
+// revoked:jti:<jti>). Both lib/authz.js's requireAuth (123 legacy routes)
+// and lib/rbac/authorize.js call verifyToken() but neither reads this key,
+// so without this check a "logged out" token stayed valid for up to 7 days.
+// jose + lib/cache.js (Upstash REST) are both edge-safe, so this runs before
+// any route handler regardless of runtime.
+async function isRevoked(payload) {
+  if (!payload?.jti) return false;
+  return Boolean(await cache.get(`revoked:jti:${payload.jti}`));
+}
+// Session-freshness backstop (Q11 in lib/rbac/session.js): rejects any token
+// whose sessionEpoch predates a privilege reduction / suspendUser() call,
+// even on the 123 routes still guarded by the legacy lib/authz.js (which
+// never re-checks role/status per request). Sourced from the Redis floor
+// lib/rbac/session.js.bumpSessionEpoch writes — no Mongo access needed here.
+async function isStaleSession(payload) {
+  const userId = payload?.userId || payload?.sub || payload?.id;
+  if (!userId) return false;
+  const floor = await getSessionEpochFloor(userId);
+  if (floor === null) return false; // nothing ever bumped for this user — nothing to enforce
+  const tokenEpoch = payload.sessionEpoch || 0;
+  return tokenEpoch < floor;
+}
+function extractBearerToken(request) {
+  const header = request.headers.get("authorization");
+  return header?.startsWith("Bearer ") ? header.slice(7) : null;
+}
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
   const method = request.method;
-  // API routes: only do CSRF check, then pass through — never redirect to login page
+  // API routes: CSRF check, then a revocation check, then pass through —
+  // never redirect to a login page (routes own their 401/403 shape).
   if (pathname.startsWith("/api/")) {
     // /api/v1/* is the bearer-token mobile API — no cookies involved, so
     // there's nothing for a CSRF/Origin check to protect. Enforcing it here
@@ -55,6 +86,24 @@ export async function middleware(request) {
         !!origin && (allowedOrigins.includes(origin) || isSameOriginDev);
       if (!isTestBypass && !originOk) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+    // Revocation check: only runs when a "token" (regular JWT_SECRET) is
+    // actually presented, via cookie (web) or Bearer header (mobile/API
+    // clients). No token / an already-invalid token is left for the route's
+    // own auth guard to reject as today.
+    const apiToken =
+      request.cookies.get("token")?.value || extractBearerToken(request);
+    if (apiToken) {
+      const payload = await parseJwt(apiToken);
+      if (await isRevoked(payload)) {
+        return NextResponse.json({ error: "Token revoked" }, { status: 401 });
+      }
+      if (await isStaleSession(payload)) {
+        return NextResponse.json(
+          { error: "Your access changed. Please sign in again.", code: "UNAUTHENTICATED", reauth: true },
+          { status: 401 },
+        );
       }
     }
     return NextResponse.next();
@@ -130,7 +179,7 @@ export async function middleware(request) {
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
   const payload = await parseJwt(token);
-  if (!payload) {
+  if (!payload || (await isRevoked(payload)) || (await isStaleSession(payload))) {
     if (pathname.startsWith("/security")) {
       return NextResponse.redirect(new URL("/auth/login", request.url));
     }

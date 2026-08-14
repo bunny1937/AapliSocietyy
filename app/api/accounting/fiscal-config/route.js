@@ -24,7 +24,7 @@ export async function GET(request) {
     }
     console.error("Get fiscal config error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }
@@ -47,7 +47,7 @@ export async function PATCH(request) {
     }
     console.error("Update fiscal config error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

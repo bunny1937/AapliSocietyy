@@ -6,10 +6,13 @@
 //
 //   https://aaplisociety.vercel.app/api/v1/cron/escalate
 //
-// which has never existed. The two real escalation routes are
-// /api/v1/cron/escalate-visitors and /api/visitor/cron/escalate. That job has
-// therefore reported "Failed (HTTP error)" on every single run since it was
-// created — it is a 404, not a bug in the sweep itself.
+// which has never existed. The real escalation route is
+// /api/v1/cron/escalate-visitors (a superseded duplicate at
+// /api/visitor/cron/escalate was removed during the 2026-08-14 security
+// remediation pass — it wasn't in the confirmed list of live cron URLs).
+// That cron-job.org job has therefore reported "Failed (HTTP error)" on
+// every single run since it was created — it is a 404, not a bug in the
+// sweep itself.
 //
 // Two ways to fix it. This file is the safer one because it needs no dashboard
 // change and cannot be forgotten:

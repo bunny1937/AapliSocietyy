@@ -68,7 +68,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("Setup error:", error);
     return NextResponse.json(
-      { error: "Failed to setup billing heads", details: error.message },
+      { error: "Failed to setup billing heads" },
       { status: 500 },
     );
   }

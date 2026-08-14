@@ -7,9 +7,27 @@ import { memberContext, publicAmenity } from "@/lib/amenities/memberContext";
 import { resolveEffectiveStatus } from "@/lib/amenities/availability";
 import { checkEligibility } from "@/lib/amenities/permissions";
 import { getTimezone } from "@/lib/amenities/settingsService";
+import cache from "@/lib/cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// Eligibility/effective-status are per-resident (age, occupancy, role) and
+// must never be cached, but the underlying amenity/category rows are the
+// same for the whole society regardless of who's asking. Caching the
+// unfiltered set (categoryId/q filters applied in JS afterward, on data
+// already in memory) keeps one cache key per society instead of one per
+// filter combination.
+async function fetchAmenityData(societyId) {
+  const [rows, categories, timezone] = await Promise.all([
+    Amenity.find({ societyId, isDeleted: false, isActive: true }).sort({ displayOrder: 1, name: 1 }).lean(),
+    AmenityCategory.find({ societyId, isDeleted: false, isActive: true })
+      .sort({ displayOrder: 1, name: 1 })
+      .lean(),
+    getTimezone(societyId),
+  ]);
+  return { rows, categories, timezone };
+}
 
 // GET /api/v1/amenities
 //
@@ -23,22 +41,21 @@ export const GET = withRoute(async (request) => {
   const ctx = await memberContext(claims, request);
 
   const sp = new URL(request.url).searchParams;
-  const filter = { societyId: ctx.societyId, isDeleted: false, isActive: true };
-  if (sp.get("categoryId")) filter.categoryId = sp.get("categoryId");
-
+  const categoryId = sp.get("categoryId");
   const q = sp.get("q")?.trim();
+
+  const { rows: allRows, categories, timezone } = await cache.getOrSetSWR(
+    `v1:amenities:${ctx.societyId}`,
+    () => fetchAmenityData(ctx.societyId),
+    { softTtlSeconds: 30, hardTtlSeconds: 120 },
+  );
+
+  let rows = allRows;
+  if (categoryId) rows = rows.filter((a) => String(a.categoryId) === String(categoryId));
   if (q) {
     const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
-    filter.$or = [{ name: rx }, { location: rx }];
+    rows = rows.filter((a) => rx.test(a.name || "") || rx.test(a.location || ""));
   }
-
-  const [rows, categories, timezone] = await Promise.all([
-    Amenity.find(filter).sort({ displayOrder: 1, name: 1 }).lean(),
-    AmenityCategory.find({ societyId: ctx.societyId, isDeleted: false, isActive: true })
-      .sort({ displayOrder: 1, name: 1 })
-      .lean(),
-    getTimezone(ctx.societyId),
-  ]);
 
   const categoryById = new Map(categories.map((c) => [String(c._id), c]));
 

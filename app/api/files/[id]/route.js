@@ -52,7 +52,7 @@ export async function GET(request, { params }) {
   } catch (error) {
     console.error("file serve error:", error);
     return NextResponse.json(
-      { error: "Failed to load file", details: error.message },
+      { error: "Failed to load file" },
       { status: 500 }
     );
   }

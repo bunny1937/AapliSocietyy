@@ -56,8 +56,7 @@ export async function DELETE(request, { params }) {
   } catch (error) {
     console.error('Reset error:', error);
     return NextResponse.json({ 
-      error: 'Reset failed', 
-      details: error.message 
+      error: 'Reset failed' 
     }, { status: 500 });
   }
 }

@@ -1067,6 +1067,10 @@ export async function POST(request) {
 
   // ── COMMIT: society is now safe to expose to normal queries ──────────
   await Society.updateOne({ _id: society._id }, { $set: { importStatus: "active" } });
+  if (billsGenerated > 0) {
+    await cache.delPattern(`v1:bills:${society._id}:member:*`);
+    await cache.delPattern(`v1:ledger:${society._id}:member:*`);
+  }
   await markRun(importRunId, {
     status: "COMMITTED",
     stage: "Queueing onboarding emails",

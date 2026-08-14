@@ -7,28 +7,16 @@ import AuditLog from "@/models/AuditLog";
 import { signToken } from "@/lib/jwt";
 import { issueRefreshToken, setRefreshCookie } from "@/lib/refresh-token";
 import { getStaffProfiles } from "@/lib/rbac/staff-profiles";
+import { enforceRateLimit } from "@/lib/v1/ratelimit";
+import { ApiError } from "@/lib/v1/http";
 const MAX_ATTEMPTS = parseInt(process.env.RATE_LIMIT_LOGIN, 10) || 10;
 const WINDOW_MS = 15 * 60 * 1000;
-const loginAttempts = new Map();
-function checkLoginRateLimit(identifier) {
-  const key = identifier.toLowerCase();
-  const now = Date.now();
-  const entry = loginAttempts.get(key) || {
-    count: 0,
-    resetAt: now + WINDOW_MS,
-  };
-  if (now > entry.resetAt) {
-    entry.count = 0;
-    entry.resetAt = now + WINDOW_MS;
-  }
-  entry.count += 1;
-  loginAttempts.set(key, entry);
-  return entry.count > MAX_ATTEMPTS ? { blocked: true } : { blocked: false };
-}
-function clearLoginRateLimit(identifier) {
-  loginAttempts.delete(identifier.toLowerCase());
-}
 export async function POST(request) {
+  // Shared Redis-backed limiter (lib/v1/ratelimit.js) keyed per-identifier,
+  // same window/limit/reset-on-success semantics as the old in-memory Map —
+  // just no longer reset to zero on every cold start / new serverless
+  // instance, which made the old limit effectively decorative.
+  let commit;
   try {
     await connectDB();
     const body = await request.json();
@@ -48,12 +36,19 @@ export async function POST(request) {
         { status: 400 },
       );
     }
-    const rateCheck = checkLoginRateLimit(identifier);
-    if (rateCheck.blocked) {
-      return NextResponse.json(
-        { error: "Too many login attempts. Try again later." },
-        { status: 429 },
-      );
+    try {
+      commit = await enforceRateLimit(request, "web-login", {
+        windowMs: WINDOW_MS,
+        limit: MAX_ATTEMPTS,
+        key: identifier,
+        skipSuccessfulRequests: true,
+        message: "Too many login attempts. Try again later.",
+      });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        return NextResponse.json(err.body, { status: err.status });
+      }
+      throw err;
     }
     // Find by username  OR  email  (covers both Member and Admin flows)
     const user = await User.findOne({
@@ -98,7 +93,7 @@ export async function POST(request) {
         "SOCIETY_ADMIN",
       ].includes(user.role)
     ) {
-      clearLoginRateLimit(identifier);
+      commit(true);
       const token = signToken({
         userId: user._id,
         email: user.email,
@@ -138,7 +133,7 @@ export async function POST(request) {
     const totalProfileCount = activeProfiles.length + staffProfiles.length;
     // CASE A: exactly one profile total (member OR staff, never both) → auto-login
     if (totalProfileCount === 1 && staffProfiles.length === 1) {
-      clearLoginRateLimit(identifier);
+      commit(true);
       const assignment = staffProfiles[0];
       const token = signToken({
         userId: user._id,
@@ -175,7 +170,7 @@ export async function POST(request) {
       return response;
     }
     if (activeProfiles.length === 1 && staffProfiles.length === 0) {
-      clearLoginRateLimit(identifier);
+      commit(true);
       const profile = activeProfiles[0];
       // Persist activeProfileId
       await User.updateOne(
@@ -219,7 +214,7 @@ export async function POST(request) {
     // CASE B: multiple profiles (member flats and/or staff roles) → return
     // the merged list, frontend shows one selector for all of them.
     if (totalProfileCount > 1) {
-      clearLoginRateLimit(identifier);
+      commit(true);
       const profileSelectToken = signToken(
         {
           userId: user._id,

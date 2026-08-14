@@ -132,7 +132,7 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error("Quick-setup status error:", error);
-    return NextResponse.json({ error: "Internal server error", details: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -215,6 +215,6 @@ for (const spec of STANDARD_ACCOUNTS) {
 return NextResponse.json({ financialYear: fy, accounts, created, renamed });
   } catch (error) {
     console.error("Quick-setup error:", error);
-    return NextResponse.json({ error: "Internal server error", details: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

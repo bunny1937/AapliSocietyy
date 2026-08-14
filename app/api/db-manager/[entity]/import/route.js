@@ -90,8 +90,7 @@ export async function POST(request, { params }) {
   } catch (error) {
     console.error('Import error:', error);
     return NextResponse.json({ 
-      error: 'Import failed', 
-      details: error.message 
+      error: 'Import failed' 
     }, { status: 500 });
   }
 }

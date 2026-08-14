@@ -120,6 +120,6 @@ export async function GET(request, { params }) {
     return NextResponse.json({ error: 'Invalid format' }, { status: 400 });
   } catch (error) {
     console.error('Export error:', error);
-    return NextResponse.json({ error: 'Export failed', details: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Export failed' }, { status: 500 });
   }
 }

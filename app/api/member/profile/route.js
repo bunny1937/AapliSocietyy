@@ -38,7 +38,7 @@ export async function GET(request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: "Server error", details: error.message },
+      { error: "Server error" },
       { status: 500 },
     );
   }
@@ -76,7 +76,7 @@ export async function PUT(request) {
     return NextResponse.json({ success: true, member });
   } catch (error) {
     return NextResponse.json(
-      { error: "Server error", details: error.message },
+      { error: "Server error" },
       { status: 500 },
     );
   }

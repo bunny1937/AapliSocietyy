@@ -25,7 +25,7 @@ export async function GET(request, ctx) {
     }
     console.error("Get posting rule error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }
@@ -49,7 +49,7 @@ export async function PATCH(request, ctx) {
     }
     console.error("Update posting rule error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }
@@ -72,7 +72,7 @@ export async function DELETE(request, ctx) {
     }
     console.error("Delete posting rule error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

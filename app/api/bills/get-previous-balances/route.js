@@ -117,7 +117,7 @@ export async function POST(request) {
       return NextResponse.json({ success: true, balances: {} });
     }
     return NextResponse.json(
-      { error: "Failed to get previous balances", details: error.message },
+      { error: "Failed to get previous balances" },
       { status: 500 },
     );
   }

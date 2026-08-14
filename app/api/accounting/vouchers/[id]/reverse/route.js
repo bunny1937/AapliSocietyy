@@ -26,7 +26,7 @@ export async function POST(request, ctx) {
     }
     console.error("Reverse voucher error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

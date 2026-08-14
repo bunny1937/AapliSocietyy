@@ -51,8 +51,9 @@ export async function PUT(request) {
     const society = await Society.findByIdAndUpdate(societyId, { $set, $inc: { configVersion: 1 } }, { new: true, runValidators: true });
     const openBillsUpdated = body.billDueDay != null ? await propagateOpenBillDueDates(societyId, Number(body.billDueDay)) : 0;
     await cache.del(`society:config:${societyId}`);
+    if (openBillsUpdated > 0) await cache.delPattern(`v1:bills:${societyId}:member:*`);
     return NextResponse.json({ success: true, society, openBillsUpdated });
-  } catch (error) { return NextResponse.json({ error: error.message }, { status: 500 }); }
+  } catch (error) { return NextResponse.json({ error: "Internal server error" }, { status: 500 }); }
 }
 export async function GET(request) {
   const gate = await authorizeAny(request, CONFIG_VIEW_IDS);

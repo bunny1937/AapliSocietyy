@@ -96,6 +96,6 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("receipt preview-fill error", error);
-    return NextResponse.json({ error: error.message || "Failed to render preview" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to render preview" }, { status: 500 });
   }
 }

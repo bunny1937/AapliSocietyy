@@ -603,6 +603,11 @@ export async function POST(request) {
 
         await cache.delPattern(`billing:list:${dec.societyId}:*`);
         await cache.del(`payments:outstanding:${dec.societyId}`);
+        if (successCount > 0) {
+          await cache.delPattern(`v1:bills:${dec.societyId}:member:*`);
+          await cache.delPattern(`v1:ledger:${dec.societyId}:member:*`);
+          await cache.delPattern(`v1:receipts:${dec.societyId}:member:*`);
+        }
 
         await cache.del(stageKey(batchKey));
         return {
@@ -628,7 +633,7 @@ export async function POST(request) {
   } catch (err) {
     console.error("upload-payments error:", err);
     return NextResponse.json(
-      { error: "Internal server error", details: err.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

@@ -14,6 +14,18 @@ import {
   PaymentServiceError,
 } from "@/lib/services/PaymentService";
 import { authorize } from "@/lib/rbac/authorize";
+import cache from "@/lib/cache";
+
+// A payment always touches this one member's bill, ledger and receipt list
+// at once - invalidate all three v1 keys together so the app never shows
+// two of the three updated and one stale.
+async function invalidateV1MemberCaches(societyId, memberId) {
+  await cache.del(
+    `v1:bills:${societyId}:member:${memberId}`,
+    `v1:ledger:${societyId}:member:${memberId}`,
+    `v1:receipts:${societyId}:member:${memberId}`,
+  );
+}
 
 // Business logic lives in lib/services/PaymentService.js as of Phase 2.1 of
 // the accounting-system revamp (docs/accounting-system-ARD.md §9). This route
@@ -224,6 +236,7 @@ export async function POST(request) {
         principalCleared: prinCleared,
         advanceCredit: advance,
       };
+      await invalidateV1MemberCaches(decoded.societyId, memberId);
       return NextResponse.json(
         {
           success: true,
@@ -323,6 +336,7 @@ export async function POST(request) {
       actorRole: decoded.role,
     });
 
+    await invalidateV1MemberCaches(decoded.societyId, memberId);
     return NextResponse.json(paymentRecord, { status: 201 });
   } catch (error) {
     if (error instanceof PaymentServiceError) {
@@ -332,7 +346,6 @@ export async function POST(request) {
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error.message,
       },
       { status: 500 },
     );

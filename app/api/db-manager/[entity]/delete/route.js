@@ -8,6 +8,7 @@ import Transaction from "@/models/Transaction";
 import Receipt from "@/models/Receipt";
 import { requireRoles } from "@/lib/authz";
 import { authorize } from "@/lib/rbac/authorize";
+import cache from "@/lib/cache";
 export async function DELETE(request, { params }) {
   try {
     const gate = await authorize(request, "society.data.delete");
@@ -59,6 +60,15 @@ export async function DELETE(request, { params }) {
       },
       timestamp: new Date(),
     });
+    // IDs deleted here aren't grouped by member, and this tool is rare/
+    // dangerous enough that a full society sweep is the right trade - a
+    // missed targeted invalidation here would mean a resident's app keeps
+    // showing a bill/payment that was just hard-deleted.
+    if ((entity === "bills" || entity === "transactions" || entity === "receipts") && result.deletedCount > 0) {
+      await cache.delPattern(`v1:bills:${decoded.societyId}:member:*`);
+      await cache.delPattern(`v1:ledger:${decoded.societyId}:member:*`);
+      await cache.delPattern(`v1:receipts:${decoded.societyId}:member:*`);
+    }
     return NextResponse.json({
       success: true,
       message: `Deleted ${result.deletedCount} ${entity}`,
@@ -69,7 +79,6 @@ export async function DELETE(request, { params }) {
     return NextResponse.json(
       {
         error: "Delete failed",
-        details: error.message,
       },
       { status: 500 },
     );

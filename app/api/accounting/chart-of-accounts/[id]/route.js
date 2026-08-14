@@ -24,7 +24,7 @@ export async function GET(request, ctx) {
     }
     console.error("Get chart of account error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }
@@ -48,7 +48,7 @@ export async function PATCH(request, ctx) {
     }
     console.error("Update chart of account error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

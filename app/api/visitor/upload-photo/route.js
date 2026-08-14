@@ -78,7 +78,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("\u274c Visitor photo upload error:", error);
     return NextResponse.json(
-      { error: "Upload failed", details: error.message },
+      { error: "Upload failed" },
       { status: 500 },
     );
   }

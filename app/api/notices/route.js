@@ -112,7 +112,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("Create notice error:", error);
     return NextResponse.json(
-      { error: "Server error", details: error.message },
+      { error: "Server error" },
       { status: 500 },
     );
   }
@@ -189,7 +189,7 @@ export async function GET(request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: "Server error", details: error.message },
+      { error: "Server error" },
       { status: 500 },
     );
   }

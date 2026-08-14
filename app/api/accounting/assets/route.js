@@ -40,7 +40,7 @@ export async function GET(request) {
   } catch (error) {
     console.error("List assets error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }
@@ -62,7 +62,7 @@ export async function POST(request) {
     if (mapped) return mapped;
     console.error("Register asset error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

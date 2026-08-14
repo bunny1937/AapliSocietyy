@@ -198,7 +198,7 @@ export async function GET(request) {
   } catch (error) {
     console.error("collection-sheet error:", error);
     return NextResponse.json(
-      { error: "Failed to build collection sheet", details: error.message },
+      { error: "Failed to build collection sheet" },
       { status: 500 },
     );
   }

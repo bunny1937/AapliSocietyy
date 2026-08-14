@@ -120,6 +120,6 @@ export async function GET(request) {
     });
   } catch (err) {
     console.error("Payments received list error", err);
-    return NextResponse.json({ error: "Failed to load payments", details: err.message }, { status: 500 });
+    return NextResponse.json({ error: "Failed to load payments" }, { status: 500 });
   }
 }

@@ -328,7 +328,7 @@ export async function GET(request) {
       } catch (error) {
         console.error("PDF generation error:", error);
         return NextResponse.json(
-          { error: "PDF generation failed", details: error.message },
+          { error: "PDF generation failed" },
           { status: 500 },
         );
       }
@@ -337,7 +337,7 @@ export async function GET(request) {
   } catch (error) {
     console.error("Export error:", error);
     return NextResponse.json(
-      { error: "Export failed", details: error.message },
+      { error: "Export failed" },
       { status: 500 },
     );
   }

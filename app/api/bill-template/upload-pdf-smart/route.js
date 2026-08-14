@@ -64,8 +64,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('❌ Upload PDF error:', error);
     return NextResponse.json({
-      error: 'Upload failed',
-      details: error.message
+      error: 'Upload failed'
     }, { status: 500 });
   }
 }

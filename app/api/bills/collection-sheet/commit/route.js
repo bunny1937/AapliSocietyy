@@ -264,6 +264,9 @@ export async function POST(request) {
       cache.del(`payments:outstanding:${societyId}`),
       cache.delPattern(`collection:sheet:${societyId}:${billSeries}:${periodId}:*`),
       invalidateSocietySnapshot(societyId),
+      // Every member on this collection sheet just had a payment posted.
+      cache.delPattern(`v1:bills:${societyId}:member:*`),
+      cache.delPattern(`v1:ledger:${societyId}:member:*`),
     ]);
 
     return NextResponse.json({
@@ -276,7 +279,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("collection-sheet/commit error:", error);
     return NextResponse.json(
-      { error: "Commit failed", details: error.message },
+      { error: "Commit failed" },
       { status: 500 },
     );
   }

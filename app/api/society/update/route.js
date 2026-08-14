@@ -49,6 +49,7 @@ export async function PUT(request) {
     const openBillsUpdated = oldDueDay !== newDueDay ? await updateOpenDueDates(societyId, newDueDay) : 0;
     await AuditLog.create({ userId: decoded.userId, societyId, action: "UPDATE_SOCIETY_CONFIG", oldData: oldSociety, newData: updatedSociety, timestamp: new Date() });
     await cache.del(`society:config:${societyId}`);
+    if (openBillsUpdated > 0) await cache.delPattern(`v1:bills:${societyId}:member:*`);
     return NextResponse.json({ success: true, message: "Society configuration updated successfully", society: updatedSociety, openBillsUpdated });
-  } catch (error) { return NextResponse.json({ error: "Internal server error", details: error.message }, { status: 500 }); }
+  } catch (error) { return NextResponse.json({ error: "Internal server error" }, { status: 500 }); }
 }

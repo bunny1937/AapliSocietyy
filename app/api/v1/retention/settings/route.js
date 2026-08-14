@@ -70,7 +70,7 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error("Retention settings GET error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -140,6 +140,6 @@ export async function PUT(request) {
     return NextResponse.json({ success: true, settings: shape(updated) });
   } catch (error) {
     console.error("Retention settings PUT error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

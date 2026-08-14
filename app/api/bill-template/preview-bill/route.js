@@ -7,6 +7,7 @@ import connectDB from "@/lib/mongodb";
 import { requireRoles } from "@/lib/authz";
 import Bill from "@/models/Bill";
 import Member from "@/models/Member";
+import Society from "@/models/Society";
 import User from "@/models/User";
 import { normalizeBillCharges } from "@/lib/bill-charge-normalizer";
 void User;
@@ -21,6 +22,9 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const societyId = auth.user.societyId;
     let memberId = searchParams.get("memberId");
+
+    // Load society config for areaBasis and other template settings
+    const society = societyId ? await Society.findById(societyId).select("config").lean() : null;
 
     if (!memberId) {
       const first = await Member.findOne({ societyId }).select("_id").lean();
@@ -84,6 +88,6 @@ export async function GET(request) {
     });
   } catch (err) {
     console.error("preview-bill error", err);
-    return NextResponse.json({ error: err.message || "Failed to build preview" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to build preview" }, { status: 500 });
   }
 }

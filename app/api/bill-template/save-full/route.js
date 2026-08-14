@@ -78,8 +78,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('❌ Save template error:', error);
     return NextResponse.json({
-      error: 'Failed to save template',
-      details: error.message
+      error: 'Failed to save template'
     }, { status: 500 });
   }
 }

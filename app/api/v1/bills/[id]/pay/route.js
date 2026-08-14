@@ -9,6 +9,7 @@ import { issueReceiptNo } from "@/lib/billing/receiptIssuance";
 import { periodLabelFrom } from "@/lib/v1/periodLabel";
 import { notifyPaymentReceived } from "@/lib/v1/notify";
 import { postPaymentToLedger } from "@/lib/accounting/paymentLedgerPosting";
+import cache from "@/lib/cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -131,6 +132,12 @@ export const POST = withRoute(async (req, ctx) => {
   }
 
   await notifyPaymentReceived({ transactionId: transaction._id, societyId, memberId: bill.memberId, amount });
+
+  await cache.del(
+    `v1:bills:${societyId}:member:${bill.memberId}`,
+    `v1:ledger:${societyId}:member:${bill.memberId}`,
+    `v1:receipts:${societyId}:member:${bill.memberId}`,
+  );
 
   const member = await Member.findById(bill.memberId).lean();
   return json({

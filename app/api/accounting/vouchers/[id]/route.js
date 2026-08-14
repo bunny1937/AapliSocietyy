@@ -20,7 +20,7 @@ export async function GET(request, ctx) {
     }
     console.error("Get voucher error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

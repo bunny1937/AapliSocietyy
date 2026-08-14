@@ -22,6 +22,7 @@
 import { withRoute, json } from "@/lib/v1/http";
 import { getClaims, requireTenant } from "@/lib/v1/auth";
 import { Society, User, Member } from "@/lib/v1/models";
+import cache from "@/lib/cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,10 +59,24 @@ function dedupe(list) {
   return out;
 }
 
+// This runs 2-3 queries plus a dedupe pass for data that barely ever
+// changes (committee roster, society office number) and is identical for
+// every resident of the society — a strong SWR candidate. Soft 60s / hard
+// 300s: nothing in the mobile app writes these fields today (they're edited
+// from the web admin side), so there's no invalidation hook here — an admin
+// edit can take up to 5 minutes to show up in the app. Acceptable for a
+// phone book; revisit if that side ever needs to feel instant too.
 export const GET = withRoute(async (req) => {
   const claims = getClaims(req);
   const societyId = requireTenant(claims);
+  return json({ contacts: await cache.getOrSetSWR(
+    `v1:society-contacts:${societyId}`,
+    () => fetchContacts(societyId),
+    { softTtlSeconds: 60, hardTtlSeconds: 300 },
+  ) });
+});
 
+async function fetchContacts(societyId) {
   const [society, committee] = await Promise.all([
     Society.findById(societyId).lean(),
     // Committee members of THIS society only. A tenant must never be handed
@@ -128,5 +143,5 @@ export const GET = withRoute(async (req) => {
     contacts.push(entry(u.name || fallback?.name || u.username, u.phone || fallback?.phone, u.role));
   }
 
-  return json({ contacts: dedupe(contacts) });
-});
+  return dedupe(contacts);
+}

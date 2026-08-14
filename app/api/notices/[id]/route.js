@@ -28,7 +28,7 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ success: true, message: "Notice deleted" });
   } catch (error) {
     return NextResponse.json(
-      { error: "Server error", details: error.message },
+      { error: "Server error" },
       { status: 500 },
     );
   }
@@ -58,7 +58,7 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ success: true, notice });
   } catch (error) {
     return NextResponse.json(
-      { error: "Server error", details: error.message },
+      { error: "Server error" },
       { status: 500 },
     );
   }

@@ -20,7 +20,7 @@ export async function GET(request) {
   } catch (error) {
     console.error("List funds error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }
@@ -43,7 +43,7 @@ export async function POST(request) {
     }
     console.error("Create fund error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

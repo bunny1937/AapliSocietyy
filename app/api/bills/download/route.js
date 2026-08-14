@@ -358,7 +358,7 @@ export async function GET(request) {
   } catch (error) {
     console.error("❌ Download error:", error);
     return NextResponse.json(
-      { error: "Failed", details: error.message },
+      { error: "Failed" },
       { status: 500 },
     );
   }

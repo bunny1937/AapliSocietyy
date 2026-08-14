@@ -263,6 +263,10 @@ export async function POST(request) {
       await cache.del(`billing:generated:${societyId}`);
       await cache.del(`payments:outstanding:${societyId}`);
       await cache.del(`admin:stats:global`);
+      // New bills for every member in this run - the mobile app's per-member
+      // cache must not serve last period's bills/ledger after this.
+      await cache.delPattern(`v1:bills:${societyId}:member:*`);
+      await cache.delPattern(`v1:ledger:${societyId}:member:*`);
 
       return {
         success: true,
@@ -279,7 +283,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("Generate final bills error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

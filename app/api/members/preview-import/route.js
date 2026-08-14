@@ -166,7 +166,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("Preview error:", error);
     return NextResponse.json(
-      { error: "Preview failed", details: error.message },
+      { error: "Preview failed" },
       { status: 500 },
     );
   }

@@ -141,9 +141,10 @@ export async function GET(request) {
           memberFilter.roomNo = { $gte: start, $lte: end };
         } else if (roomNoPattern.includes("*")) {
           // Starts with: 13*
-          memberFilter.roomNo = new RegExp(
-            `^${roomNoPattern.replace("*", "")}`,
-          );
+          const escaped = roomNoPattern
+            .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+            .replace(/\\\*/g, ""); // un-escape the wildcard token itself, then drop it
+          memberFilter.roomNo = new RegExp(`^${escaped}`);
         } else {
           memberFilter.roomNo = roomNoPattern;
         }
@@ -302,7 +303,6 @@ export async function GET(request) {
     return NextResponse.json(
       {
         error: "Failed to fetch ledger",
-        details: error.message,
       },
       { status: 500 },
     );

@@ -231,6 +231,12 @@ async function handle(req) {
         [...societyIds].flatMap((sid) => [
           cache.del(`billing:generated:${sid}`),
           cache.del(`payments:outstanding:${sid}`),
+          // Every member in this society just had a bill flip Scheduled ->
+          // Unpaid (visible for the first time) or got backfilled a new one
+          // - the mobile app's per-member bill/ledger cache for the whole
+          // society is stale now, not just the members this batch touched.
+          cache.delPattern(`v1:bills:${sid}:member:*`),
+          cache.delPattern(`v1:ledger:${sid}:member:*`),
         ]),
       );
       await cache.del("admin:stats:global");
@@ -259,7 +265,7 @@ async function handle(req) {
   } catch (error) {
     await cache.del(LOCK_KEY).catch(() => {});
     console.error("[PUSH-SCHEDULED] Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 

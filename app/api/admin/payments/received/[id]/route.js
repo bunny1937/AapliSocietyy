@@ -15,6 +15,7 @@ import Transaction from "@/models/Transaction";
 import User from "@/models/User";
 void User;
 import { authorize } from "@/lib/rbac/authorize";
+import cache from "@/lib/cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,10 +59,11 @@ export async function PATCH(request, ctx) {
 
     Object.assign(txn, updates);
     await txn.save();
+    await cache.del(`v1:ledger:${txn.societyId}:member:${txn.memberId}`);
     return NextResponse.json({ success: true, payment: { _id: String(txn._id), ...updates } });
   } catch (err) {
     console.error("Payment edit error", err);
-    return NextResponse.json({ error: "Failed to update payment", details: err.message }, { status: 500 });
+    return NextResponse.json({ error: "Failed to update payment" }, { status: 500 });
   }
 }
 
@@ -106,6 +108,11 @@ export async function POST(request, ctx) {
     txn.reversalTransactionId = reversalId;
     await txn.save();
 
+    await cache.del(
+      `v1:ledger:${txn.societyId}:member:${txn.memberId}`,
+      `v1:bills:${txn.societyId}:member:${txn.memberId}`,
+    );
+
     return NextResponse.json({
       success: true,
       reversalTransactionId: reversalId,
@@ -116,6 +123,6 @@ export async function POST(request, ctx) {
     });
   } catch (err) {
     console.error("Payment reversal error", err);
-    return NextResponse.json({ error: "Failed to reverse payment", details: err.message }, { status: 500 });
+    return NextResponse.json({ error: "Failed to reverse payment" }, { status: 500 });
   }
 }

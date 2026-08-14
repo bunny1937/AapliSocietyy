@@ -142,6 +142,10 @@ export async function POST(request) {
     await cache.del(`billing:generated:${societyId}`);
     await cache.del(`payments:outstanding:${societyId}`);
     await cache.del("admin:stats:global");
+    if (created.length > 0) {
+      await cache.delPattern(`v1:bills:${societyId}:member:*`);
+      await cache.delPattern(`v1:ledger:${societyId}:member:*`);
+    }
     return NextResponse.json({
       success: true,
       count: created.length,

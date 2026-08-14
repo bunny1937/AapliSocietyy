@@ -168,7 +168,7 @@ export async function GET(request, { params }) {
   } catch (error) {
     console.error("Retention download error:", error);
     return NextResponse.json(
-      { error: "Failed to build archive", details: error.message },
+      { error: "Failed to build archive" },
       { status: 500 },
     );
   }

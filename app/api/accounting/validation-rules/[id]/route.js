@@ -26,7 +26,7 @@ export async function PATCH(request, { params }) {
     }
     console.error("Update validation rule error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }
@@ -49,7 +49,7 @@ export async function DELETE(request, { params }) {
     }
     console.error("Delete validation rule error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }
