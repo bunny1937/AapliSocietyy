@@ -62,6 +62,13 @@ const ShopProductSchema = new mongoose.Schema(
     // At or below this, members see "Low stock" instead of "Available". 0 means
     // "only warn when it is actually finished".
     lowStockThreshold: { type: Number, default: 0, min: 0 },
+    // Per-order quantity limits a member can buy in one line. Both optional:
+    // null means "no limit" (most items — a resident buying 1 or 40 tomatoes
+    // is the shop's business, not the app's). When set, the member catalogue
+    // and order placement both enforce them, so a shop that caps "max 2 cakes
+    // per order" cannot be bypassed by an app that doesn't know the cap exists.
+    minOrderQty: { type: Number, default: null, min: 1 },
+    maxOrderQty: { type: Number, default: null, min: 1 },
     sortOrder: { type: Number, default: 100 },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },

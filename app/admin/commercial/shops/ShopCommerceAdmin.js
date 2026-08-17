@@ -53,6 +53,30 @@ const SETUP_LABELS = {
   paymentMethods: "Payment methods",
 };
 
+const OWNER_PATH_LABELS = {
+  RESIDENT: "resident's existing login",
+  EXISTING_OWNER_USER: "owner's existing login",
+  LINKED_EXISTING_ACCOUNT: "linked to existing account",
+  NEW_ACCOUNT: "new account created",
+};
+
+// Each concern within a drawer tab (listing status, public info, hours,
+// orders) gets its own bordered card instead of one long unbroken scroll.
+const bentoCard = {
+  border: "1px solid var(--cx-border)",
+  borderRadius: 10,
+  padding: 14,
+  background: "var(--cx-surface-2)",
+};
+const bentoCardTitle = {
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: "0.4px",
+  textTransform: "uppercase",
+  color: "var(--cx-fg-4)",
+  marginBottom: 10,
+};
+
 const input = {
   width: "100%",
   padding: "7px 9px",
@@ -64,14 +88,6 @@ const input = {
 };
 const label = { fontSize: 11.5, fontWeight: 600, color: "var(--cx-fg-3)", marginBottom: 4 };
 const help = { fontSize: 11.5, color: "var(--cx-fg-4)", lineHeight: 1.5 };
-const sectionTitle = {
-  fontSize: 12,
-  fontWeight: 700,
-  letterSpacing: 0.3,
-  textTransform: "uppercase",
-  color: "var(--cx-fg-3)",
-  margin: "18px 0 10px",
-};
 
 async function postJson(url, body) {
   const res = await fetch(url, {
@@ -94,27 +110,22 @@ async function postJson(url, body) {
 /** The "Residents" table cell: can a resident see this shop, and if not, why. */
 export function ShopVisibilityCell({ shop }) {
   const published = shop?.storefront?.isPublished === true;
-  if (published) {
-    return (
-      <div>
-        <Pill tone="active">Listed</Pill>
-        {shop?.storefront?.manualClosed && (
-          <div style={{ ...help, marginTop: 4 }}>marked closed by the shop</div>
-        )}
-      </div>
-    );
-  }
+  const hours = shop?.storefront?.hoursToday;
   return (
     <div>
-      <Pill tone="neutral">Not listed</Pill>
-      <div style={{ ...help, marginTop: 4 }}>residents cannot see it</div>
+      {published ? <Pill tone="active">Listed</Pill> : <Pill tone="neutral">Not listed</Pill>}
+      <div style={{ ...help, marginTop: 4 }}>
+        {published
+          ? hours?.label || "Hours not set"
+          : "residents cannot see it"}
+      </div>
     </div>
   );
 }
 
 // ------------------------------------------------------------- owner invite
 
-function OwnerInvite({ shop, onBanner }) {
+export function OwnerInvite({ shop, onBanner }) {
   const [candidates, setCandidates] = useState(null);
   const [pending, setPending] = useState(false);
   const qc = useQueryClient();
@@ -226,14 +237,28 @@ function OwnerInvite({ shop, onBanner }) {
     );
   }
 
+  const granted = shop.ownerAccess?.granted === true;
+
   return (
     <div style={{ marginTop: 10 }}>
-      <Btn variant="primary" disabled={pending || !shop.ownerEmail} onClick={() => invite({})}>
-        {pending ? "Inviting…" : "Invite the owner"}
+      <div style={{ marginBottom: 8 }}>
+        {granted ? (
+          <Pill tone="active">
+            Owner has app access
+            {shop.ownerAccess?.path && ` · ${OWNER_PATH_LABELS[shop.ownerAccess.path] || shop.ownerAccess.path}`}
+          </Pill>
+        ) : (
+          <Pill tone="neutral">Not invited yet</Pill>
+        )}
+      </div>
+      <Btn variant={granted ? undefined : "primary"} disabled={pending || !shop.ownerEmail} onClick={() => invite({})}>
+        {pending ? "Sending…" : granted ? "Resend" : "Invite the owner"}
       </Btn>
       <div style={{ ...help, marginTop: 6 }}>
         {shop.ownerEmail
-          ? `Sends ${shop.ownerEmail} what they need to open this shop in the app. A resident owner keeps their existing login and gains a Shop profile.`
+          ? granted
+            ? `${shop.ownerEmail} already has access. Resend only if they lost the email.`
+            : `Sends ${shop.ownerEmail} what they need to open this shop in the app. A resident owner keeps their existing login and gains a Shop profile.`
           : "Add an owner email above and save before inviting."}
       </div>
     </div>
@@ -271,8 +296,14 @@ function daysFromStorefront(storefront) {
  * Hours are edited as ONE range per day here. The data model supports split
  * hours (a lunch break), and any day that already has them says so instead of
  * silently pretending the second range does not exist.
+ *
+ * `tab` picks which slice of this ONE form to render — "listing" (publish +
+ * public info + hours) or "orders" (pickup/delivery/payment). Both slices
+ * share the same state and the same save button on purpose: it is one PATCH
+ * to the storefront either way, so switching tabs must never lose an edit
+ * made on the other one.
  */
-export function ShopStorefrontPanel({ shopId, onBanner }) {
+export function ShopStorefrontPanel({ shopId, onBanner, tab = "listing" }) {
   const qc = useQueryClient();
   const [days, setDays] = useState(() => DAYS.map((d) => emptyDay(d.value)));
   const [form, setForm] = useState({
@@ -419,26 +450,14 @@ export function ShopStorefrontPanel({ shopId, onBanner }) {
 
   return (
     <div>
-      <div style={sectionTitle}>What residents see</div>
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 12,
-          flexWrap: "wrap",
-          padding: 12,
-          borderRadius: 9,
-          border: "1px solid var(--cx-border)",
-          background: "var(--cx-surface-2)",
-        }}
-      >
-        <div>
+      {tab === "listing" && (
+        <>
+      <div style={{ ...bentoCard, marginBottom: 12 }}>
+          <div style={bentoCardTitle}>Listing status</div>
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--cx-fg-1)" }}>
             {published ? "Listed in Society Shops" : "Not listed in Society Shops"}
           </div>
-          <div style={{ ...help, marginTop: 3, maxWidth: 560 }}>
+          <div style={{ ...help, marginTop: 3, marginBottom: 10 }}>
             {published
               ? "Residents of this society can find this shop in the app. Un-listing hides it immediately; nothing is deleted."
               : ready
@@ -447,53 +466,53 @@ export function ShopStorefrontPanel({ shopId, onBanner }) {
                     .map((m) => SETUP_LABELS[m] || m)
                     .join(", ")}.`}
           </div>
-        </div>
-        <Btn
-          variant={published ? "danger" : "primary"}
-          disabled={publishMutation.isPending || (!published && !ready)}
-          onClick={() => publishMutation.mutate(!published)}
-        >
-          {published ? "Remove from list" : "List for residents"}
-        </Btn>
+          <Btn
+            variant={published ? "danger" : "primary"}
+            disabled={publishMutation.isPending || (!published && !ready)}
+            onClick={() => publishMutation.mutate(!published)}
+          >
+            {published ? "Remove from list" : "List for residents"}
+          </Btn>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginTop: 14 }}>
-        <div>
-          <div style={label}>Short line residents see</div>
-          <input
-            style={input}
-            maxLength={120}
-            value={form.tagline}
-            onChange={(e) => set("tagline", e.target.value)}
-            placeholder="Fresh vegetables and fruits, daily"
-          />
-        </div>
-        <div>
-          <div style={label}>Public phone</div>
-          <input
-            style={input}
-            value={form.publicPhone}
-            onChange={(e) => set("publicPhone", e.target.value)}
-            placeholder="9876543210"
-          />
-          <div style={{ ...help, marginTop: 4 }}>
-            Shown to residents. Leave blank to keep the owner&rsquo;s number private.
+      <div style={{ ...bentoCard, marginBottom: 12 }}>
+          <div style={bentoCardTitle}>Public info</div>
+          <div style={{ marginBottom: 10 }}>
+            <div style={label}>Short line residents see</div>
+            <input
+              style={input}
+              maxLength={120}
+              value={form.tagline}
+              onChange={(e) => set("tagline", e.target.value)}
+              placeholder="Fresh vegetables and fruits, daily"
+            />
           </div>
-        </div>
+          <div style={{ marginBottom: 10 }}>
+            <div style={label}>Public phone</div>
+            <input
+              style={input}
+              value={form.publicPhone}
+              onChange={(e) => set("publicPhone", e.target.value)}
+              placeholder="9876543210"
+            />
+            <div style={{ ...help, marginTop: 4 }}>
+              Leave blank to keep the owner&rsquo;s number private.
+            </div>
+          </div>
+          <div>
+            <div style={label}>About this shop</div>
+            <textarea
+              style={{ ...input, minHeight: 66, resize: "vertical" }}
+              maxLength={2000}
+              value={form.description}
+              onChange={(e) => set("description", e.target.value)}
+            />
+          </div>
       </div>
 
-      <div style={{ marginTop: 12 }}>
-        <div style={label}>About this shop</div>
-        <textarea
-          style={{ ...input, minHeight: 66, resize: "vertical" }}
-          maxLength={2000}
-          value={form.description}
-          onChange={(e) => set("description", e.target.value)}
-        />
-      </div>
-
-      <div style={sectionTitle}>Opening hours</div>
-      <div style={{ display: "grid", gap: 6 }}>
+      <div style={bentoCard}>
+          <div style={bentoCardTitle}>Opening hours</div>
+          <div style={{ display: "grid", gap: 6 }}>
         {days.map((d, i) => (
           <div
             key={d.dayOfWeek}
@@ -565,8 +584,13 @@ export function ShopStorefrontPanel({ shopId, onBanner }) {
           />
         )}
       </div>
+      </div>
+        </>
+      )}
 
-      <div style={sectionTitle}>Orders</div>
+      {tab === "orders" && (
+      <div style={bentoCard}>
+          <div style={bentoCardTitle}>Orders &amp; payment</div>
       <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
         <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5 }}>
           <input
@@ -641,6 +665,8 @@ export function ShopStorefrontPanel({ shopId, onBanner }) {
           it never appears on a maintenance bill.
         </div>
       </div>
+      </div>
+      )}
 
       <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
         <Btn variant="primary" disabled={saveMutation.isPending} onClick={save}>
@@ -651,20 +677,26 @@ export function ShopStorefrontPanel({ shopId, onBanner }) {
   );
 }
 
-// ------------------------------------------------------------------- wrapper
+// ---------------------------------------------------------------- tab panels
+// One panel per drawer tab (PageClient.js's Drawer). Each is a thin wrapper
+// so the drawer only has to know tab names, not the fields inside them.
 
-/** Owner invite + storefront, as shown under an open shop on the Shops screen. */
-export default function ShopCommerceAdmin({ shop, onBanner }) {
-  if (!shop?.id) return null;
+export function OwnerAccessTab({ shop, onBanner }) {
   return (
-    <div style={{ marginTop: 18, borderTop: "1px solid var(--cx-border)", paddingTop: 6 }}>
-      <div style={sectionTitle}>The owner&rsquo;s app access</div>
-      <div style={{ ...help, maxWidth: 620 }}>
-        A resident owner keeps their existing login and gains a Shop profile to switch into.
-        A non-resident owner gets their own login. Nothing on the flat record changes either way.
+    <div>
+      <div style={{ ...help, marginBottom: 4 }}>
+        A resident owner keeps their existing login and gains a Shop profile. A
+        non-resident owner gets their own login. The flat record never changes.
       </div>
       <OwnerInvite shop={shop} onBanner={onBanner} />
-      <ShopStorefrontPanel shopId={shop.id} onBanner={onBanner} />
     </div>
   );
+}
+
+export function ListingHoursTab({ shopId, onBanner }) {
+  return <ShopStorefrontPanel shopId={shopId} onBanner={onBanner} tab="listing" />;
+}
+
+export function OrdersTab({ shopId, onBanner }) {
+  return <ShopStorefrontPanel shopId={shopId} onBanner={onBanner} tab="orders" />;
 }

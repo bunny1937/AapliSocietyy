@@ -6,4 +6,6 @@ export { default as Btn } from "./Btn";
 export { default as StatTile } from "./StatTile";
 export { default as Icon } from "./Icon";
 export { default as ThemeToggle } from "./ThemeToggle";
+export { default as Drawer } from "./Drawer";
+export { default as Tabs } from "./Tabs";
 import "./tokens.css";

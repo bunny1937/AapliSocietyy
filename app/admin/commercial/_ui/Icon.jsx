@@ -4,10 +4,11 @@ import {
   Megaphone, MessageSquareWarning, Settings, Building2, ClipboardList,
   Database, PackageOpen, ScrollText, Plus, RefreshCw, Tag, IndianRupee,
   Home, CheckCircle, AlertTriangle, Clock, Phone, ChevronRight, Search,
-  Bell, Wrench, ShieldAlert, Sparkles, Calendar, ArrowRight, Sun, Moon,
+  Bell, Wrench, ShieldAlert, Sparkles, Calendar, ArrowRight, Sun, Moon, X,
 } from "lucide-react";
 
 const MAP = {
+  x: X,
   "layout-dashboard": LayoutDashboard, "file-text": FileText, users: Users,
   "credit-card": CreditCard, "book-open": BookOpen, waves: Waves, store: Store,
   megaphone: Megaphone, "message-square-warning": MessageSquareWarning,

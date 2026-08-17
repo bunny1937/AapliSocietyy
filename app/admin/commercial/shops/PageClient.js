@@ -16,15 +16,21 @@
 // its own bill series. Linking it to an owner stores a reference on the SHOP.
 // Nothing on this screen ever writes to a flat. You can delete a shop and the
 // flat is exactly as it was.
+//
+// REVAMPED 2026-08-17. The old layout was one long vertical scroll: a table
+// row expanded into a ~40-field form, with owner email, listing status and
+// opening hours buried below the fold or missing from the table entirely.
+// This version is a card grid (every important fact visible without a click)
+// plus a tabbed drawer for editing, so "is this shop listed", "does the owner
+// have app access" and "what are its hours" are answered at a glance.
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { Card, CardHead, Pill, Segmented, Table, Btn, StatTile } from "../_ui";
-// Owner invite + resident-facing storefront. Kept in its own file so this
-// screen keeps its single job (the unit record) and gains only a column.
-import ShopCommerceAdmin, { ShopVisibilityCell } from "./ShopCommerceAdmin";
+import { Card, Pill, Segmented, Btn, StatTile, Tabs, Icon } from "../_ui";
+import { OwnerAccessTab, ListingHoursTab, OrdersTab } from "./ShopCommerceAdmin";
 
 const FILTERS = [
   { value: "ALL", label: "All" },
@@ -117,11 +123,118 @@ const EMPTY_FORM = {
   isActive: true,
 };
 
+const DRAWER_TABS = [
+  { value: "unit", label: "Unit details" },
+  { value: "owner", label: "Owner & access" },
+  { value: "listing", label: "Listing & hours" },
+  { value: "orders", label: "Orders & payment" },
+];
+const NEW_ONLY_DISABLED_REASON = "Save the shop first — there is nothing to invite or list yet.";
+
+const cardBoxStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
+  background: "var(--cx-surface)",
+  border: "1px solid var(--cx-border)",
+  borderRadius: "var(--cx-radius-lg)",
+  padding: 18,
+  boxShadow: "var(--cx-shadow-card)",
+  cursor: "pointer",
+};
+
+/** One shop, as a scannable card. Every fact this screen exists to surface
+ * (owner + email, area, business, billing status, listed status + hours) is
+ * on the card itself, not one click away. */
+function ShopCard({ shop, onOpen, isOpen }) {
+  const s = shop;
+  const published = s.storefront?.isPublished === true;
+
+  return (
+    <div
+      onClick={() => onOpen(s)}
+      style={
+        isOpen
+          ? { ...cardBoxStyle, outline: "2px solid var(--cx-brand)", outlineOffset: 2 }
+          : cardBoxStyle
+      }
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--cx-fg-1)" }}>
+            {s.unitKind} {s.unitLabel}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--cx-fg-4)" }}>floor {s.floor ?? 0}</div>
+        </div>
+        {s.problems.length ? (
+          <Pill tone="overdue">Needs attention</Pill>
+        ) : !s.isBillable || !s.isActive ? (
+          <Pill tone="neutral">Not billed</Pill>
+        ) : (
+          <Pill tone="active">In billing</Pill>
+        )}
+      </div>
+
+      <div style={{ borderTop: "1px solid var(--cx-border)", paddingTop: 10, display: "grid", gap: 6 }}>
+        <Row label="Owner">
+          <div>
+            <div style={{ fontSize: 13, color: "var(--cx-fg-1)" }}>{s.ownerName || "—"}</div>
+            {s.ownerEmail && <div style={{ fontSize: 11, color: "var(--cx-fg-4)" }}>{s.ownerEmail}</div>}
+          </div>
+        </Row>
+        <Row label="Area">
+          <span className="cx-num" style={{ fontSize: 13, color: "var(--cx-fg-1)" }}>
+            {Number(s.areaSqft) > 0 ? `${s.areaSqft} sq ft` : "—"}
+          </span>
+        </Row>
+        <Row label="Business">
+          <span style={{ fontSize: 13, color: s.tradeName ? "var(--cx-fg-1)" : "var(--cx-fg-4)" }}>
+            {s.tradeName || "not set"}
+          </span>
+        </Row>
+        <Row label="Listing">
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {published ? <Pill tone="active">Listed</Pill> : <Pill tone="neutral">Not listed</Pill>}
+            <span style={{ fontSize: 11, color: "var(--cx-fg-4)" }}>
+              {published ? s.storefront?.hoursToday?.label || "Hours not set" : "hidden from residents"}
+            </span>
+          </div>
+        </Row>
+        <Row label="Owner access">
+          {s.ownerAccess?.granted ? (
+            <Pill tone="active">Has app access</Pill>
+          ) : (
+            <Pill tone="neutral">Not invited</Pill>
+          )}
+        </Row>
+      </div>
+
+      {s.problems.length > 0 && (
+        <div style={{ fontSize: 11, color: "var(--cx-warning)", lineHeight: 1.5 }}>
+          {s.problems.map((p, i) => (
+            <div key={i}>&bull; {p}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Row({ label, children }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+      <span style={{ fontSize: 11, color: "var(--cx-fg-4)", flexShrink: 0 }}>{label}</span>
+      <div style={{ textAlign: "right" }}>{children}</div>
+    </div>
+  );
+}
+
 export default function CommercialShopsPage() {
   const qc = useQueryClient();
   const [filter, setFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState(null); // shop id, or "NEW"
+  const [drawerTab, setDrawerTab] = useState("unit");
   const [form, setForm] = useState(EMPTY_FORM);
   const [banner, setBanner] = useState(null); // { tone, title, detail }
 
@@ -201,7 +314,7 @@ export default function CommercialShopsPage() {
         .filter((m) => !m.isDeleted)
         .map((m) => ({
           id: String(m.memberId ?? m._id ?? m.id ?? ""),
-          label: `${m.wing || ""}-${m.flatNo || "?"} \u00b7 ${m.ownerName || "Unnamed"}`,
+          label: `${m.wing || ""}-${m.flatNo || "?"} · ${m.ownerName || "Unnamed"}`,
           ownerName: m.ownerName || "",
           phone: m.contactNumber || "",
           email: m.emailPrimary || "",
@@ -215,6 +328,7 @@ export default function CommercialShopsPage() {
   const openNew = () => {
     setForm(EMPTY_FORM);
     setOpenId("NEW");
+    setDrawerTab("unit");
     setBanner(null);
   };
 
@@ -228,8 +342,11 @@ export default function CommercialShopsPage() {
       signageSizeSqft: s.signageSizeSqft ?? "",
     });
     setOpenId(s.id);
+    setDrawerTab("unit");
     setBanner(null);
   };
+
+  const closeDrawer = () => setOpenId(null);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["commercial-shops"] });
@@ -255,13 +372,22 @@ export default function CommercialShopsPage() {
         : apiClient.patch(`/api/commercial/shops/${openId}`, payload),
     onSuccess: (res) => {
       invalidate();
-      setOpenId(null);
+      const wasNew = openId === "NEW";
       setBanner({
         tone: "success",
         title:
           res?.nextStep ||
           "Saved. This shop will appear in the next commercial bill run.",
       });
+      if (wasNew && res?.id) {
+        // Stay open on the new shop instead of closing — the owner/listing
+        // tabs only make sense once there is an id, and the admin is most
+        // likely to want them next.
+        setOpenId(res.id);
+        setDrawerTab("owner");
+      } else {
+        closeDrawer();
+      }
     },
     onError: showError,
   });
@@ -270,7 +396,7 @@ export default function CommercialShopsPage() {
     mutationFn: (id) => apiClient.delete(`/api/commercial/shops/${id}`),
     onSuccess: (res) => {
       invalidate();
-      setOpenId(null);
+      closeDrawer();
       setBanner({
         tone: "success",
         title: res?.nextStep || "Shop removed. The linked flat was not changed.",
@@ -329,67 +455,19 @@ export default function CommercialShopsPage() {
     saveMutation.mutate(payload);
   };
 
-  // ---- table -------------------------------------------------------------
-  const cols = [
-    { key: "unit", label: "Unit" },
-    { key: "owner", label: "Owner" },
-    { key: "area", label: "Area" },
-    { key: "trade", label: "Business" },
-    { key: "status", label: "Status" },
-    { key: "residents", label: "Residents" },
-  ];
-
-  const rows = visible.map((s) => ({
-    key: s.id,
-    cells: [
-      <div key="unit">
-        <div style={{ fontWeight: 600, color: "var(--cx-fg-1)" }}>
-          {s.unitKind} {s.unitLabel}
-        </div>
-        <div style={{ fontSize: 11, color: "var(--cx-fg-4)" }}>floor {s.floor ?? 0}</div>
-      </div>,
-      <div key="owner">
-        <div>{s.ownerName || "\u2014"}</div>
-        {s.occupancyType === "Rented out" && (
-          <div style={{ fontSize: 11, color: "var(--cx-fg-4)" }}>
-            tenant: {s.tenantName || "not recorded"}
-          </div>
-        )}
-      </div>,
-      <div key="area">
-        <div className="cx-num" style={{ fontWeight: 600 }}>
-          {Number(s.areaSqft) > 0 ? `${s.areaSqft} sq ft` : "\u2014"}
-        </div>
-        <div style={{ fontSize: 11, color: "var(--cx-fg-4)" }}>{s.areaBasisNote}</div>
-      </div>,
-      s.tradeName || <span style={{ color: "var(--cx-fg-4)" }}>not set</span>,
-      s.problems.length ? (
-        <Pill tone="overdue">Needs attention</Pill>
-      ) : !s.isBillable || !s.isActive ? (
-        <Pill tone="neutral">Not billed</Pill>
-      ) : (
-        <Pill tone="active">In billing</Pill>
-      ),
-      // Billing status and resident visibility are different questions: a
-      // shop can be billed for months and still be invisible in the app.
-      <ShopVisibilityCell key="residents" shop={s} />,
-    ],
-    expanded: s.problems.length ? (
-      <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--cx-warning)" }}>
-        {s.problems.map((p, i) => (
-          <div key={i}>• {p}</div>
-        ))}
-      </div>
-    ) : null,
-  }));
-
   const emptyText = shopsQuery.error
     ? "The shop list could not be loaded. Refresh the page, and if it keeps failing your session may have expired."
     : search
       ? `No shop matches "${search}".`
-      : "No shops or offices yet. Add your first one \u2014 this does not change any flat.";
+      : "No shops or offices yet. Add your first one — this does not change any flat.";
 
   const editing = openId && openId !== "NEW" ? decorated.find((s) => s.id === openId) : null;
+  const isNew = openId === "NEW";
+  const tabItems = DRAWER_TABS.map((t) => ({
+    ...t,
+    disabled: isNew && t.value !== "unit",
+    disabledReason: isNew && t.value !== "unit" ? NEW_ONLY_DISABLED_REASON : undefined,
+  }));
 
   return (
     // "commercial-scope" is not decoration -- _ui/tokens.css defines every
@@ -426,18 +504,18 @@ export default function CommercialShopsPage() {
 
       <div style={{ ...grid(4), marginBottom: 16 }}>
         <StatTile icon="store" label="Total units" value={counts.all} />
-        <StatTile icon="check" label="In billing" value={counts.billable} />
+        <StatTile icon="check-circle" label="In billing" value={counts.billable} />
         <StatTile
-          icon="alert"
+          icon="alert-triangle"
           label="Needs attention"
           value={counts.problems}
           tone={counts.problems ? "danger" : undefined}
           hint={counts.problems ? "These would bill incorrectly" : "All good"}
         />
-        <StatTile icon="pause" label="Not billed" value={counts.inactive} />
+        <StatTile icon="clock" label="Not billed" value={counts.inactive} />
       </div>
 
-      {banner && (
+      {banner && !openId && (
         <Card
           style={{
             marginBottom: 14,
@@ -457,96 +535,222 @@ export default function CommercialShopsPage() {
             {banner.title}
           </div>
           {banner.detail && <div style={{ ...help, marginTop: 5 }}>{banner.detail}</div>}
-          {banner.issues && (
-            <ul style={{ margin: "8px 0 0 16px", padding: 0, fontSize: 12, lineHeight: 1.6 }}>
-              {banner.issues.map((i, idx) => (
-                <li key={i.field || idx}>{i.message}</li>
-              ))}
-            </ul>
-          )}
         </Card>
       )}
 
-      <Card padded={false}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "12px 14px",
-            borderBottom: "1px solid var(--cx-border)",
-            gap: 12,
-            flexWrap: "wrap",
-          }}
-        >
-          <Segmented
-            value={filter}
-            onChange={setFilter}
-            options={FILTERS.map((f) => ({
-              ...f,
-              count:
-                f.value === "ALL"
-                  ? counts.all
-                  : f.value === "BILLABLE"
-                    ? counts.billable
-                    : f.value === "NEEDS_ATTENTION"
-                      ? counts.problems
-                      : counts.inactive,
-            }))}
-          />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search shop no, owner or business"
-            style={{ ...inputStyle, width: 260 }}
-          />
-        </div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 14,
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <Segmented
+          value={filter}
+          onChange={setFilter}
+          options={FILTERS.map((f) => ({
+            ...f,
+            count:
+              f.value === "ALL"
+                ? counts.all
+                : f.value === "BILLABLE"
+                  ? counts.billable
+                  : f.value === "NEEDS_ATTENTION"
+                    ? counts.problems
+                    : counts.inactive,
+          }))}
+        />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search shop no, owner or business"
+          style={{ ...inputStyle, width: 260 }}
+        />
+      </div>
 
-        {shopsQuery.isLoading ? (
+      {shopsQuery.isLoading ? (
+        <Card>
           <div style={{ padding: 28, textAlign: "center", fontSize: 13, color: "var(--cx-fg-4)" }}>
             Loading shops…
           </div>
-        ) : (
-          <Table
-            cols={cols}
-            rows={rows}
-            emptyText={emptyText}
-            onRowClick={(r) => openExisting(visible.find((s) => s.id === r.key))}
-          />
-        )}
-      </Card>
+        </Card>
+      ) : visible.length === 0 ? (
+        <Card>
+          <div style={{ padding: 28, textAlign: "center", fontSize: 13, color: "var(--cx-fg-4)" }}>
+            {emptyText}
+          </div>
+        </Card>
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: 14,
+          }}
+        >
+          {visible.map((s) => (
+            <ShopCard key={s.id} shop={s} onOpen={openExisting} isOpen={s.id === openId} />
+          ))}
+        </div>
+      )}
 
-      {openId && (
-        <Card style={{ marginTop: 16 }}>
-          <CardHead
-            title={openId === "NEW" ? "Add a shop or office" : `Edit ${editing?.unitKind || "shop"} ${editing?.unitLabel || ""}`}
-            sub="Only three things are required: the shop number, the owner, and the area."
-            right={
-              <div style={{ display: "flex", gap: 8 }}>
-                {openId !== "NEW" && (
-                  <Btn
-                    variant="danger"
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          "Remove this shop? Its past bills are kept, and the linked flat is not changed.",
-                        )
-                      )
-                        deleteMutation.mutate(openId);
-                    }}
-                    disabled={deleteMutation.isPending}
-                  >
-                    Remove
-                  </Btn>
+      <div style={{ ...help, marginTop: 18 }}>
+        Rates for these units are set once on the{" "}
+        <Link href="/admin/commercial/rate-card" style={{ color: "var(--cx-brand)", fontWeight: 600 }}>
+          Commercial Rate Card
+        </Link>
+        , and apply to every shop and office.
+      </div>
+
+      <AnimatePresence>
+        {openId && (
+          <>
+            <motion.div
+              key="backdrop"
+              onClick={closeDrawer}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ position: "fixed", inset: 0, background: "rgba(10,10,15,0.4)", zIndex: 60 }}
+            />
+            <motion.div
+              key="dialog"
+              className="cxShopDialog"
+              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0, scale: 0.97, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: 8 }}
+              transition={{ type: "spring", stiffness: 320, damping: 30 }}
+              style={{
+                position: "fixed",
+                top: "6vh",
+                bottom: "6vh",
+                left: "calc(260px + 5vw)",
+                right: "5vw",
+                zIndex: 61,
+                background: "var(--cx-canvas)",
+                border: "1px solid var(--cx-border)",
+                borderRadius: 18,
+                boxShadow: "var(--cx-shadow-pop)",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              }}
+            >
+              {/* The "soundbar": the card's own header row, condensed. Same
+                  facts the card showed (unit, owner, status), now as a strip
+                  instead of a stack — this is what the card visually becomes. */}
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.08 }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 16,
+                  padding: "14px 20px",
+                  borderBottom: "1px solid var(--cx-border)",
+                  background: "var(--cx-surface)",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "var(--cx-fg-1)" }}>
+                    {isNew
+                      ? "Add a shop or office"
+                      : `${editing?.unitKind || "Shop"} ${editing?.unitLabel || ""}`}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: "var(--cx-fg-4)" }}>
+                    {isNew
+                      ? "Only three things are required: the shop number, the owner, and the area."
+                      : editing?.ownerName || "No owner recorded"}
+                  </div>
+                </div>
+
+                {!isNew && editing && (
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    {Number(editing.areaSqft) > 0 && (
+                      <span className="cx-num" style={{ fontSize: 12, color: "var(--cx-fg-3)" }}>
+                        {editing.areaSqft} sq ft
+                      </span>
+                    )}
+                    {editing.problems.length ? (
+                      <Pill tone="overdue">Needs attention</Pill>
+                    ) : !editing.isBillable || !editing.isActive ? (
+                      <Pill tone="neutral">Not billed</Pill>
+                    ) : (
+                      <Pill tone="active">In billing</Pill>
+                    )}
+                    {editing.storefront?.isPublished ? (
+                      <Pill tone="active">Listed</Pill>
+                    ) : (
+                      <Pill tone="neutral">Not listed</Pill>
+                    )}
+                    {editing.ownerAccess?.granted ? (
+                      <Pill tone="active">Owner has access</Pill>
+                    ) : (
+                      <Pill tone="neutral">Not invited</Pill>
+                    )}
+                  </div>
                 )}
-                <Btn onClick={() => setOpenId(null)}>Cancel</Btn>
-              </div>
-            }
-          />
 
-          <form onSubmit={submit}>
+                <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+                  {!isNew && (
+                    <Btn
+                      variant="danger"
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "Remove this shop? Its past bills are kept, and the linked flat is not changed.",
+                          )
+                        )
+                          deleteMutation.mutate(openId);
+                      }}
+                      disabled={deleteMutation.isPending}
+                    >
+                      Remove
+                    </Btn>
+                  )}
+                  <button
+                    onClick={closeDrawer}
+                    aria-label="Close"
+                    style={{
+                      width: 30,
+                      height: 30,
+                      borderRadius: 8,
+                      border: "1px solid var(--cx-border)",
+                      background: "var(--cx-surface)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      color: "var(--cx-fg-3)",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Icon name="x" size={14} />
+                  </button>
+                </div>
+              </motion.div>
+
+              {/* Body: fades/slides in just after the header settles, so the
+                  motion reads as "card becomes bar, then content appears"
+                  rather than everything popping in at once. */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.14 }}
+                style={{ flex: 1, overflowY: "auto", padding: "20px 28px" }}
+              >
+                <Tabs items={tabItems} value={drawerTab} onChange={setDrawerTab} />
+
+        {drawerTab === "unit" && (
+          <form id="shop-unit-form" onSubmit={submit}>
             <div style={sectionTitle}>The unit</div>
-            <div style={grid(4)}>
+            <div style={grid(2)}>
               <Field label="Shop number *" hint="As painted on the shutter.">
                 <input
                   style={inputStyle}
@@ -587,7 +791,7 @@ export default function CommercialShopsPage() {
             </div>
 
             <div style={sectionTitle}>Area used for billing</div>
-            <div style={grid(3)}>
+            <div style={grid(2)}>
               <Field
                 label="Area (sq ft) *"
                 hint="This shop's own area. It is never taken from a flat."
@@ -614,17 +818,17 @@ export default function CommercialShopsPage() {
                   ))}
                 </select>
               </Field>
-              <Field label="" hint="Bills already generated keep the area they were generated with, so correcting this never rewrites history.">
-                <div style={{ height: 32 }} />
-              </Field>
+            </div>
+            <div style={{ ...help, marginTop: -6, marginBottom: 12 }}>
+              Bills already generated keep the area they were generated with, so correcting this never rewrites history.
             </div>
 
             <div style={sectionTitle}>Owner</div>
-            <div style={grid(3)}>
+            <div style={grid(2)}>
               <Field
                 label="Society member"
                 hint="Links the shop to an existing member. Their flat is not modified."
-                span={1}
+                span={2}
               >
                 <select
                   style={inputStyle}
@@ -679,7 +883,7 @@ export default function CommercialShopsPage() {
             </div>
 
             <div style={sectionTitle}>Who occupies it</div>
-            <div style={grid(3)}>
+            <div style={grid(2)}>
               <Field
                 label="Occupancy"
                 hint="Non-occupancy charge, if your society has it switched on, applies only to rented units."
@@ -722,7 +926,7 @@ export default function CommercialShopsPage() {
                 {tradeRequired ? "(required by this society)" : "(optional)"}
               </span>
             </div>
-            <div style={grid(3)}>
+            <div style={grid(2)}>
               <Field label="Business name">
                 <input
                   style={inputStyle}
@@ -758,7 +962,7 @@ export default function CommercialShopsPage() {
                   onChange={(e) => set("shopActNumber", e.target.value)}
                 />
               </Field>
-              <Field label="FSSAI no." hint="Food businesses only.">
+              <Field label="FSSAI no." hint="Food businesses only." span={2}>
                 <input
                   style={inputStyle}
                   value={form.fssaiNumber}
@@ -768,7 +972,7 @@ export default function CommercialShopsPage() {
             </div>
 
             <div style={sectionTitle}>Utilities &amp; premises</div>
-            <div style={grid(3)}>
+            <div style={grid(2)}>
               <Field
                 label="Electricity"
                 hint="Most shops pay their own bill. Pick the sub-meter option only if the society recovers it."
@@ -849,7 +1053,7 @@ export default function CommercialShopsPage() {
             </div>
 
             <div style={sectionTitle}>Opening balance</div>
-            <div style={grid(3)}>
+            <div style={grid(2)}>
               <Field
                 label="Amount already due (Rs)"
                 hint="What this SHOP owed before the system started. A flat's arrears are never carried here."
@@ -871,7 +1075,7 @@ export default function CommercialShopsPage() {
                   onChange={(e) => set("openingInterest", e.target.value)}
                 />
               </Field>
-              <Field label="Include in billing" hint="Switch off for a vacant unit you do not want billed.">
+              <Field label="Include in billing" hint="Switch off for a vacant unit you do not want billed." span={2}>
                 <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, height: 32 }}>
                   <input
                     type="checkbox"
@@ -882,33 +1086,71 @@ export default function CommercialShopsPage() {
                 </label>
               </Field>
             </div>
-
-            <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
-              <Btn variant="primary" type="submit" disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? "Saving\u2026" : openId === "NEW" ? "Add shop" : "Save changes"}
-              </Btn>
-              <Btn onClick={() => setOpenId(null)}>Cancel</Btn>
-            </div>
           </form>
+        )}
 
-          {/* Outside the <form> on purpose: these are separate actions with
-              their own calls, and nesting them would let an Enter keypress
-              or a stray submit button save the unit record instead. Only for
-              a saved shop - an owner cannot be invited to a shop that does
-              not exist yet. */}
-          {openId !== "NEW" && editing && (
-            <ShopCommerceAdmin shop={editing} onBanner={setBanner} />
-          )}
-        </Card>
-      )}
+        {drawerTab === "owner" && editing && (
+          <OwnerAccessTab shop={editing} onBanner={setBanner} />
+        )}
+        {drawerTab === "listing" && editing && (
+          <ListingHoursTab shopId={editing.id} onBanner={setBanner} />
+        )}
+        {drawerTab === "orders" && editing && (
+          <OrdersTab shopId={editing.id} onBanner={setBanner} />
+        )}
+              </motion.div>
 
-      <div style={{ ...help, marginTop: 18 }}>
-        Rates for these units are set once on the{" "}
-        <Link href="/admin/commercial/rate-card" style={{ color: "var(--cx-brand)", fontWeight: 600 }}>
-          Commercial Rate Card
-        </Link>
-        , and apply to every shop and office.
-      </div>
+              <div
+                style={{
+                  padding: "12px 20px",
+                  borderTop: "1px solid var(--cx-border)",
+                  background: "var(--cx-surface)",
+                  display: "flex",
+                  gap: 8,
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <div>
+                  {banner && openId && (
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: banner.tone === "danger" ? "var(--cx-danger)" : "var(--cx-success)",
+                        maxWidth: 460,
+                      }}
+                    >
+                      {banner.title}
+                      {banner.issues && (
+                        <ul style={{ margin: "4px 0 0 14px", padding: 0 }}>
+                          {banner.issues.map((iss, idx) => (
+                            <li key={iss.field || idx}>{iss.message}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {drawerTab === "unit" && (
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Btn onClick={closeDrawer}>Cancel</Btn>
+                    <Btn
+                      variant="primary"
+                      disabled={saveMutation.isPending}
+                      onClick={() =>
+                        document.getElementById("shop-unit-form")?.requestSubmit()
+                      }
+                    >
+                      {saveMutation.isPending ? "Saving…" : isNew ? "Add shop" : "Save changes"}
+                    </Btn>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
