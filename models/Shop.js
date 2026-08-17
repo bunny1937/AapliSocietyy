@@ -70,6 +70,17 @@ const ShopSchema = new mongoose.Schema(
     ownerPhone: { type: String, trim: true, maxlength: 20, default: null },
     ownerEmail: { type: String, trim: true, lowercase: true, maxlength: 160, default: null },
 
+    // Denormalized outcome of inviteShopOwner(), written once a login is
+    // confirmed to exist and hold this shop's Commercial profile. Exists so
+    // the admin list can show "already invited" without a User join per row
+    // (this screen can list up to 1000 shops).
+    ownerAccess: {
+      granted: { type: Boolean, default: false },
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+      path: { type: String, default: null }, // RESIDENT | EXISTING_OWNER_USER | LINKED_EXISTING_ACCOUNT | NEW_ACCOUNT
+      grantedAt: { type: Date, default: null },
+    },
+
     // ---- Area: the shop's OWN figure ------------------------------------
     // Deliberately ONE number, not carpet/built-up/super. Commercial rent and
     // society charges in Indian markets are quoted on a single agreed figure,

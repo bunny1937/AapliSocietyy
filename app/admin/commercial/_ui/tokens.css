@@ -60,6 +60,72 @@
   --cx-warning-soft: #2a1d08;
 }
 .cx-num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; letter-spacing: -0.01em; }
+
+/* Shop dialog (app/admin/commercial/shops/PageClient.js): the dialog is
+   position:fixed and sits next to the app's constant 260px sidebar
+   (styles/Dashboard.module.css — no responsive collapse exists there, so
+   260px is a safe constant at every width). Base position/inset is set
+   inline on the element for guaranteed application; these overrides only
+   narrow the surrounding margin as the viewport shrinks. !important is
+   required because inline style otherwise always wins over an external
+   stylesheet regardless of media query specificity. */
+@media (max-width: 968px) {
+  .cxShopDialog {
+    left: calc(260px + 24px) !important;
+    right: 24px !important;
+    top: 5vh !important;
+    bottom: 5vh !important;
+  }
+}
+@media (max-width: 720px) {
+  .cxShopDialog {
+    left: calc(260px + 16px) !important;
+    right: 16px !important;
+    top: 4vh !important;
+    bottom: 4vh !important;
+    border-radius: 14px !important;
+  }
+}
+@media (max-width: 640px) {
+  .cxShopDialog {
+    top: 3vh !important;
+    bottom: 3vh !important;
+  }
+}
+@media (max-width: 580px) {
+  .cxShopDialog {
+    left: calc(260px + 10px) !important;
+    right: 10px !important;
+    border-radius: 12px !important;
+  }
+}
+@media (max-width: 460px) {
+  .cxShopDialog {
+    top: 2vh !important;
+    bottom: 2vh !important;
+    left: calc(260px + 6px) !important;
+    right: 6px !important;
+    border-radius: 10px !important;
+  }
+}
+@media (max-width: 380px) {
+  .cxShopDialog {
+    left: 264px !important;
+    right: 4px !important;
+    top: 1vh !important;
+    bottom: 1vh !important;
+    border-radius: 8px !important;
+  }
+}
+@media (max-width: 240px) {
+  .cxShopDialog {
+    left: 262px !important;
+    right: 2px !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    border-radius: 0 !important;
+  }
+}
 .cx-dot { width: 6px; height: 6px; border-radius: 999px; display: inline-block; background: currentColor; }
 @keyframes cx-fade { from { opacity: 0; } to { opacity: 1; } }
 .cx-fade { animation: cx-fade 0.18s ease-out; }
