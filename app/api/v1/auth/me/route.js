@@ -5,7 +5,7 @@ import { toMemberDto, toSocietyDto } from "@/lib/v1/authService";
 import { normalizeCommercialFlags } from "@/lib/commercial/featureFlags";
 import { isCommercialUnit } from "@/lib/commercial/constants";
 import { listActiveStaffRoles } from "@/lib/rbac/assignment-service";
-import { STAFF_ROLE_MOBILE_ROUTES } from "@/lib/v1/staffRoleRoutes";
+import { resolveStaffRoleRoute } from "@/lib/v1/staffRoleRoutes";
 import BusinessProfile from "@/models/BusinessProfile";
 import Shop from "@/models/Shop";
 
@@ -71,8 +71,9 @@ export const GET = withRoute(async (req) => {
     ? await listActiveStaffRoles(claims.userId, claims.societyId)
     : [];
   const roles = staffRoles
-    .filter((r) => STAFF_ROLE_MOBILE_ROUTES[r.key])
-    .map((r) => ({ key: r.key, label: r.label, route: STAFF_ROLE_MOBILE_ROUTES[r.key] }));
+    .map((r) => ({ ...r, route: resolveStaffRoleRoute(r) }))
+    .filter((r) => r.route)
+    .map((r) => ({ key: r.key, label: r.label, route: r.route }));
 
   return json({
     capabilities: {
