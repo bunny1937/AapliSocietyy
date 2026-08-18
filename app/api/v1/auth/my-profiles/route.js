@@ -15,6 +15,7 @@ import { withRoute, ApiError, json } from "@/lib/v1/http";
 import { getClaims } from "@/lib/v1/auth";
 import { User } from "@/lib/v1/models";
 import Shop from "@/models/Shop";
+import { attachProfileRoles } from "@/lib/v1/profileRoles";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -69,7 +70,11 @@ export const GET = withRoute(async (req) => {
           .map((s) => [String(s._id), s])
       : [],
   );
-  const profiles = activeProfiles.map((p) => toPickerProfile(p, shopById));
+  const profiles = await attachProfileRoles(
+    activeProfiles.map((p) => toPickerProfile(p, shopById)),
+    activeProfiles,
+    String(user._id),
+  );
 
   return json({
     name: user.name ?? user.username ?? null,

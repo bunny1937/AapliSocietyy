@@ -34,6 +34,7 @@ import { signAccess } from "@/lib/v1/jwt";
 import { enforceRateLimit } from "@/lib/v1/ratelimit";
 import { OCCUPANCY_TYPES } from "@/lib/v1/constants";
 import Shop from "@/models/Shop";
+import { attachProfileRoles } from "@/lib/v1/profileRoles";
 
 // Shapes one profile for the picker. The old response sent only
 // profileId/societyName/flatNo, so every flat rendered the same
@@ -146,7 +147,11 @@ export const POST = withRoute(async (req) => {
           .map((s) => [String(s._id), s])
       : [],
   );
-  const profiles = activeProfiles.map((p) => toPickerProfile(p, shopById));
+  const profiles = await attachProfileRoles(
+    activeProfiles.map((p) => toPickerProfile(p, shopById)),
+    activeProfiles,
+    String(user._id),
+  );
   return json({
     // Both name pairs on purpose. The app reads requiresProfileSelect/
     // profileSelectToken; older shipped builds read needsProfileSelect/

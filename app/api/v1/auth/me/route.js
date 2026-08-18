@@ -4,6 +4,8 @@ import { User, Member, Society } from "@/lib/v1/models";
 import { toMemberDto, toSocietyDto } from "@/lib/v1/authService";
 import { normalizeCommercialFlags } from "@/lib/commercial/featureFlags";
 import { isCommercialUnit } from "@/lib/commercial/constants";
+import { listActiveStaffRoles } from "@/lib/rbac/assignment-service";
+import { STAFF_ROLE_MOBILE_ROUTES } from "@/lib/v1/staffRoleRoutes";
 import BusinessProfile from "@/models/BusinessProfile";
 import Shop from "@/models/Shop";
 
@@ -58,6 +60,20 @@ export const GET = withRoute(async (req) => {
     if (shop) shop = { ...shop, _id: String(shop._id) };
   }
 
+  // Live re-fetch, not decoded from the JWT: claims.staffRoles is a snapshot
+  // baked in at login/refresh, so a role renamed (or granted/revoked) after
+  // that token was issued would otherwise show a stale label until the next
+  // refresh. /auth/me is already a network round trip, so paying for a fresh
+  // read here costs nothing extra and keeps the picker honest. Roles with no
+  // mobile console yet (not in STAFF_ROLE_MOBILE_ROUTES) are left out — the
+  // app has nowhere to send that tap.
+  const staffRoles = claims.societyId
+    ? await listActiveStaffRoles(claims.userId, claims.societyId)
+    : [];
+  const roles = staffRoles
+    .filter((r) => STAFF_ROLE_MOBILE_ROUTES[r.key])
+    .map((r) => ({ key: r.key, label: r.label, route: STAFF_ROLE_MOBILE_ROUTES[r.key] }));
+
   return json({
     capabilities: {
       commercialDirectory: commercialFlags.directoryEnabled === true,
@@ -107,6 +123,10 @@ export const GET = withRoute(async (req) => {
       userId: claims.userId,
       role: claims.role,
       staffRoles: claims.staffRoles ?? [],
+      // {key,label,route} per active RBAC role that has a mobile console -
+      // the app renders these generically as tappable badges, nowhere
+      // hardcoding a role's name. See lib/v1/staffRoleRoutes.js.
+      roles,
       societyId: claims.societyId ?? null,
       memberId: claims.memberId ?? null,
       kind: claims.kind ?? "Residential",
