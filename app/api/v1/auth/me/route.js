@@ -96,11 +96,17 @@ export const GET = withRoute(async (req) => {
       username: user.username,
       email: user.email ?? null,
       role: claims.role,
+      // RBAC roles (e.g. "clubhouse_manager") granted via Manage Access.
+      // Baked into the JWT at login/refresh — see lib/v1/authService.js.
+      // A grant made after the current token was issued won't show here
+      // until the app refreshes/re-logs-in (grants don't force logout).
+      staffRoles: claims.staffRoles ?? [],
       mustChangePassword: user.mustChangePassword === true,
     },
     claims: {
       userId: claims.userId,
       role: claims.role,
+      staffRoles: claims.staffRoles ?? [],
       societyId: claims.societyId ?? null,
       memberId: claims.memberId ?? null,
       kind: claims.kind ?? "Residential",
