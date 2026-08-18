@@ -14,6 +14,7 @@ export { default as AmenityAttendance } from "./AmenityAttendance";
 export { default as AmenityVisitor } from "./AmenityVisitor";
 export { default as AmenityQrToken } from "./AmenityQrToken";
 export { default as AmenityQrScan } from "./AmenityQrScan";
+export { default as AmenityMemberCard } from "./AmenityMemberCard";
 export { default as AmenityIncident } from "./AmenityIncident";
 export { default as AmenityActivityLog } from "./AmenityActivityLog";
 export { default as AmenityAnalyticsDaily } from "./AmenityAnalyticsDaily";

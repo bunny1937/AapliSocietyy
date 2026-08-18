@@ -115,7 +115,12 @@ export const POST = withRoute(async (request) => {
     entityId: record._id,
     amenityId: amenity._id,
     amenityName: amenity.name,
-    action: ACTIVITY_ACTION.ATTENDANCE_CHECKED_IN,
+    // FIX: this read ACTIVITY_ACTION.ATTENDANCE_CHECKED_IN, which does not
+    // exist in lib/amenities/constants (the constant is ATTENDANCE_CHECK_IN).
+    // `action` is a required field, so every write threw — and
+    // logAmenityActivity swallows its own failures by design, so resident
+    // self-check-ins silently never appeared in the activity log at all.
+    action: ACTIVITY_ACTION.ATTENDANCE_CHECK_IN,
     actor: ctx.actor,
     newValue: { name: ctx.member.name, method: CHECKIN_METHOD.QR, self: true },
   });

@@ -86,7 +86,9 @@ export const POST = withRoute(async (request) => {
     entityId: record._id,
     amenityId: record.amenityId,
     amenityName: amenity?.name || "",
-    action: ACTIVITY_ACTION.ATTENDANCE_CHECKED_OUT,
+    // FIX: same undefined-constant bug as the check-in route above
+    // (ATTENDANCE_CHECKED_OUT -> ATTENDANCE_CHECK_OUT).
+    action: ACTIVITY_ACTION.ATTENDANCE_CHECK_OUT,
     actor: ctx.actor,
     newValue: { durationMins: record.durationMins, method, self: true },
   });

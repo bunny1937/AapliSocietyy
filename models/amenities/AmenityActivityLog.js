@@ -28,6 +28,7 @@ const AmenityActivityLogSchema = new mongoose.Schema(
         "QR",
         "INCIDENT",
         "SETTINGS",
+        "MEMBER_CARD",
       ],
       index: true,
     },
