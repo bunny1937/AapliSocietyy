@@ -8,11 +8,12 @@ import AmenityTimeSlot from "@/models/amenities/AmenityTimeSlot";
 import AmenityMaintenance from "@/models/amenities/AmenityMaintenance";
 import AmenityEvent from "@/models/amenities/AmenityEvent";
 import AmenityAttendance from "@/models/amenities/AmenityAttendance";
+import AmenityAvailability from "@/models/amenities/AmenityAvailability";
 import { memberContext, publicAmenity } from "@/lib/amenities/memberContext";
 import { resolveEffectiveStatus, getWeeklyGrid } from "@/lib/amenities/availability";
 import { checkEligibility } from "@/lib/amenities/permissions";
 import { getTimezone } from "@/lib/amenities/settingsService";
-import { dayOfWeek, minutesOfDay } from "@/lib/amenities/time";
+import { dayOfWeek, minutesOfDay, dayKey, startOfDayUtc, endOfDayUtc } from "@/lib/amenities/time";
 import { EVENT_STATUS, MAINTENANCE_STATUS } from "@/lib/amenities/constants";
 
 export const runtime = "nodejs";
@@ -41,7 +42,7 @@ export const GET = withRoute(async (request, { params }) => {
   const now = new Date();
   const today = dayOfWeek(now, timezone);
 
-  const [category, rules, slots, maintenance, events, myOpenSession, effective, weeklyGrid] = await Promise.all([
+  const [category, rules, slots, maintenance, closuresToday, events, myOpenSession, effective, weeklyGrid] = await Promise.all([
     AmenityCategory.findById(amenity.categoryId).select("name").lean(),
     AmenityRule.find({ amenityId: id, isActive: true }).sort({ kind: 1, displayOrder: 1 }).lean(),
     amenity.slotPolicy?.enabled
@@ -55,6 +56,22 @@ export const GET = withRoute(async (request, { params }) => {
     })
       .sort({ startDate: 1 })
       .select("startDate endDate reason status")
+      .lean(),
+    // A break/closure added from the clubhouse manager's own app ("Add a
+    // break") only ever affected the live Open/Closed pill, for the exact
+    // minutes it was active - resolveEffectiveStatus() checks it, but this
+    // route never surfaced the record itself, so a resident looking at the
+    // page any time other than that exact window saw nothing explaining why
+    // the amenity was, or is about to be, unavailable today.
+    AmenityAvailability.find({
+      amenityId: id,
+      type: "CLOSURE",
+      isActive: true,
+      startDate: { $lte: endOfDayUtc(dayKey(now, timezone), timezone) },
+      endDate: { $gte: startOfDayUtc(dayKey(now, timezone), timezone) },
+    })
+      .sort({ startDate: 1 })
+      .select("startDate endDate reason closureType allDay")
       .lean(),
     AmenityEvent.find({
       amenityId: id,
@@ -102,6 +119,16 @@ export const GET = withRoute(async (request, { params }) => {
       isPast: nowMins >= s.endMinutes,
     })),
     maintenance,
+    todayBreaks: closuresToday.map((c) => ({
+      _id: c._id,
+      // HH:mm in the society's own timezone, not the server's - a raw
+      // toISOString() here would repeat the exact "01:00 vs 02:00 vs 00:00"
+      // drift that made the weekly-hours screen look broken.
+      startTime: new Intl.DateTimeFormat("en-GB", { timeZone: timezone, hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(c.startDate)),
+      endTime: new Intl.DateTimeFormat("en-GB", { timeZone: timezone, hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(c.endDate)),
+      reason: c.reason || "",
+      isHoliday: c.closureType === "HOLIDAY",
+    })),
     upcomingEvents: events,
     // Drives the single primary button: "Check in" or "Check out".
     myOpenSession,

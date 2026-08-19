@@ -7,8 +7,9 @@ import { clubhouseContext } from "@/lib/amenities/clubhouseContext";
 import { CAPABILITY } from "@/lib/amenities/permissions";
 import { CLOSURE_TYPE, ACTIVITY_ACTION } from "@/lib/amenities/constants";
 import { getTimezone } from "@/lib/amenities/settingsService";
-import { isHHmm, toMinutes, dayKey, startOfDayUtc, addMinutes } from "@/lib/amenities/time";
+import { isHHmm, toMinutes, dayKey, dayOfWeek, startOfDayUtc, addMinutes } from "@/lib/amenities/time";
 import { logAmenityActivity } from "@/lib/amenities/activityLog";
+import cache from "@/lib/cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,11 +23,14 @@ export const dynamic = "force-dynamic";
 // failure toast).
 //
 //   action: "timings" - overwrites the amenity's blanket openingTime/
-//           closingTime, the same fields the website's amenity edit form
-//           writes via PATCH /api/amenities/[id]. Deliberately NOT the
-//           per-weekday AmenityAvailability rows (that editor is website-
-//           only, Manage Access permitting) - this is the one-line "we open
-//           at 7 not 6 from today" edit a manager makes standing at the desk.
+//           closingTime (the same fields PATCH /api/amenities/[id] writes)
+//           AND today's own row in the per-weekday AmenityAvailability grid,
+//           the same two places the website's weekly-hours editor (PUT
+//           /api/amenities/[id]/availability) keeps in sync on every save.
+//           The other six days of that grid are untouched - this is the
+//           one-line "we open at 7 not 6 from today" edit a manager makes
+//           standing at the desk, not a rewrite of the whole week (that
+//           stays website-only, Manage Access permitting).
 //   action: "break"   - a same-day partial closure (AmenityAvailability,
 //           type CLOSURE, allDay:false), the same record type the website's
 //           Closures panel creates. Scoped to TODAY only, in the society's
@@ -75,6 +79,29 @@ export const POST = withRoute(async (request, { params }) => {
       { new: true },
     ).lean();
 
+    // The website's own weekly-hours editor (PUT /api/amenities/[id]/
+    // availability) keeps these blanket fields and the per-weekday
+    // AmenityAvailability grid in sync on every save. This quick edit only
+    // ever touched the blanket fields, so a manager changing hours from the
+    // app would silently diverge from what the detail page's "Weekly hours"
+    // (built from that same grid) shows for today - the exact drift that
+    // made the two screens disagree. Keep TODAY's row in step; the other six
+    // days are unaffected, matching what this action's own copy promises
+    // ("Change opening hours" - not "rewrite the week").
+    const timezone = await getTimezone(ctx.societyId);
+    const todayDow = dayOfWeek(new Date(), timezone);
+    await AmenityAvailability.deleteMany({ amenityId: id, type: "WEEKLY", dayOfWeek: todayDow });
+    await AmenityAvailability.create({
+      societyId: ctx.societyId,
+      amenityId: id,
+      type: "WEEKLY",
+      dayOfWeek: todayDow,
+      openTime: body.openingTime,
+      closeTime: body.closingTime,
+      isActive: true,
+      createdBy: ctx.userId,
+    });
+
     await logAmenityActivity({
       societyId: ctx.societyId,
       entityType: "AMENITY",
@@ -87,6 +114,14 @@ export const POST = withRoute(async (request, { params }) => {
       newValue: { openingTime: updated.openingTime, closingTime: updated.closingTime, via: "CLUBHOUSE" },
       changedFields: ["openingTime", "closingTime"],
     });
+
+    // The resident list (GET /v1/amenities) caches this society's rows for
+    // up to 120s (stale-while-revalidate, by design for load). Without this
+    // bust, the list card and this amenity's own detail page (uncached)
+    // would legitimately disagree for up to two minutes after every manager
+    // edit — exactly the "why do these two screens show different hours"
+    // confusion that shows up hardest during back-to-back testing.
+    await cache.del(`v1:amenities:${ctx.societyId}`);
 
     return json({ ok: true, amenity: updated });
   }
@@ -125,6 +160,10 @@ export const POST = withRoute(async (request, { params }) => {
     actor: ctx.actor,
     newValue: { startDate: start, endDate: end, reason: body.reason, via: "CLUBHOUSE" },
   });
+
+  // Same reasoning as the timings branch above - a break changes what the
+  // list's cached "Open"/effective status shows too.
+  await cache.del(`v1:amenities:${ctx.societyId}`);
 
   return json({ ok: true, closure });
 });
