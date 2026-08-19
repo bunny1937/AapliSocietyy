@@ -10,7 +10,7 @@ import { amenityUpdateSchema } from "@/lib/amenities/schemas";
 import { logAmenityActivity, logUpdate } from "@/lib/amenities/activityLog";
 import { ACTIVITY_ACTION, MAINTENANCE_STATUS } from "@/lib/amenities/constants";
 import { capacitySnapshot } from "@/lib/amenities/attendanceService";
-import { resolveEffectiveStatus, getWeeklyGrid } from "@/lib/amenities/availability";
+import { resolveEffectiveStatus } from "@/lib/amenities/availability";
 import { regenerateSlots } from "@/lib/amenities/slotEngine";
 import { getSettings } from "@/lib/amenities/settingsService";
 import { buildQrPayloadForDisplay } from "@/lib/amenities/qrService";
@@ -37,7 +37,16 @@ export const GET = withAmenityRoute(async (request, { params }) => {
   const [rules, slots, weekly, maintenance, closures, activeQr, openNow, effective] = await Promise.all([
     AmenityRule.find({ amenityId: id, isActive: true }).sort({ kind: 1, displayOrder: 1 }).lean(),
     AmenityTimeSlot.find({ amenityId: id }).sort({ dayOfWeek: 1, startMinutes: 1 }).lean(),
-    getWeeklyGrid(id, amenity),
+    // Raw WEEKLY rows, not the computed display grid (getWeeklyGrid) - the
+    // admin edit form (app/admin/amenities/[id]/PageClient.js) filters this
+    // by `r.type === "WEEKLY"` and reads `r.dayOfWeek/openTime/closeTime`
+    // directly to hydrate its editable draft. getWeeklyGrid()'s output has
+    // no `type` field at all, so that filter always came back empty and the
+    // form showed "No weekly hours set" with every day Closed regardless of
+    // what was actually saved.
+    AmenityAvailability.find({ amenityId: id, type: "WEEKLY", isActive: true })
+      .sort({ dayOfWeek: 1, openTime: 1 })
+      .lean(),
     AmenityMaintenance.find({ amenityId: id }).sort({ startDate: -1 }).limit(20).lean(),
     AmenityAvailability.find({ amenityId: id, type: "CLOSURE", isActive: true }).sort({ startDate: -1 }).lean(),
     AmenityQrToken.findOne({ amenityId: id, isActive: true }).lean(),

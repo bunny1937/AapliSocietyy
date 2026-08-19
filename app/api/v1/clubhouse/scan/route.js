@@ -107,8 +107,14 @@ export const POST = withRoute(async (request) => {
         openingTime: a.openingTime,
         closingTime: a.closingTime,
         slotsEnabled: !!a.slotPolicy?.enabled,
-        eligible: eligibility.allowed,
-        eligibilityReason: eligibility.allowed ? "" : eligibility.reason,
+        // checkEligibility() (lib/amenities/permissions.js) returns
+        // {eligible, reason} - this read `.allowed`, a property that never
+        // existed on that object. undefined is falsy, so every scan for
+        // every member on every amenity came back "ineligible" regardless of
+        // the actual rules - the member-facing routes (app/api/v1/amenities)
+        // read `.eligible` correctly; only this staff-scan route had it wrong.
+        eligible: eligibility.eligible,
+        eligibilityReason: eligibility.eligible ? "" : eligibility.reason,
         alreadyInside: !!inside,
         openSessionId: inside?._id || null,
       };

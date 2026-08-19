@@ -24,11 +24,12 @@ import {
 // owner/family member gets a card, which is why holder identity is (memberId +
 // holderKind + familyIndex) rather than a separate eligibility document.
 //
-// Only a SHA-256 hash of the secret is stored. The scannable string is returned
-// to the resident's own app whenever they open My Amenity Cards (it is theirs to
-// display), but it is never recoverable from this collection — so a database
-// dump does not let anyone forge a check-in, and the admin card screen can
-// identify a card without ever being able to clone one.
+// A SHA-256 hash of the secret is stored for fast-path scan verification
+// (unchanged), AND an encrypted copy (tokenEnc, lib/amenities/cardCrypto.js)
+// so the server can hand the plaintext back to the card's own holder on every
+// load — no client-side-only caching, no permanently-dead QR after a
+// reinstall. The admin card screen still never reads tokenEnc; it identifies
+// a card without ever displaying or cloning one.
 const AmenityMemberCardSchema = new mongoose.Schema(
   {
     societyId: { type: mongoose.Schema.Types.ObjectId, ref: "Society", required: true, index: true },
@@ -54,6 +55,12 @@ const AmenityMemberCardSchema = new mongoose.Schema(
     contactNumber: { type: String, trim: true, maxlength: 20, default: "" },
 
     tokenHash: { type: String, required: true, index: true },
+    // Reversible copy for re-display (lib/amenities/cardCrypto.js). Nullable:
+    // cards issued before this field existed have none and are transparently
+    // reissued the next time their holder opens My Amenity Cards - see
+    // memberCardService.ensureCardsForMember(). tokenHash keeps doing what it
+    // always did; this is additive, not a replacement.
+    tokenEnc: { type: String, default: null },
     // Short, non-secret fragment carried in the payload so verification is an
     // index hit instead of a hash scan across the society.
     tokenPrefix: { type: String, required: true, index: true },

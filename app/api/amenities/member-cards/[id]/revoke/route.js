@@ -31,7 +31,10 @@ export const POST = withAmenityRoute(async (request, { params }) => {
   if (!authorized.ok) return authorized.response;
 
   const { id } = await params;
-  if (!isId(id)) return fail("That card reference is not valid.", 400);
+  // fail(status, message) - was backwards here (message first), which passes
+  // a string where NextResponse.json expects a numeric HTTP status and
+  // throws instead of returning the intended 400/404/409.
+  if (!isId(id)) return fail(400, "That card reference is not valid.");
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) return zodFail(parsed);
@@ -46,8 +49,8 @@ export const POST = withAmenityRoute(async (request, { params }) => {
   });
   if (!result.ok) {
     return fail(
-      result.reason === "NOT_FOUND" ? "That card no longer exists." : "This card is already revoked.",
       result.reason === "NOT_FOUND" ? 404 : 409,
+      result.reason === "NOT_FOUND" ? "That card no longer exists." : "This card is already revoked.",
     );
   }
 

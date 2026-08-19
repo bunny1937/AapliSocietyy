@@ -50,6 +50,7 @@ export default function PageClient() {
   const [target, setTarget] = useState(null);
   const [reason, setReason] = useState("");
   const [revoking, setRevoking] = useState(false);
+  const [reissuingId, setReissuingId] = useState(null);
   const [toast, setToast] = useState("");
   const reasonRef = useRef(null);
 
@@ -118,6 +119,31 @@ export default function PageClient() {
       setError(e.message);
     } finally {
       setRevoking(false);
+    }
+  };
+
+  // One click, no dialog: revokes the current card (if still active) and
+  // mints a fresh one for the same holder in a single request (see
+  // memberCardService.reissueCard()). Works from either status - a REVOKED
+  // card has nothing left to revoke, so the service just issues the
+  // replacement straight away.
+  const reissue = async (card) => {
+    if (!confirm(`Issue a new card for ${card.holderName}? ${card.status === "ACTIVE" ? "The current one stops working immediately." : ""}`)) return;
+    setReissuingId(card._id);
+    try {
+      const res = await fetch(`/api/amenities/member-cards/${card._id}/reissue`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Reissued from the admin card screen" }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body?.error || "Could not reissue this card.");
+      setToast(body?.data?.message || body?.message || "New card issued.");
+      await load();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setReissuingId(null);
     }
   };
 
@@ -223,13 +249,24 @@ export default function PageClient() {
                     : "Never"}
                 </td>
                 <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                  {c.status === "REVOKED" ? (
-                    <Pill tone="danger">Revoked</Pill>
-                  ) : (
-                    <Btn variant="ghost" tone="danger" onClick={() => setTarget(c)}>
-                      Revoke
+                  <div style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+                    {c.status === "REVOKED" ? <Pill tone="danger">Revoked</Pill> : null}
+                    {c.status !== "REVOKED" ? (
+                      <Btn variant="ghost" tone="danger" onClick={() => setTarget(c)}>
+                        Revoke
+                      </Btn>
+                    ) : null}
+                    {/* Works on either status - see reissue() above. The one
+                        answer to "the resident's code stopped working" and
+                        "they lost their phone, replace it now." */}
+                    <Btn
+                      variant="ghost"
+                      onClick={() => reissue(c)}
+                      disabled={reissuingId === c._id}
+                    >
+                      {reissuingId === c._id ? "Issuing…" : "Reissue"}
                     </Btn>
-                  )}
+                  </div>
                 </td>
               </tr>
             );
