@@ -82,13 +82,20 @@ const AmenityMemberCardSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// One card per holder. This is the constraint that makes "generate on first
-// open" safe: two devices opening My Amenity Cards at the same instant race to
-// insert, one wins, and the loser reads the winner's row instead of minting a
-// duplicate credential for the same person.
+// One ACTIVE card per holder. Partial on status: ACTIVE, not a bare unique
+// index — a revoked card and its replacement legitimately share the same
+// identity tuple (memberId, holderKind, familyIndex), and a bare unique index
+// made every legacy-card auto-heal and every admin reissue permanently fail.
+// The revoke step never changes those three fields, so the just-revoked row
+// kept the index slot occupied and the mint-replacement insert collided with
+// it on every single attempt - not a race, a guaranteed E11000 every time for
+// any member whose card predates encrypted storage. This still makes
+// "generate on first open" race-safe for two concurrent first-opens (both
+// insert with status ACTIVE, one wins the partial-unique slot, the loser's
+// catch re-fetches the winner) without blocking revoke-then-reissue.
 AmenityMemberCardSchema.index(
   { memberId: 1, holderKind: 1, familyIndex: 1 },
-  { unique: true },
+  { unique: true, partialFilterExpression: { status: MEMBER_CARD_STATUS.ACTIVE } },
 );
 AmenityMemberCardSchema.index({ societyId: 1, status: 1, createdAt: -1 });
 
