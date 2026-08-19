@@ -9,7 +9,7 @@ import { Notice } from "@/lib/v1/models";
 import { clubhouseContext, clubhouseCapabilities } from "@/lib/amenities/clubhouseContext";
 import { CAPABILITY } from "@/lib/amenities/permissions";
 import { capacitySnapshot } from "@/lib/amenities/attendanceService";
-import { resolveEffectiveStatus, EFFECTIVE } from "@/lib/amenities/availability";
+import { resolveEffectiveStatus, prefetchEffectiveStatusInputs, EFFECTIVE } from "@/lib/amenities/availability";
 import { getTimezone } from "@/lib/amenities/settingsService";
 import { dayKey, dayOfWeek, minutesOfDay, startOfDayUtc } from "@/lib/amenities/time";
 import { MAINTENANCE_STATUS, INCIDENT_STATUS } from "@/lib/amenities/constants";
@@ -95,9 +95,13 @@ export const GET = withRoute(async (request) => {
 
   const nameById = new Map(amenities.map((a) => [String(a._id), a.name]));
 
+  // One round of 3 batched queries for every amenity, instead of up to 3
+  // PER amenity inside the map below - see availability.js's own comment.
+  const prefetched = await prefetchEffectiveStatusInputs({ amenityIds, at: now, timezone });
+
   const cards = await Promise.all(
     amenities.map(async (a) => {
-      const effective = await resolveEffectiveStatus({ amenity: a, at: now, timezone });
+      const effective = await resolveEffectiveStatus({ amenity: a, at: now, timezone, prefetched });
       const capacity = capacitySnapshot(a);
       return {
         _id: a._id,

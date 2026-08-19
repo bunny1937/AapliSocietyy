@@ -1,6 +1,7 @@
 import { withRoute, ApiError, json, zodError } from "@/lib/v1/http";
 import { getClaims, requireRoles, requireTenant } from "@/lib/v1/auth";
 import { guardRequestSchema } from "@/lib/v1/schemas";
+import { isDuplicateKeyError } from "@/lib/mongoErrors";
 import { Visitor, Member, Blacklist, User } from "@/lib/v1/models";
 import { VISITOR_ACCESS_ROLES } from "@/lib/v1/constants";
 import { notifyVisitorChange } from "@/lib/v1/notify";
@@ -59,7 +60,7 @@ export const POST = withRoute(async (req) => {
     });
     return json({ ok: true, visitorId: String(visitor._id), visitor }, { status: 201 });
   } catch (e) {
-    if (e?.code === 11000) {
+    if (isDuplicateKeyError(e)) {
       const winner = await Visitor.findOne({ societyId, "offlineMeta.clientRef": data.clientRef });
       if (winner) return json({ ok: true, visitorId: String(winner._id), visitor: winner, deduped: true });
     }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
+import { isDuplicateKeyError } from "@/lib/mongoErrors";
 import Member from "@/models/Member";
 import Bill from "@/models/Bill";
 import Transaction from "@/models/Transaction";
@@ -340,13 +341,7 @@ export async function POST(request) {
       try {
         importRecord = await PaymentImport.create(importPayload);
       } catch (e) {
-        const isDup =
-          e &&
-          (e.code === 11000 ||
-            /E11000/.test(e.message || "") ||
-            (Array.isArray(e.writeErrors) &&
-              e.writeErrors.some((w) => w?.code === 11000)));
-        if (!isDup) throw e;
+        if (!isDuplicateKeyError(e)) throw e;
         // A prior import with the same content signature exists. Only BLOCK the
         // re-upload if that prior attempt actually applied money. If the first
         // attempt failed before applying any payment (successRows=0 AND

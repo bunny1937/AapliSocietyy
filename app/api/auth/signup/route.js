@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
+import { isDuplicateKeyError } from "@/lib/mongoErrors";
 import User from "@/models/User";
 import Society from "@/models/Society";
 import { signToken } from "@/lib/jwt";
@@ -159,8 +160,8 @@ export async function POST(request) {
   } catch (error) {
     console.error("Signup error:", error);
     // Handle specific errors
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern)[0];
+    if (isDuplicateKeyError(error)) {
+      const field = Object.keys(error.keyPattern || {})[0] || "field";
       return NextResponse.json(
         { error: `${field} already exists` },
         { status: 409 },

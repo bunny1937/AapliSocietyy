@@ -2,6 +2,7 @@
 // Admin: create and list security guard accounts.
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
+import { isDuplicateKeyError } from "@/lib/mongoErrors";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { requireRoles } from "@/lib/authz";
@@ -104,7 +105,7 @@ export async function POST(request) {
       },
     });
   } catch (err) {
-    if (err?.code === 11000)
+    if (isDuplicateKeyError(err))
       return NextResponse.json({ error: "Username already taken" }, { status: 409 });
     console.error("Create guard error", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

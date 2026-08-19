@@ -7,7 +7,7 @@ import AmenityTimeSlot from "@/models/amenities/AmenityTimeSlot";
 import { clubhouseContext, clubhouseCapabilities } from "@/lib/amenities/clubhouseContext";
 import { CAPABILITY } from "@/lib/amenities/permissions";
 import { capacitySnapshot } from "@/lib/amenities/attendanceService";
-import { resolveEffectiveStatus } from "@/lib/amenities/availability";
+import { resolveEffectiveStatus, prefetchEffectiveStatusInputs } from "@/lib/amenities/availability";
 import { getTimezone } from "@/lib/amenities/settingsService";
 import { dayOfWeek, minutesOfDay } from "@/lib/amenities/time";
 
@@ -78,9 +78,11 @@ export const GET = withRoute(async (request) => {
     slotsById.get(key).push(s);
   }
 
+  const prefetched = await prefetchEffectiveStatusInputs({ amenityIds: ids, at: now, timezone });
+
   const amenities = await Promise.all(
     rows.map(async (a) => {
-      const effective = await resolveEffectiveStatus({ amenity: a, at: now, timezone });
+      const effective = await resolveEffectiveStatus({ amenity: a, at: now, timezone, prefetched });
       const insideInfo = insideById.get(String(a._id));
       const capacity = capacitySnapshot(a);
       const current = insideInfo?.count || 0;

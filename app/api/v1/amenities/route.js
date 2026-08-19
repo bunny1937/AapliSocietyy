@@ -4,7 +4,7 @@ import connectDB from "@/lib/mongodb";
 import Amenity from "@/models/amenities/Amenity";
 import AmenityCategory from "@/models/amenities/AmenityCategory";
 import { memberContext, publicAmenity } from "@/lib/amenities/memberContext";
-import { resolveEffectiveStatus } from "@/lib/amenities/availability";
+import { resolveEffectiveStatus, prefetchEffectiveStatusInputs } from "@/lib/amenities/availability";
 import { checkEligibility } from "@/lib/amenities/permissions";
 import { getTimezone } from "@/lib/amenities/settingsService";
 import cache from "@/lib/cache";
@@ -59,9 +59,14 @@ export const GET = withRoute(async (request) => {
 
   const categoryById = new Map(categories.map((c) => [String(c._id), c]));
 
+  const prefetched = await prefetchEffectiveStatusInputs({
+    amenityIds: rows.map((a) => a._id),
+    timezone,
+  });
+
   const amenities = await Promise.all(
     rows.map(async (a) => {
-      const effective = await resolveEffectiveStatus({ amenity: a, timezone });
+      const effective = await resolveEffectiveStatus({ amenity: a, timezone, prefetched });
       const eligibility = checkEligibility({
         amenity: a,
         occupancyType: ctx.occupancyType,
