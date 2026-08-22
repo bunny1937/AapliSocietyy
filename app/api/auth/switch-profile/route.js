@@ -11,6 +11,8 @@ import {
   loadActiveAssignment,
 } from "@/lib/rbac/staff-profiles";
 import Society from "@/models/Society";
+import { loginBlockFor } from "@/lib/auth/login-block";
+import { legacyRoleForKey } from "@/lib/rbac/legacy-role-bridge";
 export async function POST(request) {
   try {
     await connectDB();
@@ -45,8 +47,9 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const user = await User.findById(resolvedUserId);
-    if (!user || !user.isActive) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    const block = loginBlockFor(user);
+    if (block) {
+      return NextResponse.json({ error: block.message, code: block.code }, { status: 403 });
     }
 
     // Staff/management profile (backed by a RoleAssignment, not user.profiles[]).
@@ -65,6 +68,12 @@ export async function POST(request) {
         activeContext: { societyId: assignment.societyId, hat: "staff" },
         // Root-level societyId, additive — see login/route.js CASE A comment.
         societyId: assignment.societyId,
+        // Legacy bridge — see lib/rbac/legacy-role-bridge.js and the identical
+        // comment in login/route.js. Switching INTO a staff hat mid-session
+        // must restore the same legacy `role` string login would have given it,
+        // or every lib/authz.js-gated route 403s the moment someone switches
+        // to it instead of it being their first login of the session.
+        role: legacyRoleForKey(assignment.roleKey),
         sessionEpoch: user.sessionEpoch || 0,
       });
       const response = NextResponse.json({

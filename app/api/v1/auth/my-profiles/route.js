@@ -12,6 +12,7 @@
 // you must already be inside a session to enumerate the account's flats.
 
 import { withRoute, ApiError, json } from "@/lib/v1/http";
+import { loginBlockFor } from "@/lib/auth/login-block";
 import { getClaims } from "@/lib/v1/auth";
 import { User } from "@/lib/v1/models";
 import Shop from "@/models/Shop";
@@ -60,7 +61,8 @@ export const GET = withRoute(async (req) => {
 
   const user = await User.findById(claims.userId).lean();
   if (!user) throw new ApiError(401, "User not found");
-  if (user.isActive === false) throw new ApiError(403, "Account is disabled");
+  const block = loginBlockFor(user);
+  if (block) throw new ApiError(403, { error: block.message, code: block.code });
 
   const activeProfiles = (user.profiles || []).filter((p) => p.status === "Active");
   const shopIds = activeProfiles.filter((p) => p.kind === "Commercial").map((p) => p.shopId);

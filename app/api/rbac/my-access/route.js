@@ -11,11 +11,12 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import RoleAssignment from "@/models/RoleAssignment";
 import Role from "@/models/Role";
-import { getTokenFromRequest, verifyToken, isMemberToken } from "@/lib/jwt";
+import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import { resolveEffectivePermissions, HAT } from "@/lib/rbac/permission-engine";
 import { registry } from "@/lib/rbac/registry";
 import { summarizePageAccess } from "@/lib/rbac/page-access-map";
 import { PAGE_CATALOG } from "@/lib/rbac/page-catalog";
+import { getSessionContext, HAT_MEMBER } from "@/lib/auth/session-context";
 
 export async function GET(request) {
   const token = getTokenFromRequest(request);
@@ -30,15 +31,14 @@ export async function GET(request) {
   } catch {
     return NextResponse.json({ error: "Invalid session" }, { status: 401 });
   }
-  const userId = decoded.userId || decoded.sub || decoded.id;
-  const societyId =
-    decoded.activeContext?.societyId || decoded.societyId || null;
-  const hat =
-    decoded.activeContext?.hat === HAT.MEMBER ||
-    isMemberToken?.(decoded) ||
-    decoded.role === "Member"
-      ? HAT.MEMBER
-      : HAT.STAFF;
+  // Single source of truth for MEMBER vs STAFF — see session-context.js
+  // header comment. This used to reimplement the same precedence inline and
+  // independently from /api/auth/me, and the two disagreed about identical
+  // tokens (me.js took a legacy branch this file never had).
+  const session = getSessionContext(decoded);
+  const userId = session?.userId || decoded.userId || decoded.sub || decoded.id;
+  const societyId = session?.societyId || decoded.societyId || null;
+  const hat = session?.hat === HAT_MEMBER ? HAT.MEMBER : HAT.STAFF;
   if (!userId || !societyId) {
     return NextResponse.json(
       { error: "No active society context" },

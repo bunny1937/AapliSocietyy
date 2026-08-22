@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 import { requireRoles } from "@/lib/authz";
 import { logAudit } from "@/lib/audit-logger";
 import { authorize } from "@/lib/rbac/authorize";
+import { ensureAdminAssignment } from "@/lib/rbac/ensure-admin-assignment";
 function isPlausiblePhone(phone) {
   const digits = String(phone || "").replace(/\D/g, "");
   return digits.length >= 10 && digits.length <= 13;
@@ -86,6 +87,16 @@ export async function POST(request) {
       gateLabel: gateLabel || "Main Gate",
       phone,
       isActive: true,
+    });
+    // The login route no longer accepts the bare root role string (see
+    // app/api/auth/login/route.js) — without this a guard signing in through
+    // the general login page (rather than /api/security/auth/login, which
+    // mints its own token independent of RoleAssignment) would find zero
+    // profiles.
+    await ensureAdminAssignment({
+      userId: guard._id,
+      societyId: gate.context.societyId,
+      legacyRole: "Security",
     });
     await logAudit(gate.context.userId, gate.context.societyId, "SECURITY_GUARD_CREATED", null, {
       id: guard._id.toString(),

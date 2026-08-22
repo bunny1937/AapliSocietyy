@@ -113,7 +113,6 @@ export async function middleware(request) {
   // ── PUBLIC ROUTES ─────────────────────────────────────────────────────────
   const publicRoutes = [
     "/auth/login",
-    "/auth/signup",
     "/admin/login",
     "/security/login",
     "/member/login",

@@ -23,7 +23,7 @@
  *   POST   /api/rbac/roles/[id]/restore-defaults
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { rbacFetch } from "@/lib/rbac/client/rbac-client";
 import { PermissionButton } from "@/components/rbac/PermissionButton";
 import { PageAccessPicker } from "@/components/rbac/PageAccessPicker";
@@ -60,6 +60,16 @@ export function RoleManager() {
   const [seedPicked, setSeedPicked] = useState(() => new Set());
   const [seeding, setSeeding] = useState(false);
   const [seedErr, setSeedErr] = useState(null);
+
+  // Templates the society doesn't have a system role for yet. Keyed by role
+  // `key` only (not name) — the whole point of the seed routes' name-clash
+  // guard is that a same-named CUSTOM role does not count as "already have
+  // this", so it isn't excluded here either; the admin sees it's missing and
+  // the seed call itself is what refuses to double it up.
+  const missingTemplates = useMemo(() => {
+    const seededKeys = new Set(roles.filter((r) => r.isSystem).map((r) => r.key));
+    return SEED_TEMPLATES.filter((t) => !seededKeys.has(t.key));
+  }, [roles]);
 
   const load = useCallback(async (signal) => {
     setLoading(true);
@@ -99,6 +109,21 @@ export function RoleManager() {
     });
   }
   function openEdit(role) {
+    // The Admin system role is a hardcoded superuser at the server
+    // (lib/rbac/permission-engine.js: role.isSystem && role.key === "admin"
+    // bypasses every permission check, unconditionally). Its `permissions`
+    // list is never actually read for that check, so showing a per-page
+    // VIEW/MANAGE picker here would be lying — whatever you toggle here has
+    // zero effect on what an Admin can do. Show that plainly instead of a
+    // picker that implies otherwise.
+    if (role.key === "admin" && isSystem(role)) {
+      setEditor({
+        mode: "admin-locked",
+        roleId: roleId(role),
+        draft: { name: role.name, description: role.description, color: role.color },
+      });
+      return;
+    }
     setEditor({
       mode: "edit",
       roleId: roleId(role),
@@ -185,10 +210,17 @@ export function RoleManager() {
     setSeeding(true);
     setSeedErr(null);
     try {
-      await rbacFetch("/api/rbac/bootstrap", {
+      const res = await rbacFetch("/api/rbac/bootstrap", {
         method: "POST",
         body: { roleKeys },
       });
+      if (res?.nameCollisions?.length) {
+        setSeedErr(
+          res.nameCollisions
+            .map((c) => `"${c.name}" skipped — a custom role with that exact name already exists.`)
+            .join(" "),
+        );
+      }
       setSeedPicked(new Set());
       await load();
     } catch (e) {
@@ -331,17 +363,18 @@ export function RoleManager() {
         </table>
       </div>
 
-      {roles.length === 0 ? (
+      {missingTemplates.length > 0 ? (
         <div className="mt-4 rounded-lg border border-gray-200 p-4">
           <h3 className="mb-1 text-sm font-semibold text-gray-700">
-            Seed starter roles
+            {roles.length === 0 ? "Seed starter roles" : "Add more starter roles"}
           </h3>
           <p className="mb-3 text-xs text-gray-500">
-            Pick the roles you actually need — you don't have to seed all of
-            them at once. Each one is still fully editable afterward.
+            {roles.length === 0
+              ? "Pick the roles you actually need — you don't have to seed all of them at once. Each one is still fully editable afterward."
+              : "These standard roles haven't been added to this society yet. Pick any you need — each one is still fully editable afterward."}
           </p>
           <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {SEED_TEMPLATES.map((t) => (
+            {missingTemplates.map((t) => (
               <label
                 key={t.key}
                 className="flex items-start gap-2 rounded-lg border border-gray-200 p-2 text-sm hover:bg-gray-50"
@@ -380,7 +413,7 @@ export function RoleManager() {
             <button
               type="button"
               disabled={seeding}
-              onClick={() => seedTemplates(SEED_TEMPLATES.map((t) => t.key))}
+              onClick={() => seedTemplates(missingTemplates.map((t) => t.key))}
               className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 disabled:opacity-50"
             >
               Seed all
@@ -389,8 +422,38 @@ export function RoleManager() {
         </div>
       ) : null}
 
+      {/* ── Admin role: explainer instead of a picker that would lie ───────── */}
+      {editor?.mode === "admin-locked" ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+            <h3 className="mb-2 text-sm font-semibold text-gray-900">
+              Admin always has full access
+            </h3>
+            <p className="mb-3 text-sm text-gray-600">
+              Admin is a superuser — it can do everything in the society, and that never
+              depends on a per-page list. There is nothing to turn off here, which is why
+              this role has no page-access picker like the others do.
+            </p>
+            <p className="mb-4 text-sm text-gray-600">
+              To control who <em>has</em> the Admin role, use <strong>Assign</strong> on the
+              roles list — grant it to someone there, or remove it from someone who
+              shouldn't have it. That's the only lever for this role.
+            </p>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setEditor(null)}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* ── Create / edit / clone: BIG CENTERED DIALOG ─────────────────────── */}
-      {editor ? (
+      {editor && editor.mode !== "admin-locked" ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
           <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b px-6 py-4">

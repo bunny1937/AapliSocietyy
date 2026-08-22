@@ -27,6 +27,7 @@
 
 import bcrypt from "bcryptjs";
 import { withRoute, ApiError, json, zodError } from "@/lib/v1/http";
+import { loginBlockFor } from "@/lib/auth/login-block";
 import { loginSchema } from "@/lib/v1/schemas";
 import { User } from "@/lib/v1/models";
 import { issueTokens } from "@/lib/v1/authService";
@@ -104,7 +105,10 @@ export const POST = withRoute(async (req) => {
   if (!user || !(await verifyPassword(password, user))) {
     throw new ApiError(401, "Invalid credentials");
   }
-  if (user.isActive === false) throw new ApiError(403, "Account is disabled");
+  // Same block rules as the web login, from the one shared helper, so a
+  // paused or disabled account cannot get in through the mobile app.
+  const block = loginBlockFor(user);
+  if (block) throw new ApiError(403, { error: block.message, code: block.code });
 
   const activeProfiles = (user.profiles || []).filter(
     (p) => p.status === "Active",

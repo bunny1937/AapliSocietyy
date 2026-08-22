@@ -21,8 +21,7 @@ import Society from "@/models/Society";
 import Role from "@/models/Role";
 import RoleAssignment from "@/models/RoleAssignment";
 import User from "@/models/User";
-import { registry } from "@/lib/rbac/registry";
-import { SYSTEM_ROLE_DEFAULTS } from "@/lib/rbac/system-role-defaults";
+import { seedAllRoleTemplatesForSociety } from "@/lib/rbac/seed-society-roles";
 
 const LEGACY_ROLE_TO_KEY = {
   Admin: "admin",
@@ -30,15 +29,6 @@ const LEGACY_ROLE_TO_KEY = {
   Accountant: "accountant",
   Security: "security",
 };
-
-function expand(tokens) {
-  const out = new Set();
-  for (const t of tokens) {
-    if (registry.has(t)) out.add(t);
-    else registry.expand(t).forEach((id) => out.add(id));
-  }
-  return [...out];
-}
 
 export async function POST(request) {
   const auth = requireRoles(request, ["Admin"]);
@@ -58,30 +48,13 @@ export async function POST(request) {
   } catch {
     /* no/empty body -> seed all, as before */
   }
-  const defsToSeed = requestedKeys
-    ? SYSTEM_ROLE_DEFAULTS.filter((d) => requestedKeys.has(d.key))
-    : SYSTEM_ROLE_DEFAULTS;
-
   await connectDB();
 
-  let templatesCreated = 0;
-  for (const def of defsToSeed) {
-    const existing = await Role.findOne({ societyId, key: def.key });
-    if (existing) continue;
-    await Role.create({
-      societyId,
-      key: def.key,
-      name: def.name,
-      description: def.description,
-      color: def.color || null,
-      isSystem: true,
-      permissions: expand(def.permissions),
-      denies: [],
-      createdBy: userId,
-      updatedBy: userId,
-    });
-    templatesCreated++;
-  }
+  const { created, nameCollisions } = await seedAllRoleTemplatesForSociety(societyId, {
+    actorId: userId,
+    roleKeys: requestedKeys ? [...requestedKeys] : null,
+  });
+  const templatesCreated = created.length;
 
   const staff = await User.find({
     societyId,
@@ -118,5 +91,6 @@ export async function POST(request) {
     ok: true,
     templatesCreated,
     assignmentsCreated,
+    nameCollisions,
   });
 }

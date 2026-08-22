@@ -38,6 +38,23 @@ const RoleAssignmentSchema = new mongoose.Schema(
     // Denormalized for fast display + audit without a Role join.
     roleKey: { type: String, required: true },
 
+    // ---- Optional flat link -------------------------------------------
+    // Lets a staff grant (admin, guard, auditor, clubhouse manager...) also
+    // name the person's OWN flat in this society, so "admin who is also a
+    // resident" is one record instead of a second mechanism. Nothing reads
+    // this to change what the role can DO — permissions still come entirely
+    // from roleId. It only surfaces the flat as a linked profile in the
+    // login/switch-profile picker (see lib/rbac/staff-profiles.js) and lets
+    // the RBAC screen show "Auditor — also lives in A-204".
+    memberId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Member",
+      default: null,
+    },
+    // Denormalized for the picker/admin list without a Member join.
+    flatNo: { type: String, trim: true, default: null },
+    wing: { type: String, trim: true, default: null },
+
     status: {
       type: String,
       enum: ["active", "suspended", "revoked"],

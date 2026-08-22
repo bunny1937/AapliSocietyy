@@ -1,12 +1,27 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+
+const ROLE_COLOR_MAP = {
+  red: "bg-red-50 text-red-700 ring-red-600/20",
+  indigo: "bg-indigo-50 text-indigo-700 ring-indigo-600/20",
+  green: "bg-green-50 text-green-700 ring-green-600/20",
+  blue: "bg-blue-50 text-blue-700 ring-blue-600/20",
+  purple: "bg-purple-50 text-purple-700 ring-purple-600/20",
+  amber: "bg-amber-50 text-amber-700 ring-amber-600/20",
+};
+
+function badgeClass(color) {
+  return ROLE_COLOR_MAP[color] || "bg-gray-100 text-gray-700 ring-gray-500/20";
+}
+
 export default function SelectSocietyPage() {
   const router = useRouter();
-  const [profiles, setProfiles] = useState([]);
+  const [profiles, setProfiles] = useState(null);
   const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [selecting, setSelecting] = useState(null);
   const [error, setError] = useState("");
+
   useEffect(() => {
     const raw = sessionStorage.getItem("pendingProfiles");
     const storedName = sessionStorage.getItem("pendingName");
@@ -17,8 +32,9 @@ export default function SelectSocietyPage() {
     setProfiles(JSON.parse(raw));
     setName(storedName || "");
   }, []);
+
   const handleSelect = async (profileId, kind) => {
-    setLoading(true);
+    setSelecting(profileId);
     setError("");
     try {
       const profileSelectToken = sessionStorage.getItem("profileSelectToken");
@@ -29,99 +45,99 @@ export default function SelectSocietyPage() {
         body: JSON.stringify({ profileId, profileSelectToken }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to select society");
-      // Clear pending state
+      if (!res.ok) {
+        if (res.status === 401) {
+          sessionStorage.removeItem("pendingProfiles");
+          sessionStorage.removeItem("pendingUserId");
+          sessionStorage.removeItem("profileSelectToken");
+          sessionStorage.removeItem("pendingName");
+          router.replace("/auth/login?expired=1");
+          return;
+        }
+        throw new Error(data.error || "Failed to select society");
+      }
       sessionStorage.removeItem("pendingProfiles");
       sessionStorage.removeItem("pendingUserId");
       sessionStorage.removeItem("profileSelectToken");
       sessionStorage.removeItem("pendingName");
-      // /my-access always works for a staff-hat login, regardless of which
-      // pages that particular role actually has — was previously hardcoded
-      // to /admin/dashboard, which 403s/redirects for any role without
-      // Dashboard access (e.g. an Auditor scoped to just Finance pages).
       router.replace(kind === "Staff" ? "/my-access" : "/member/dashboard");
     } catch (err) {
       setError(err.message);
-    } finally {
-      setLoading(false);
+      setSelecting(null);
     }
   };
+
+  if (profiles === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+      </div>
+    );
+  }
+
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#f9fafb",
-      }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: 12,
-          padding: 32,
-          width: 400,
-          boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-        }}
-      >
-        <h2 style={{ marginBottom: 4 }}>Choose Society</h2>
-        <p style={{ color: "#6b7280", marginBottom: 24 }}>
-          Welcome back, {name}. Select which society to access.
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-10">
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl shadow-gray-200/60 ring-1 ring-gray-100">
+        <h2 className="text-xl font-semibold text-gray-900">Choose Society</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Welcome back, {name}. You have access to {profiles.length}{" "}
+          {profiles.length === 1 ? "profile" : "profiles"} — pick one to continue.
         </p>
+
         {error && (
-          <div
-            style={{
-              background: "#fee2e2",
-              color: "#991b1b",
-              padding: 12,
-              borderRadius: 8,
-              marginBottom: 16,
-              fontSize: 14,
-            }}
-          >
+          <div className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">
             {error}
           </div>
         )}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {profiles.map((p) => (
-            <button
-              key={String(p.profileId)}
-              onClick={() => handleSelect(String(p.profileId), p.kind)}
-              disabled={loading}
-              style={{
-                textAlign: "left",
-                padding: "16px 20px",
-                borderRadius: 10,
-                border: p.kind === "Staff" ? "1.5px solid #6366f1" : "1.5px solid #e5e7eb",
-                background: "#fff",
-                cursor: "pointer",
-                transition: "border-color 0.15s",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.borderColor = "#6366f1")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.borderColor =
-                  p.kind === "Staff" ? "#6366f1" : "#e5e7eb")
-              }
-            >
-              <div style={{ fontWeight: 600, fontSize: 15 }}>
-                {p.kind === "Staff" ? "🛡️" : "🏢"} {p.societyName}
-              </div>
-              <div style={{ color: "#6b7280", fontSize: 13, marginTop: 4 }}>
-                {p.kind === "Staff" ? (
-                  <>Management &nbsp;·&nbsp; {p.role}</>
-                ) : (
-                  <>
-                    {p.kind === "Commercial" ? "Shop" : "Flat"}{" "}
-                    {p.wing ? `${p.wing}-` : ""}
-                    {p.flatNo} &nbsp;·&nbsp; {p.role}
-                  </>
-                )}
-              </div>
-            </button>
-          ))}
+
+        <div className="mt-6 flex flex-col gap-2.5">
+          {profiles.map((p) => {
+            const isSelecting = selecting === String(p.profileId);
+            const isDisabled = selecting !== null;
+            const societyLabel = p.societyName?.trim() || "Unnamed Society";
+            return (
+              <button
+                key={String(p.profileId)}
+                onClick={() => handleSelect(String(p.profileId), p.kind)}
+                disabled={isDisabled}
+                className={`group relative flex items-center justify-between rounded-xl border px-4 py-3.5 text-left transition
+                  ${isDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:border-indigo-400 hover:shadow-sm"}
+                  ${isSelecting ? "border-indigo-400" : "border-gray-200"}`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-base
+                      ${p.kind === "Staff" ? "bg-indigo-50" : "bg-gray-100"}`}
+                  >
+                    {p.kind === "Staff" ? "🛡️" : "🏢"}
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {societyLabel}
+                    </div>
+                    <div className="mt-0.5 text-xs text-gray-500">
+                      {p.kind === "Staff"
+                        ? p.flatNo
+                          ? `Management · Flat ${p.wing ? `${p.wing}-` : ""}${p.flatNo}`
+                          : "Management"
+                        : `${p.kind === "Commercial" ? "Shop" : "Flat"} ${p.wing ? `${p.wing}-` : ""}${p.flatNo || "—"}`}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${badgeClass(p.roleColor)}`}
+                  >
+                    {p.role}
+                  </span>
+                  {isSelecting && (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+                  )}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

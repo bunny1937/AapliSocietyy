@@ -45,15 +45,20 @@ export async function PATCH(request, { params }) {
   const gate = await authorize(request, requiredPermission);
   if (!gate.ok) return gate.response;
 
+  // Next 15 hands `params` over as a promise; reading it synchronously yields
+  // undefined, which silently targeted "no user" instead of failing loudly.
+  const { id: targetUserId } = await params;
   const ctx = {
     societyId: gate.context.societyId,
     actorId: gate.context.userId,
-    userId: params.id,
+    userId: targetUserId,
   };
   try {
     if (action === "suspend") {
       return NextResponse.json(
-        await suspendUser({ ...ctx, reason: body?.reason }),
+        // `pausedUntil` turns an indefinite switch-off into a timed pause that
+        // clears itself — see suspendUser().
+        await suspendUser({ ...ctx, reason: body?.reason, pausedUntil: body?.pausedUntil }),
       );
     }
     return NextResponse.json(await reactivateUser(ctx));

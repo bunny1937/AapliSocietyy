@@ -7,6 +7,8 @@ import AuditLog from "@/models/AuditLog";
 import { signToken } from "@/lib/jwt";
 import { issueRefreshToken, setRefreshCookie } from "@/lib/refresh-token";
 import { getStaffProfiles } from "@/lib/rbac/staff-profiles";
+import { legacyRoleForKey } from "@/lib/rbac/legacy-role-bridge";
+import { loginBlockFor, pauseHasExpired } from "@/lib/auth/login-block";
 import { enforceRateLimit } from "@/lib/v1/ratelimit";
 import { ApiError } from "@/lib/v1/http";
 const MAX_ATTEMPTS = parseInt(process.env.RATE_LIMIT_LOGIN, 10) || 10;
@@ -53,7 +55,11 @@ export async function POST(request) {
     // Find by username  OR  email  (covers both Member and Admin flows)
     const user = await User.findOne({
       $or: [{ username: identifier }, { email: identifier }],
-      isActive: true,
+      // Deliberately NOT filtered on isActive. A disabled account used to fall
+      // through to "Invalid credentials", so the person retyped a correct
+      // password over and over with no idea their login had been switched off.
+      // The block is checked below, AFTER the password is verified, so this
+      // still leaks nothing to someone who does not know the password.
     });
     const ip = request.headers.get("x-forwarded-for") || "unknown";
     const ua = request.headers.get("user-agent") || "unknown";
@@ -82,46 +88,41 @@ export async function POST(request) {
         { status: 401 },
       );
     }
-    // ── ADMIN / SECRETARY / ACCOUNTANT ───────────────────────────────────────
-    // These still carry root-level role + societyId — unchanged flow.
-    if (
-      [
-        "Admin",
-        "Secretary",
-        "Accountant",
-        "Security",
-        "SOCIETY_ADMIN",
-      ].includes(user.role)
-    ) {
-      commit(true);
-      const token = signToken({
+    // ── Account switched off, or login paused ────────────────────────────────
+    const block = loginBlockFor(user);
+    if (block) {
+      await AuditLog.create({
         userId: user._id,
-        email: user.email,
-        role: user.role,
         societyId: user.societyId,
-        societyCode: user.societyCode,
-      });
-      const response = NextResponse.json({
-        success: true,
-        message: "Login successful",
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          societyId: user.societyId,
-        },
-      });
-      response.cookies.set("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        path: "/",
-        maxAge: 60 * 60 * 8, // 8 hours
-      });
-      setRefreshCookie(response, await issueRefreshToken(user._id));
-      return response;
+        action: "LOGIN_BLOCKED",
+        newData: { identifier, reason: block.code, ip, ua },
+        timestamp: new Date(),
+      }).catch(() => {});
+      return NextResponse.json({ error: block.message, code: block.code }, { status: 403 });
     }
+    // An elapsed pause is cleared on the way through, so nobody has to remember
+    // to switch the account back on.
+    if (pauseHasExpired(user)) {
+      user.loginPausedUntil = null;
+      await User.updateOne({ _id: user._id }, { $set: { loginPausedUntil: null } }).catch(() => {});
+    }
+
+    // Legacy Admin/Secretary/Accountant/Security/SOCIETY_ADMIN branch removed
+    // 2026-08-20: every one of those accounts now has a RoleAssignment (see
+    // scripts/rbac/backfill-assignments.js) and flows through the SAME merged
+    // picker every member/staff account uses below. A single-hat account
+    // (the common case) still auto-logs in with no picker shown — see CASE A
+    // just below, unchanged in effect, just reached via RoleAssignment instead
+    // of a hardcoded role-string branch. Multi-hat accounts (e.g. admin of two
+    // societies, or an admin who is also a resident) now correctly see the
+    // picker, which the old branch could never show them.
+    //
+    // Five orphaned SOCIETY_ADMIN test accounts whose societyId points at a
+    // deleted/nonexistent Society were left unmigrated on purpose (see
+    // scripts/rbac/backfill-assignments.js output) — they were already unusable
+    // (no real society to operate on) and now fail at CASE C below with an
+    // honest "no active society profiles" instead of minting a token scoped to
+    // a society that does not exist.
     // ── MEMBER — multi-profile logic ─────────────────────────────────────────
     const activeProfiles = (user.profiles ?? []).filter(
       (p) => p.status === "Active",
@@ -144,6 +145,13 @@ export async function POST(request) {
         // decoded.societyId directly and would otherwise silently scope
         // queries to "undefined" for any RBAC-only staff role.
         societyId: assignment.societyId,
+        // Legacy bridge: lib/authz.js's requireRoles() still reads decoded.role
+        // directly and knows nothing about activeContext. Admin/Secretary/
+        // Accountant/Security resolve to their old string here so every
+        // requireRoles()-gated route keeps working for a migrated staff
+        // account; a pure-RBAC role (Auditor etc) resolves to undefined, same
+        // as before this bridge existed. See lib/rbac/legacy-role-bridge.js.
+        role: legacyRoleForKey(assignment.roleKey),
         sessionEpoch: user.sessionEpoch || 0,
       });
       const response = NextResponse.json({
@@ -220,7 +228,7 @@ export async function POST(request) {
           userId: user._id,
           purpose: "profile-select",
         },
-        { expiresIn: "10m" },
+        { expiresIn: "30m" },
       );
       // Commercial profiles have no flatNo/wing of their own (they link a
       // Shop, not a Member) — resolve the shop label instead of showing a

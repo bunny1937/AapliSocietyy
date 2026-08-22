@@ -5,6 +5,13 @@ import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import { getAdminModels } from "@/lib/admin-models";
 import { getTokenFromRequest } from "@/lib/jwt";
+import { loginBlockFor } from "@/lib/auth/login-block";
+import { getSessionContext, HAT_STAFF, HAT_MEMBER } from "@/lib/auth/session-context";
+// Reads req.cookies.get() directly rather than next/headers' cookies(), which
+// doesn't opt this route out of Next's route cache by itself — force it, or a
+// stale response (e.g. a Member profile fetched before a staff-hat switch)
+// can be served back after the cookie has already moved on.
+export const dynamic = "force-dynamic";
 export async function GET(req) {
   try {
     const adminToken = req.cookies.get("admin_token")?.value;
@@ -46,33 +53,27 @@ export async function GET(req) {
         return NextResponse.json({ error: "Invalid token" }, { status: 401 });
       }
       await connectDB();
-      // ── Admin / Secretary — root-level role, unchanged ────────────────────
-      if (
-        decoded.role === "Admin" ||
-        decoded.role === "Secretary" ||
-        decoded.role === "Accountant" ||
-        decoded.role === "Security" ||
-        decoded.role === "SOCIETY_ADMIN"
-      ) {
-        const user = await User.findById(decoded.userId).select(
-          "name email role societyId societyCode",
+      // Single source of truth for MEMBER vs STAFF — see session-context.js
+      // header comment for the bug this replaced (two endpoints, same
+      // cookie, disagreeing about which hat was active).
+      const session = getSessionContext(decoded);
+      if (!session) {
+        return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+      }
+
+      // ── STAFF hat — RoleAssignment-backed (modern) or a pre-RBAC hardcoded
+      // Admin/Secretary/Accountant/Security/SOCIETY_ADMIN account (legacy,
+      // no activeContext — session.isLegacyToken is true for those). ───────
+      if (session.hat === HAT_STAFF) {
+        const user = await User.findById(session.userId).select(
+          "name email username role isActive loginPausedUntil loginBlockedReason societyCode",
         );
         if (!user) {
-          return NextResponse.json(
-            { error: "User not found" },
-            { status: 404 },
-          );
-        }
-        return NextResponse.json({ user });
-      }
-      // ── RBAC staff-hat — RoleAssignment-backed profile (e.g. a member also
-      // granted "Auditor"), new token shape { activeContext:{societyId,hat} } ──
-      if (decoded.activeContext?.hat === "staff") {
-        const user = await User.findById(decoded.userId).select(
-          "name email username role isActive",
-        );
-        if (!user || !user.isActive) {
           return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+        const block = loginBlockFor(user);
+        if (block) {
+          return NextResponse.json({ error: block.message, code: block.code }, { status: 403 });
         }
         return NextResponse.json({
           user: {
@@ -80,25 +81,37 @@ export async function GET(req) {
             name: user.name,
             email: user.email,
             username: user.username,
-            role: "Staff",
-            societyId: decoded.activeContext.societyId,
+            // session.role is decoded.role — for a modern staff-hat token
+            // this is the legacy-bridge string (e.g. "Admin") set by
+            // switch-profile/route.js; for a legacy token it's the same
+            // string the token was issued with. NEVER the DB's root
+            // User.role — that reflects the account's default hat, not
+            // this session's active one, and can differ (see comment atop
+            // session-context.js).
+            role: session.role || "Staff",
+            societyId: session.societyId,
+            ...(session.isLegacyToken ? { societyCode: user.societyCode } : {}),
           },
         });
       }
-      // ── Member — derive context from activeProfileId ──────────────────────
-      // JWT contains only { userId, activeProfileId } — never trust societyId from token
-      if (decoded.activeProfileId) {
-        const user = await User.findById(decoded.userId).select(
-          "name username email phone profiles activeProfileId isActive",
-        );
-        if (!user || !user.isActive) {
-          return NextResponse.json(
-            { error: "User not found" },
-            { status: 404 },
-          );
-        }
+
+      // ── MEMBER hat — derive context from the user's profiles[] array.
+      // JWT/session carries only activeProfileId (+legacy societyId/memberId
+      // on old tokens) — never trust societyName/flatNo/role from the token
+      // itself, always resolve fresh from the current profile record. ─────
+      const user = await User.findById(session.userId).select(
+        "name username email phone profiles activeProfileId isActive loginPausedUntil loginBlockedReason",
+      );
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+      const block = loginBlockFor(user);
+      if (block) {
+        return NextResponse.json({ error: block.message, code: block.code }, { status: 403 });
+      }
+      if (session.activeProfileId) {
         const activeProfile = user.profiles.find(
-          (p) => String(p.profileId) === String(decoded.activeProfileId),
+          (p) => String(p.profileId) === String(session.activeProfileId),
         );
         if (!activeProfile) {
           return NextResponse.json(
@@ -113,7 +126,6 @@ export async function GET(req) {
             username: user.username,
             email: user.email,
             phone: user.phone,
-            // Derived from profile — NEVER from JWT root
             role: activeProfile.role,
             societyId: activeProfile.societyId,
             memberId: activeProfile.memberId,
@@ -121,46 +133,31 @@ export async function GET(req) {
             wing: activeProfile.wing,
             societyName: activeProfile.societyName,
             activeProfile,
-            // All profiles available so frontend can show switcher
             profiles: user.profiles.filter((p) => p.status === "Active"),
           },
         });
       }
-      // ── Legacy Member tokens (pre-migration) ─────────────────────────────
-      // If token still has old shape { role: "Member", societyId, memberId }
-      if (decoded.role === "Member") {
-        const user = await User.findById(decoded.userId).select(
-          "name email role societyId profiles activeProfileId",
-        );
-        if (!user) {
-          return NextResponse.json(
-            { error: "User not found" },
-            { status: 404 },
-          );
-        }
-        // If already migrated, use first active profile
-        if (user.profiles?.length > 0) {
-          const profile =
-            user.profiles.find((p) => p.status === "Active") ??
-            user.profiles[0];
-          return NextResponse.json({
-            user: {
-              id: user._id,
-              name: user.name,
-              email: user.email,
-              role: profile.role,
-              societyId: profile.societyId,
-              memberId: profile.memberId,
-              flatNo: profile.flatNo,
-              wing: profile.wing,
-              activeProfile: profile,
-            },
-          });
-        }
-        // Not yet migrated — return old shape so nothing breaks
-        return NextResponse.json({ user });
+      // Legacy Member token (pre-migration) with no activeProfileId — fall
+      // back to the first active profile, or the bare old shape if this
+      // account was never migrated at all.
+      if (user.profiles?.length > 0) {
+        const profile =
+          user.profiles.find((p) => p.status === "Active") ?? user.profiles[0];
+        return NextResponse.json({
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: profile.role,
+            societyId: profile.societyId,
+            memberId: profile.memberId,
+            flatNo: profile.flatNo,
+            wing: profile.wing,
+            activeProfile: profile,
+          },
+        });
       }
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+      return NextResponse.json({ user });
     }
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   } catch (err) {

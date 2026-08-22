@@ -4,8 +4,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
 import NotificationBell from "./NotificationBell";
+import ProfileSwitcher from "./ProfileSwitcher";
 import RouteLoadingBar from "./RouteLoadingBar";
 import styles from "@/styles/Dashboard.module.css";
+// Legacy role strings a staff-hat session can carry (see legacyRoleForKey /
+// session-context.js) — flagged with a colored pill in the sidebar so a
+// staff/admin session never reads visually the same as a plain member one.
+const STAFF_ROLES = new Set(["Admin", "Secretary", "Accountant", "Security", "SOCIETY_ADMIN", "Staff"]);
 export default function DashboardLayout({
   children,
   role,
@@ -140,12 +145,20 @@ export default function DashboardLayout({
             </div>
             <div className={styles.userDetails}>
               <div className={styles.userName}>{user.name}</div>
-              <div className={styles.userRole}>{user.role}</div>
+              {STAFF_ROLES.has(user.role) ? (
+                <div className={styles.userRoleStaff}>{user.role}</div>
+              ) : (
+                <div className={styles.userRole}>{user.role}</div>
+              )}
             </div>
             <button className={styles.logoutBtn} onClick={handleLogout} title="Logout">
               <LogOut size={16} strokeWidth={1.75} />
             </button>
           </div>
+          {/* Renders nothing for a single-profile account. Lets anyone whose
+              account spans multiple flats, multiple societies, or a staff hat
+              plus a flat, change context without logging out. */}
+          <ProfileSwitcher />
         </div>
       </aside>
       {/* MAIN AREA */}

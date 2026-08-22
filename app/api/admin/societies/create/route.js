@@ -4,6 +4,8 @@ import Society from "@/models/Society";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { validateAdminRequest } from "@/lib/admin-middleware";
+import { ensureAdminAssignment } from "@/lib/rbac/ensure-admin-assignment";
+import { seedAllRoleTemplatesForSociety } from "@/lib/rbac/seed-society-roles";
 function generateSocietyId(name, area, buildDate) {
   const parts = name.trim().split(" ");
   const first = parts[0]?.slice(0, 4).toLowerCase() || "soc";
@@ -49,6 +51,21 @@ export async function POST(request) {
   } = body;
   if (!societyName || !email || !fullName) {
     return NextResponse.json({ error: "societyName, email, and fullName are required" }, { status: 400 });
+  }
+  // Reuse an existing Admin account for a second society instead of
+  // rejecting the email or (worse) throwing a raw duplicate-key error — same
+  // fix as bulk-import, see [[bulk-import-multi-society-admin]].
+  let multiSocietyAdminUser = null;
+  const emailExists = await User.findOne({ email });
+  if (emailExists) {
+    if (["Admin", "SOCIETY_ADMIN"].includes(emailExists.role)) {
+      multiSocietyAdminUser = emailExists;
+    } else {
+      return NextResponse.json(
+        { error: `Admin email "${email}" is already registered to a non-admin account (${emailExists.role}) — choose a different email` },
+        { status: 409 },
+      );
+    }
   }
   if (registrationNo) {
     const dupe = await Society.findOne({ registrationNo, isDeleted: { $ne: true } });
@@ -113,20 +130,35 @@ export async function POST(request) {
           ],
     },
     subscription: { status: "Trial" },
-    credentials: { adminEmail: email, plainPassword }, // stored temporarily for superadmin only
+    // No new password to show when reusing an existing account — see below.
+    credentials: { adminEmail: email, plainPassword: multiSocietyAdminUser ? null : plainPassword },
   });
-  const user = await User.create({
-    name: fullName,
-    email,
-    password: hashedPassword,
-    role: "Admin",
-    societyId: society._id,
-    isActive: true,
-  });
+  const user = multiSocietyAdminUser
+    ? multiSocietyAdminUser
+    : await User.create({
+        name: fullName,
+        email,
+        password: hashedPassword,
+        role: "Admin",
+        societyId: society._id,
+        isActive: true,
+      });
+  // Every role template up front, not just Admin — so Secretary/Treasurer/
+  // Auditor/Security/Committee Member/Clubhouse Manager are ready to assign
+  // from day one instead of the admin having to remember to seed them later.
+  await seedAllRoleTemplatesForSociety(society._id, { actorId: user._id });
+  // The login route no longer accepts the bare root role string (see
+  // app/api/auth/login/route.js) — without this the admin account just
+  // created could never log in.
+  await ensureAdminAssignment({ userId: user._id, societyId: society._id, legacyRole: "Admin" });
   return NextResponse.json({
     success: true,
     society,
     adminEmail: email,
-    plainPassword,
+    plainPassword: multiSocietyAdminUser ? null : plainPassword,
+    reusedExistingAccount: !!multiSocietyAdminUser,
+    note: multiSocietyAdminUser
+      ? "This email already had a login. No new password was created — they sign in as before and this society now appears in their profile picker."
+      : undefined,
   });
 }

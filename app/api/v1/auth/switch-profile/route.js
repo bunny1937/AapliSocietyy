@@ -20,6 +20,7 @@
 // block in lib/v1/models.js.
 
 import { withRoute, ApiError, json, zodError } from "@/lib/v1/http";
+import { loginBlockFor } from "@/lib/auth/login-block";
 import { getClaims } from "@/lib/v1/auth";
 import { verifyAccess } from "@/lib/v1/jwt";
 import { profileSelectSchema } from "@/lib/v1/schemas";
@@ -69,7 +70,8 @@ export const POST = withRoute(async (req) => {
 
   const user = await User.findById(claims.userId);
   if (!user) throw new ApiError(401, "User not found");
-  if (user.isActive === false) throw new ApiError(403, "Account is disabled");
+  const block = loginBlockFor(user);
+  if (block) throw new ApiError(403, { error: block.message, code: block.code });
 
   const profile = (user.profiles || []).find(
     (p) =>

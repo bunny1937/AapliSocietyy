@@ -1,4 +1,5 @@
 import { withRoute, ApiError, json } from "@/lib/v1/http";
+import { loginBlockFor } from "@/lib/auth/login-block";
 import { verifyRefresh } from "@/lib/v1/jwt";
 import { RefreshToken, User } from "@/lib/v1/models";
 import { issueTokens } from "@/lib/v1/authService";
@@ -27,7 +28,8 @@ export const POST = withRoute(async (req) => {
   await RefreshToken.deleteOne({ _id: stored._id });
 
   const user = await User.findById(payload.userId);
-  if (!user || user.isActive === false) throw new ApiError(401, "User not found");
+  const block = loginBlockFor(user);
+  if (block) throw new ApiError(401, { error: block.message, code: block.code });
 
   // Re-scope to the same profile the refresh token was issued for.
   let profile = null;

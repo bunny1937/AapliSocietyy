@@ -196,6 +196,22 @@
   font-size: 11px;
   color: #9ca3af;
 }
+/* Staff/admin hats get a colored pill instead of plain gray text — the
+   "which hat am I on" confusion (2026-08-22) came from this row looking
+   identical regardless of active context; a member row and an admin row
+   read as the same thing at a glance otherwise. */
+.userRoleStaff {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #b91c1c;
+  background: #fee2e2;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-top: 2px;
+}
 .logoutBtn {
   background: none;
   border: none;

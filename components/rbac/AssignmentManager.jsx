@@ -51,7 +51,12 @@ export function AssignmentManager({ role, onClose, onChanged }) {
   const [allUsers, setAllUsers] = useState([]); // all society staff
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [tab, setTab] = useState("create"); // 'create' | 'existing'
+  // Defaults to "existing": the common case for a small society is one
+  // admin account that already exists (created at society signup) and just
+  // needs the role/flat link, not a brand-new login. "Create a new login"
+  // is for genuinely new staff (a second admin, a fresh guard), so it stays
+  // one tab away instead of being the thing every admin sees first.
+  const [tab, setTab] = useState("existing"); // 'create' | 'existing'
 
   // create-user form state
   const [draft, setDraft] = useState({ ...EMPTY_NEW });
@@ -63,6 +68,14 @@ export function AssignmentManager({ role, onClose, onChanged }) {
   const [pickUserId, setPickUserId] = useState("");
   const [assigning, setAssigning] = useState(false);
   const [assignErr, setAssignErr] = useState(null);
+  // Optional: names the grantee's own flat, so an admin/guard/auditor who is
+  // also a resident shows up as both in the login picker (models/RoleAssignment
+  // memberId). Searched lazily — most societies have too many flats to load
+  // upfront on every open.
+  const [flatQuery, setFlatQuery] = useState("");
+  const [flatOptions, setFlatOptions] = useState([]);
+  const [flatSearching, setFlatSearching] = useState(false);
+  const [pickMemberId, setPickMemberId] = useState("");
 
   const load = useCallback(
     async (signal) => {
@@ -97,6 +110,33 @@ export function AssignmentManager({ role, onClose, onChanged }) {
     () => allUsers.filter((u) => !haveIds.has(u.id)),
     [allUsers, haveIds],
   );
+
+  useEffect(() => {
+    const q = flatQuery.trim();
+    if (q.length < 2) {
+      setFlatOptions([]);
+      return;
+    }
+    let alive = true;
+    setFlatSearching(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/members/list?limit=25&search=${encodeURIComponent(q)}`, {
+          credentials: "include",
+        });
+        const body = await res.json().catch(() => null);
+        if (alive) setFlatOptions(res.ok ? body?.members ?? [] : []);
+      } catch {
+        if (alive) setFlatOptions([]);
+      } finally {
+        if (alive) setFlatSearching(false);
+      }
+    }, 300);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [flatQuery]);
 
   function friendlyErr(e) {
     if (e?.code === "PRIVILEGE_ESCALATION")
@@ -136,9 +176,12 @@ export function AssignmentManager({ role, onClose, onChanged }) {
     try {
       await rbacFetch("/api/rbac/assignments", {
         method: "POST",
-        body: { userId: pickUserId, roleId },
+        body: { userId: pickUserId, roleId, memberId: pickMemberId || undefined },
       });
       setPickUserId("");
+      setPickMemberId("");
+      setFlatQuery("");
+      setFlatOptions([]);
       await load();
       onChanged?.();
     } catch (e) {
@@ -253,6 +296,11 @@ export function AssignmentManager({ role, onClose, onChanged }) {
           ) : null}
 
           {/* add someone */}
+          <p className="text-xs text-gray-400">
+            This only grants the <strong>{role?.name}</strong> role to a login that already
+            exists (or a brand-new one you create below). It never changes what that role
+            itself can do — edit the role's page access from the roles list for that.
+          </p>
           <section className="rounded-xl border border-gray-200">
             <div className="flex border-b border-gray-100">
               <button
@@ -429,6 +477,67 @@ export function AssignmentManager({ role, onClose, onChanged }) {
                           </option>
                         ))}
                       </select>
+                    </label>
+                    <label className="block text-sm">
+                      <span className="mb-1 block font-medium text-gray-700">
+                        Link to flat (optional)
+                      </span>
+                      <span className="mb-1 block text-xs text-gray-400">
+                        Only if this person also lives in the society, e.g. an
+                        admin or guard who is also a resident. They will then
+                        appear as both in their login picker.
+                      </span>
+                      {pickMemberId ? (
+                        <div className="flex items-center justify-between rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm">
+                          <span>
+                            {flatOptions.find((m) => m._id === pickMemberId)?.flatNo ||
+                              flatOptions.find((m) => m._id === pickMemberId)?.wing ||
+                              "Selected flat"}
+                          </span>
+                          <button
+                            type="button"
+                            className="text-xs font-medium text-indigo-600"
+                            onClick={() => {
+                              setPickMemberId("");
+                              setFlatQuery("");
+                            }}
+                          >
+                            Change
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <input
+                            type="text"
+                            value={flatQuery}
+                            onChange={(e) => setFlatQuery(e.target.value)}
+                            placeholder="Search flat number or owner name…"
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                          />
+                          {flatSearching && (
+                            <div className="mt-1 text-xs text-gray-400">Searching…</div>
+                          )}
+                          {flatOptions.length > 0 && (
+                            <div className="mt-1 max-h-40 overflow-y-auto rounded-lg border border-gray-200">
+                              {flatOptions.map((m) => (
+                                <button
+                                  key={m._id}
+                                  type="button"
+                                  className="block w-full px-3 py-2 text-left text-sm hover:bg-indigo-50"
+                                  onClick={() => {
+                                    setPickMemberId(m._id);
+                                    setFlatQuery("");
+                                    setFlatOptions([]);
+                                  }}
+                                >
+                                  {m.wing ? `${m.wing}-` : ""}
+                                  {m.flatNo} — {m.ownerName}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
                     </label>
                     {assignErr ? (
                       <div className="rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-700">

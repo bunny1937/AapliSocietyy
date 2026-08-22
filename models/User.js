@@ -117,10 +117,21 @@ const UserSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       // points to profiles[n].profileId for the current session
     },
+    // The single gate every login path checks. `false` = the account cannot
+    // sign in and any live session dies at the next request (via sessionEpoch).
     isActive: {
       type: Boolean,
       default: true,
     },
+    // ---- Login pause -------------------------------------------------------
+    // A TEMPORARY block, distinct from isActive:false, for "stop this person
+    // logging in until the 5th" without an admin having to remember to switch
+    // them back on. Null = no pause. A past date is treated as expired and is
+    // cleaned up on the next successful login attempt.
+    loginPausedUntil: { type: Date, default: null },
+    // Shown to the person on the login screen and to the admin on the member
+    // record, so a blocked login is never an unexplained "invalid credentials".
+    loginBlockedReason: { type: String, trim: true, maxlength: 200, default: null },
     // True for members created via bulk-import until they complete the
     // onboarding "set your own credentials" flow (auto-generated username
     // and temp password aren't meant to be permanent).

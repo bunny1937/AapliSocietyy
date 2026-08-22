@@ -17,8 +17,12 @@ export default function LoginPage() {
   // Suspense boundary) for a one-off, low-stakes success banner.
   useEffect(() => {
   setHydrated(true);
-  if (new URLSearchParams(window.location.search).get("onboarded") === "1") {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("onboarded") === "1") {
     setOnboardedMessage("Account set up — sign in with your new username and password.");
+  }
+  if (params.get("expired") === "1") {
+    setOnboardedMessage("Your session took too long — please sign in again.");
   }
 }, []);
   const handleChange = (e) => {

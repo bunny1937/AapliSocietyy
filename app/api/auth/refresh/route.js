@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import { signToken } from "@/lib/jwt";
 import { rotateRefreshToken, setRefreshCookie, clearRefreshCookie } from "@/lib/refresh-token";
+import { loginBlockFor } from "@/lib/auth/login-block";
 // Real rotating refresh: reads the httpOnly refreshToken cookie (never a
 // client-supplied token in the body — the previous version accepted any
 // signature-valid token from anyone, not necessarily the session's own),
@@ -24,8 +25,11 @@ export async function POST(request) {
       return res;
     }
     const user = await User.findById(rotated.userId);
-    if (!user || !user.isActive) {
-      const res = NextResponse.json({ error: "User not found" }, { status: 401 });
+    const block = loginBlockFor(user);
+    if (block) {
+      // Clearing the cookie matters here: without it the browser keeps
+      // retrying a refresh that can never succeed.
+      const res = NextResponse.json({ error: block.message, code: block.code }, { status: 401 });
       clearRefreshCookie(res);
       return res;
     }

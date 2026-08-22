@@ -33,7 +33,7 @@ export async function POST(request) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
-  const { userId, roleId, expiresAt } = body || {};
+  const { userId, roleId, expiresAt, memberId } = body || {};
   if (!userId || !roleId) {
     return NextResponse.json(
       { error: "userId and roleId are required" },
@@ -47,6 +47,10 @@ export async function POST(request) {
       userId,
       roleId,
       expiresAt: expiresAt || null,
+      // Optional: links this grant to the grantee's own flat, so an admin,
+      // guard or auditor who also resides in the society shows up as both in
+      // the login picker. See models/RoleAssignment.js.
+      memberId: memberId || null,
     });
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
@@ -56,7 +60,7 @@ export async function POST(request) {
         { error: err.message, code, escalating: err.escalating },
         { status: 403 },
       );
-    const map = { ROLE_NOT_FOUND: 404, USER_NOT_FOUND: 404 };
+    const map = { ROLE_NOT_FOUND: 404, USER_NOT_FOUND: 404, MEMBER_NOT_FOUND: 404 };
     const status = map[code] || 500;
     if (status === 500)
       console.error("[rbac] assignments POST failed:", err?.message);
