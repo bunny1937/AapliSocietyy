@@ -2121,7 +2121,7 @@ export default function AdminSocietiesPage() {
           </div>
         </div>
       )}
-      {/* ── BULK IMPORT WIZARD (native, no Excel) ── */}
+      {/* ── BULK IMPORT WIZARD (upload a filled .xlsx template) ── */}
 <BulkImportWizard
   open={showBulkModal}
   onClose={resetBulkModal}

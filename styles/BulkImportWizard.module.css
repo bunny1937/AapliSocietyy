@@ -38,7 +38,7 @@
   background: #fff;
   border-radius: 14px;
   box-shadow: 0 24px 64px rgba(17, 24, 39, 0.28);
-  overflow: hidden;
+  overflow: scroll;
   /* The morph animates this element. Give the compositor its own layer for
      the duration; GSAP clears the transform when the timeline ends. */
   will-change: transform, opacity;
@@ -181,7 +181,12 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 16px 24px 0;
+  /* .shell is a fixed height with overflow:hidden — this is the only region
+     that can ever scroll, and it wasn't. Anything taller than the modal
+     (the whole import-success summary, for one) was silently clipped with
+     no scrollbar at all. */
+  overflow-y: auto;
+  padding: 16px 24px 24px;
   opacity: 0;
   transform: translateY(8px);
 }
