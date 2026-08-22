@@ -241,6 +241,12 @@ export async function POST(request) {
       if (err.code === "MEMBER_NOT_FOUND") return { memberId, error: "Member not found" };
       if (err.code === "SHOP_NOT_FOUND") return { memberId, error: "Shop not found" };
       if (err.code && /^[BP]\d/.test(err.code)) return { memberId, error: `Invariant ${err.code}: ${err.message}` };
+      // Raw Mongo duplicate-key (11000) — the app-level P4_DUPLICATE guard
+      // should have caught this earlier; landing here means it slipped past
+      // (e.g. a race between two concurrent generation runs). Report it as
+      // the same "already exists" case rather than surfacing a raw driver
+      // error to the admin.
+      if (err.code === 11000) return { memberId, error: `Bill already exists for ${billPeriodId}` };
       console.error(`Error creating bill for ${memberId}:`, err);
       return { memberId, error: err.message };
     }

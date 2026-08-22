@@ -36,6 +36,8 @@ export function rowSignatureOf(billId, st) {
     String(st?.amountPaid ?? ""),
     String(st?.mode ?? ""),
     String(st?.remarks ?? ""),
+    String(st?.overpayAsAdvance ?? ""),
+    String(st?.confirmedBlank ?? ""),
   ].join("|");
 }
 
@@ -115,6 +117,7 @@ export default function VerifyGenieOverlay({
         amountPaid: rowState[r.billId]?.amountPaid ?? null,
         mode: rowState[r.billId]?.mode ?? "",
         remarks: rowState[r.billId]?.remarks ?? "",
+        overpayAsAdvance: !!rowState[r.billId]?.overpayAsAdvance,
       }));
 
       let res;

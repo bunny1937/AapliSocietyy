@@ -94,7 +94,10 @@ export default function MyBillsPage() {
             flexWrap: "wrap",
           }}
         >
-          {["all", "Unpaid", "Partial", "Overdue", "Paid"].map((s) => (
+          {/* Partial isn't a separate tab — "Unpaid" already covers it
+              server-side (see api/member/bills/route.js); each bill still
+              shows its own Partial badge with the remaining amount. */}
+          {["all", "Unpaid", "Overdue", "Paid"].map((s) => (
             <button
               key={s}
               onClick={() => {

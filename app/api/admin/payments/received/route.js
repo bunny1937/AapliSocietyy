@@ -39,10 +39,20 @@ export async function GET(request) {
     const to = searchParams.get("to");
     const includeReversed = searchParams.get("includeReversed") === "1";
 
-    const query = { societyId: gate.context.societyId, category: "Payment" };
+    // Canonical shape is category:"Payment" (type:"Credit"), written by
+    // PaymentService and (as of 2026-08-22) the collection-sheet commit
+    // route. Older collection-sheet rows predate that fix and only have
+    // type:"PAYMENT" with no category at all — matched here too, or this
+    // "one source of truth" list silently drops every payment recorded
+    // through that path before today.
+    const query = { societyId: gate.context.societyId };
+    const and = [
+      { $or: [{ category: "Payment" }, { type: { $in: ["PAYMENT", "Payment", "payment"] } }] },
+    ];
     if (memberId) query.memberId = memberId;
-    if (mode) query.paymentMode = mode;
+    if (mode) and.push({ $or: [{ paymentMode: mode }, { mode }] });
     if (!includeReversed) query.isReversed = { $ne: true };
+    query.$and = and;
     if (from || to) {
       query.date = {};
       if (from) query.date.$gte = new Date(from);
@@ -96,12 +106,14 @@ export async function GET(request) {
         date: r.date,
         amount: r.amount,
         description: r.description,
-        paymentMode: r.paymentMode,
+        // Legacy collection-sheet rows only had `mode`, not `paymentMode`.
+        paymentMode: r.paymentMode || r.mode,
         chequeNo: r.chequeNo,
         bankName: r.bankName,
         upiId: r.upiId,
         transactionRef: r.transactionRef,
-        notes: r.notes,
+        // Legacy collection-sheet rows wrote `remarks`, not `notes`.
+        notes: r.notes || r.remarks,
         billPeriodId: r.billPeriodId,
         isReversed: Boolean(r.isReversed),
         reversalTransactionId: r.reversalTransactionId || null,

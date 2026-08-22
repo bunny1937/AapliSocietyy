@@ -23,7 +23,14 @@ export const dynamic = "force-dynamic";
 const EDITABLE = ["paymentMode", "chequeNo", "bankName", "upiId", "transactionRef", "notes"];
 
 async function load(id, societyId) {
-  const txn = await Transaction.findOne({ _id: id, societyId, category: "Payment" });
+  // Same shape-tolerance as /api/admin/payments/received: old collection-sheet
+  // rows only have type:"PAYMENT", no category — matching category:"Payment"
+  // alone 404'd Edit/Reverse for any payment recorded before 2026-08-22.
+  const txn = await Transaction.findOne({
+    _id: id,
+    societyId,
+    $or: [{ category: "Payment" }, { type: { $in: ["PAYMENT", "Payment", "payment"] } }],
+  });
   return txn;
 }
 

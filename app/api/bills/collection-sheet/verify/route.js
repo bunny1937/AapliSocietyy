@@ -283,17 +283,22 @@ export async function POST(request) {
         };
       }
 
-      // CHECK 5: bounds. This is the hard stop on amountPaid tampering.
-      // remainingDue came from the database, not the browser.
-      if (amountPaid > remainingDue + TOLERANCE) {
+      // CHECK 5: bounds. remainingDue came from the database, not the
+      // browser. An amount above it is not an error by itself — the excess
+      // becomes an advance credit on the member's account, same as the
+      // Payments screen already does for a single payment. It only needs
+      // the admin's explicit confirmation first, so a typo (5000 instead of
+      // 500) can't silently move money into a credit balance unnoticed.
+      const overpayExcess = money(Math.max(0, amountPaid - remainingDue));
+      if (overpayExcess > TOLERANCE && !input.overpayAsAdvance) {
         return {
           ...base,
           ...fail(
-            "AMOUNT_EXCEEDS_DUE",
+            "OVERPAY_NEEDS_CONFIRM",
             `Entered ${inr(amountPaid)} but only ${inr(remainingDue)} is outstanding${
               alreadyPaid > 0 ? ` (${inr(alreadyPaid)} already received)` : ""
-            }. Overpayment must be recorded as advance credit from the Payments screen.`,
-            { server: ledger, maxAllowed: remainingDue },
+            }. The extra ${inr(overpayExcess)} can be added as advance credit on this member's account — confirm to continue.`,
+            { server: ledger, maxAllowed: remainingDue, excess: overpayExcess, action: "CONFIRM_OVERPAY" },
           ),
         };
       }
@@ -313,10 +318,14 @@ export async function POST(request) {
         };
       }
 
+      // The bill itself never absorbs more than remainingDue; any confirmed
+      // excess is credited separately, not folded into this bill's payment.
+      const appliedAmount = money(amountPaid - overpayExcess);
+
       // Partial top-up is legitimate: member paid some online, pays the rest
       // at the desk. We only require that the two together do not exceed the
       // bill, which CHECK 5 above already guarantees.
-      const totalAfter = money(alreadyPaid + amountPaid);
+      const totalAfter = money(alreadyPaid + appliedAmount);
       const resolvedStatus =
         totalAfter >= billDue - TOLERANCE ? "PAID" : "PARTIAL";
 
@@ -327,7 +336,7 @@ export async function POST(request) {
           ...base,
           ...fail(
             "PARTIAL_NEEDS_REMARK",
-            `${inr(amountPaid)} against ${inr(remainingDue)} leaves ${inr(money(remainingDue - amountPaid))} outstanding. Add a remark explaining the short payment.`,
+            `${inr(appliedAmount)} against ${inr(remainingDue)} leaves ${inr(money(remainingDue - appliedAmount))} outstanding. Add a remark explaining the short payment.`,
             { server: ledger },
           ),
         };
@@ -348,21 +357,24 @@ export async function POST(request) {
         ok: true,
         resolvedStatus,
         willRecord: {
-          amount: amountPaid,
+          amount: appliedAmount,
           mode: modeRaw,
           remarks,
           appliesTo: billId,
+          advanceCredit: overpayExcess > 0 ? overpayExcess : undefined,
         },
-        amountPaid,
+        amountPaid: appliedAmount,
         mode: modeRaw,
         remarks,
         server: ledger,
         note:
-          resolvedStatus === "PAID"
-            ? alreadyPaid > 0
-              ? `Settles the balance. ${inr(alreadyPaid)} online + ${inr(amountPaid)} ${modeRaw} = ${inr(totalAfter)}.`
-              : `Full payment of ${inr(amountPaid)} by ${modeRaw}.`
-            : `Part payment. ${inr(money(billDue - totalAfter))} will carry forward.`,
+          overpayExcess > TOLERANCE
+            ? `Settles the balance in full (${inr(appliedAmount)}). Extra ${inr(overpayExcess)} added to this member's advance credit.`
+            : resolvedStatus === "PAID"
+              ? alreadyPaid > 0
+                ? `Settles the balance. ${inr(alreadyPaid)} online + ${inr(appliedAmount)} ${modeRaw} = ${inr(totalAfter)}.`
+                : `Full payment of ${inr(appliedAmount)} by ${modeRaw}.`
+              : `Part payment. ${inr(money(billDue - totalAfter))} will carry forward.`,
       };
     });
 

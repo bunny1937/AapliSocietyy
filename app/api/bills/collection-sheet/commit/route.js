@@ -17,10 +17,14 @@ import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import { authorize } from "@/lib/rbac/authorize";
 import Bill from "@/models/Bill";
+import Member from "@/models/Member";
 import Transaction from "@/models/Transaction";
 import ScheduledBillRun from "@/models/ScheduledBillRun";
 import { getSocietySnapshot, invalidateSocietySnapshot } from "@/lib/import/societySnapshot";
 import { verifyRow, configFingerprint, money } from "@/lib/billing/ledgerSignature";
+import { applyAllocationToBill } from "@/lib/billing/paymentApplication";
+import { allocatePaymentInterestFirst } from "@/utils/interestUtils";
+import { notifyPaymentReceived } from "@/lib/v1/notify";
 import cache from "@/lib/cache";
 
 export const runtime = "nodejs";
@@ -105,11 +109,13 @@ export async function POST(request) {
     }
 
     const billIds = paying.map((r) => String(r.billId));
-    const bills = await Bill.find({ societyId, _id: { $in: billIds } })
-      .select(
-        "memberId billPeriodId billSeries totalBillDue amountPaid status openingPrincipal openingInterest currentCharges billPrincipal",
-      )
-      .lean();
+    // Mongoose docs, not .lean() — applyAllocationToBill() mutates these in
+    // place and each is saved individually below, the same pattern
+    // PaymentService uses. Needs the balance fields too, not just the
+    // read-only ones the old $inc-only version used.
+    const bills = await Bill.find({ societyId, _id: { $in: billIds } }).select(
+      "memberId billPeriodId billSeries totalBillDue amountPaid status openingPrincipal openingInterest currentCharges billPrincipal principalBalance interestBalance balanceAmount",
+    );
     const billMap = new Map(bills.map((b) => [String(b._id), b]));
 
     const payAgg = await Transaction.aggregate([
@@ -117,7 +123,13 @@ export async function POST(request) {
         $match: {
           societyId,
           billId: { $in: bills.map((b) => b._id) },
-          type: { $in: ["PAYMENT", "Payment", "payment"] },
+          // Old collection-sheet commits wrote type:"PAYMENT"; the canonical
+          // shape everywhere else is type:"Credit"/category:"Payment" — match
+          // both so a mixed history of old and new rows still sums correctly.
+          $or: [
+            { type: { $in: ["PAYMENT", "Payment", "payment"] } },
+            { type: "Credit", category: "Payment" },
+          ],
           isReversed: { $ne: true },
         },
       },
@@ -128,8 +140,30 @@ export async function POST(request) {
     // ---- Re-validate, then build the writes ------------------------------
     const rejected = [];
     const txDocs = [];
-    const billOps = [];
+    const billsToSave = [];
+    const memberAdvanceOps = [];
     const now = new Date();
+
+    // Running ledger balance per member — seeded from each payer's last
+    // transaction, so the txn this route writes carries a real
+    // balanceAfterTransaction like every other payment path does, instead of
+    // leaving it undefined (which is why these rows looked broken/missing in
+    // the member ledger — no running balance to render).
+    const payerMemberIds = [
+      ...new Set(paying.map((r) => String(billMap.get(String(r.billId))?.memberId || ""))),
+    ].filter(Boolean);
+    const lastTxns = await Transaction.find({
+      societyId,
+      memberId: { $in: payerMemberIds },
+      isReversed: { $ne: true },
+    })
+      .sort({ date: -1, createdAt: -1 })
+      .lean();
+    const runningBalance = new Map();
+    for (const t of lastTxns) {
+      const key = String(t.memberId);
+      if (!runningBalance.has(key)) runningBalance.set(key, t.balanceAfterTransaction ?? 0);
+    }
 
     for (const input of paying) {
       const billId = String(input.billId);
@@ -175,7 +209,7 @@ export async function POST(request) {
         continue;
       }
 
-      const amount = money(input.amountPaid);
+      const enteredAmount = money(input.amountPaid);
       const payMode = String(input.mode).trim();
 
       if (!VALID_MODES.includes(payMode)) {
@@ -186,38 +220,67 @@ export async function POST(request) {
         rejected.push({ billId, code: "ALREADY_SETTLED" });
         continue;
       }
-      if (amount <= 0 || amount > remainingDue + TOLERANCE) {
+      if (enteredAmount <= 0) {
         rejected.push({ billId, code: "AMOUNT_OUT_OF_BOUNDS", maxAllowed: remainingDue });
         continue;
       }
+      // An amount above what's outstanding is only accepted with the admin's
+      // explicit per-row confirmation (input.overpayAsAdvance) — verify/route
+      // already required this before the client got this far. The bill only
+      // ever absorbs remainingDue; the rest becomes advance credit below.
+      const overpayExcess = money(Math.max(0, enteredAmount - remainingDue));
+      if (overpayExcess > TOLERANCE && !input.overpayAsAdvance) {
+        rejected.push({ billId, code: "OVERPAY_NEEDS_CONFIRM", maxAllowed: remainingDue });
+        continue;
+      }
+      const amount = money(enteredAmount - overpayExcess);
 
-      const totalAfter = money(alreadyPaid + amount);
-      const newStatus = totalAfter >= billDue - TOLERANCE ? "Paid" : "Partial";
+      // Canonical interest-first allocation, same helper PaymentService uses —
+      // this is what the old version skipped, leaving balanceAmount/
+      // principalBalance/interestBalance untouched while amountPaid quietly
+      // moved, so the bill looked "Partial" forever and next month's
+      // generation carried forward the full pre-payment arrears.
+      const { billUpdates } = allocatePaymentInterestFirst(amount, [bill], "INTEREST_FIRST");
+      applyAllocationToBill(bill, billUpdates[0], { actorUserId: userId });
+      billsToSave.push(bill);
+
+      const memberKey = String(bill.memberId);
+      const prevBalance = runningBalance.get(memberKey) ?? 0;
+      const newBalance = money(prevBalance - amount);
+      runningBalance.set(memberKey, newBalance);
 
       txDocs.push({
         societyId,
         memberId: bill.memberId,
         billId: new mongoose.Types.ObjectId(billId),
-        type: "PAYMENT",
+        // Canonical shape (type/category) so this row renders in every ledger
+        // view the same as any other payment; source/mode/commitToken kept
+        // for this route's own idempotency + provenance.
+        type: "Credit",
+        category: "Payment",
         source: "ADMIN_COLLECTION",
         amount,
+        balanceAfterTransaction: newBalance,
+        paymentMode: payMode,
         mode: payMode,
+        description: `Payment received via ${payMode} (collection sheet)`,
         remarks: String(input.remarks || "").slice(0, 240),
         date: now,
         recordedBy: userId,
+        createdBy: userId,
         commitToken,
         billPeriodId: bill.billPeriodId,
+        ...(overpayExcess > 0 ? { advanceCreditAdded: overpayExcess } : {}),
       });
 
-      billOps.push({
-        updateOne: {
-          filter: { _id: bill._id, societyId },
-          update: {
-            $inc: { amountPaid: amount },
-            $set: { status: newStatus, lastPaymentAt: now },
+      if (overpayExcess > 0) {
+        memberAdvanceOps.push({
+          updateOne: {
+            filter: { _id: bill.memberId, societyId },
+            update: { $inc: { advanceCredit: overpayExcess } },
           },
-        },
-      });
+        });
+      }
     }
 
     if (rejected.length > 0) {
@@ -233,8 +296,23 @@ export async function POST(request) {
       );
     }
 
-    await Transaction.insertMany(txDocs, { ordered: false });
-    if (billOps.length) await Bill.bulkWrite(billOps, { ordered: false });
+    const insertedTxns = await Transaction.insertMany(txDocs, { ordered: false });
+    await Promise.all(billsToSave.map((b) => b.save()));
+    if (memberAdvanceOps.length) await Member.bulkWrite(memberAdvanceOps, { ordered: false });
+
+    // Nobody was ever told their payment landed via this route — the same
+    // gap fixed on the single-payment /api/payments/record path.
+    await Promise.all(
+      insertedTxns.map((t) =>
+        notifyPaymentReceived({
+          transactionId: t._id,
+          societyId,
+          memberId: t.memberId,
+          amount: t.amount,
+          period: t.billPeriodId,
+        }).catch((e) => console.error("notifyPaymentReceived failed:", e.message)),
+      ),
+    );
 
     // ---- Optional: schedule next month -----------------------------------
     let scheduled = null;
@@ -273,6 +351,7 @@ export async function POST(request) {
       success: true,
       recorded: txDocs.length,
       totalAmount: money(txDocs.reduce((s, t) => s + t.amount, 0)),
+      totalAdvanceCredit: money(txDocs.reduce((s, t) => s + (t.advanceCreditAdded || 0), 0)),
       scheduled,
       periodId,
     });

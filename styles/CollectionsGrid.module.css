@@ -15,9 +15,19 @@
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
+  /* `overflow: hidden` here clipped the 1380px table instead of letting
+     .tableScroll scroll it, so Amount Paid / Mode / Remarks were unreachable.
+     Clip only the corners, and only vertically, so the inner scroller owns the
+     horizontal axis. */
+  overflow-x: visible;
+  overflow-y: hidden;
   display: flex;
   flex-direction: column;
+  /* A flex item defaults to min-width:auto, which resolves to the table's
+     1380px min-content and stops the box ever being narrower than its
+     contents - i.e. no scrollbar is ever generated. */
+  min-width: 0;
+  width: 100%;
 }
 
 /* ── Sheet bar ─────────────────────────────────────────── */
@@ -70,6 +80,11 @@
 /* ── Table ─────────────────────────────────────────────── */
 .tableScroll {
   overflow: auto;
+  /* Always show the horizontal bar: an overlay scrollbar that only appears on
+     hover is invisible to an admin who does not know there is more to the
+     right. */
+  overflow-x: scroll;
+  scrollbar-gutter: stable;
   max-height: min(62vh, 680px);
   /* Own stacking context so sticky cells never fight the overlay. */
   position: relative;
@@ -109,7 +124,15 @@
   z-index: 4 !important;
   width: 74px;
 }
-.thName { width: 168px; }
+.thName {
+  width: 168px;
+  /* Pinned beside Flat (74px) so the admin still knows whose row they are
+     typing into after scrolling right to Amount Paid. */
+  position: sticky;
+  left: 74px;
+  z-index: 4 !important;
+  box-shadow: 1px 0 0 #e5e7eb;
+}
 .thStatus { width: 96px; }
 .thLocked {
   width: 122px;
@@ -154,7 +177,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  position: sticky;
+  left: 74px;
+  z-index: 2;
+  background: white;
+  box-shadow: 1px 0 0 #f3f4f6;
 }
+.row:hover .tdName { background: #fafaff; }
 
 /* ── Locked ledger block ───────────────────────────────── */
 .tdLocked {
@@ -222,7 +251,8 @@
 .rowSettled .tdSticky { box-shadow: inset 3px 0 0 #d1d5db; }
 
 .rowError,
-.rowOk {
+.rowOk,
+.rowNeedsAction {
   display: flex;
   align-items: flex-start;
   gap: 0.28rem;
@@ -232,8 +262,31 @@
 }
 .rowError { color: #b91c1c; }
 .rowOk { color: #047857; }
+.rowNeedsAction { color: #b45309; }
 .rowError svg,
-.rowOk svg { flex-shrink: 0; margin-top: 1px; }
+.rowOk svg,
+.rowNeedsAction svg { flex-shrink: 0; margin-top: 1px; }
+
+.rowOverpay,
+.rowBlankConfirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.32rem;
+  margin-top: 0.32rem;
+  font-size: 0.68rem;
+  line-height: 1.3;
+  cursor: pointer;
+}
+.rowOverpay {
+  color: #92400e;
+  font-weight: 600;
+}
+.rowOverpay input,
+.rowBlankConfirm input {
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+.rowBlankConfirm { color: #6b7280; }
 
 /* ── Status pills ──────────────────────────────────────── */
 .pill {
@@ -287,6 +340,18 @@
   font-variant-numeric: tabular-nums;
 }
 .footAccent { color: #4f46e5; }
+.footWarn { color: #b45309; }
+
+.footerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.draftSaved {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  white-space: nowrap;
+}
 
 /* ── Buttons ───────────────────────────────────────────── */
 .btnPrimary,

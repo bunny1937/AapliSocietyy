@@ -1,7 +1,10 @@
 /* ── Layout ─────────────────────────────────────────── */
 .container {
   padding: 0;
-  max-width: 1100px;
+  /* 1100px was narrower than the collections table this page hosts (1380px),
+     so the wizard was permanently squeezed. Widened, and capped by the
+     viewport rather than a fixed pixel figure. */
+  max-width: min(1600px, 100%);
   margin: 0 auto;
 }
 .header {

@@ -28,10 +28,44 @@ import {
   RefreshCw,
   Wallet,
   Smartphone,
+  Save,
+  ShieldAlert,
 } from "lucide-react";
 import s from "@/styles/CollectionsGrid.module.css";
 
 const MODES = ["", "Cash", "Cheque", "NEFT", "IMPS", "UPI", "Card", "Online"];
+const TOLERANCE = 0.01;
+
+/**
+ * Every row must reach one of three resolved states before Submit is allowed:
+ * a real payment (with a remark if it's short, and explicit confirmation if
+ * it's over the amount due), or an explicit "no payment collected" confirm.
+ * Leaving a row untouched is no longer a silent pass — see [[save-submit-gate]].
+ */
+export function resolveRow(row, st) {
+  if (row.systemStatus === "PAID") return { resolved: true };
+  const amt = Number(st?.amountPaid);
+  const hasAmt = Number.isFinite(amt) && amt > 0;
+  const hasMode = !!st?.mode;
+
+  if (!hasAmt && !hasMode) {
+    return st?.confirmedBlank
+      ? { resolved: true }
+      : { resolved: false, reason: "Confirm no payment, or enter one." };
+  }
+  if (hasAmt && !hasMode) return { resolved: false, reason: "Pick a payment mode." };
+  if (!hasAmt && hasMode) return { resolved: false, reason: "Enter the amount collected." };
+
+  const overpay = amt > row.remainingDue + TOLERANCE;
+  if (overpay && !st?.overpayAsAdvance) {
+    return { resolved: false, reason: "Confirm the extra amount as advance credit." };
+  }
+  const shortfall = !overpay && amt < row.remainingDue - TOLERANCE;
+  if (shortfall && !String(st?.remarks || "").trim()) {
+    return { resolved: false, reason: "Add a remark for the short payment." };
+  }
+  return { resolved: true };
+}
 
 // Column order for keyboard navigation. Only editable cells appear here,
 // which is what makes arrow-right skip the grey ledger block entirely.
@@ -237,6 +271,9 @@ export default function CollectionsGrid({
   const totals = useMemo(() => {
     let entered = 0;
     let filledRows = 0;
+    let unresolved = 0;
+    let blankUnconfirmed = 0;
+    let blankConfirmed = 0;
     for (const r of rows) {
       const st = rowState[r.billId] || {};
       const amt = Number(st.amountPaid);
@@ -244,13 +281,89 @@ export default function CollectionsGrid({
         entered += amt;
         filledRows += 1;
       }
+      if (!resolveRow(r, st).resolved) unresolved += 1;
+      if (r.systemStatus !== "PAID" && !amt && !st.mode) {
+        if (st.confirmedBlank) blankConfirmed += 1;
+        else blankUnconfirmed += 1;
+      }
     }
     return {
       entered,
       filledRows,
+      unresolved,
+      blankUnconfirmed,
+      blankConfirmed,
       outstanding: sheet?.summary?.outstanding || 0,
     };
-  }, [rows, rowState, sheet]);
+  }, [rows, rowState]);
+
+  // One click instead of one checkbox per empty flat — most of a sheet is
+  // usually untouched rows (nothing collected at the desk), and the point of
+  // requiring confirmation was never to make that tedious, just explicit.
+  const confirmAllBlank = useCallback(() => {
+    setRowState((prev) => {
+      const next = { ...prev };
+      for (const r of rows) {
+        const st = next[r.billId] || {};
+        const amt = Number(st.amountPaid);
+        if (r.systemStatus !== "PAID" && !amt && !st.mode && !st.confirmedBlank) {
+          next[r.billId] = { ...st, confirmedBlank: true };
+        }
+      }
+      return next;
+    });
+  }, [rows, setRowState]);
+
+  // The undo for the bulk confirm above — one click back to "nothing
+  // decided yet" for every still-blank row, instead of unchecking each one.
+  const unconfirmAllBlank = useCallback(() => {
+    setRowState((prev) => {
+      const next = { ...prev };
+      for (const r of rows) {
+        const st = next[r.billId] || {};
+        const amt = Number(st.amountPaid);
+        if (!amt && !st.mode && st.confirmedBlank) {
+          next[r.billId] = { ...st, confirmedBlank: false };
+        }
+      }
+      return next;
+    });
+  }, [rows, setRowState]);
+
+  // ---- Save & continue later ---------------------------------------------
+  // A plain in-browser draft, not a server commit — nothing here is posted
+  // until Verify & Submit runs. Lets an admin fill half a sheet, leave, and
+  // pick up exactly where they stopped instead of losing typed-in amounts.
+  const draftKey = `collections-draft:${billSeries}:${periodId}`;
+  const [draftSavedAt, setDraftSavedAt] = useState(null);
+
+  useEffect(() => {
+    if (!periodId) return;
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed?.rowState && Object.keys(parsed.rowState).length) {
+        setRowState((prev) => ({ ...parsed.rowState, ...prev }));
+        setDraftSavedAt(parsed.savedAt || null);
+      }
+    } catch {
+      /* corrupt or foreign draft, ignore */
+    }
+    // Only ever load once, when this sheet first mounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey]);
+
+  const saveDraft = useCallback(() => {
+    const savedAt = new Date().toISOString();
+    try {
+      window.localStorage.setItem(draftKey, JSON.stringify({ rowState, savedAt }));
+      setDraftSavedAt(savedAt);
+    } catch {
+      /* storage full or blocked — nothing to do, the admin's typed values are
+         still in memory and Verify & Submit still works this session */
+    }
+  }, [draftKey, rowState]);
 
   if (isLoading) {
     return (
@@ -347,6 +460,27 @@ export default function CollectionsGrid({
           </span>
         </div>
         <div className={s.sheetActions}>
+          {totals.blankUnconfirmed > 0 && (
+            <button
+              className={s.btnSecondary}
+              onClick={confirmAllBlank}
+              disabled={busy}
+              title="Marks every still-empty flat as no collection this month, in one go — same as ticking each row's checkbox yourself. Any row you then fill in overrides it."
+            >
+              Confirm {totals.blankUnconfirmed} empty row
+              {totals.blankUnconfirmed === 1 ? "" : "s"} as no payment
+            </button>
+          )}
+          {totals.blankConfirmed > 0 && (
+            <button
+              className={s.btnGhost}
+              onClick={unconfirmAllBlank}
+              disabled={busy}
+              title="Undoes the bulk confirm above for every row that's still blank — back to needing a decision, one row at a time or in bulk again."
+            >
+              Unselect {totals.blankConfirmed} confirmed
+            </button>
+          )}
           <span className={s.cacheTag} title="This sheet is reused until billing configuration changes.">
             <Lock size={11} /> Ledger locked
           </span>
@@ -404,6 +538,12 @@ export default function CollectionsGrid({
               // inputs is friendlier than letting the admin type and then
               // rejecting it at verify time.
               const settled = row.systemStatus === "PAID";
+              const amtNum = Number(st.amountPaid);
+              const hasAmt = Number.isFinite(amtNum) && amtNum > 0;
+              const overpay = hasAmt && amtNum > row.remainingDue + TOLERANCE;
+              const excess = overpay ? Math.round((amtNum - row.remainingDue) * 100) / 100 : 0;
+              const isBlank = !hasAmt && !st.mode;
+              const rowResult = resolveRow(row, st);
 
               return (
                 <tr
@@ -438,15 +578,30 @@ export default function CollectionsGrid({
                       inputMode="decimal"
                       step="0.01"
                       min="0"
-                      max={row.remainingDue}
                       className={s.cellInput}
                       value={st.amountPaid ?? ""}
                       disabled={settled || busy}
                       placeholder={settled ? "settled" : inr(row.remainingDue)}
-                      onChange={(e) => update(row.billId, "amountPaid", e.target.value)}
+                      onChange={(e) =>
+                        update(row.billId, "amountPaid", e.target.value)
+                      }
                       onKeyDown={(e) => onKeyDown(e, rIdx, 0)}
                       onFocus={() => setFocused({ row: rIdx, col: 0 })}
                     />
+                    {overpay && (
+                      <label className={s.rowOverpay}>
+                        <input
+                          type="checkbox"
+                          checked={!!st.overpayAsAdvance}
+                          disabled={settled || busy}
+                          onChange={(e) =>
+                            update(row.billId, "overpayAsAdvance", e.target.checked)
+                          }
+                        />
+                        <ShieldAlert size={11} /> ₹{inr(excess)} over due — add as advance
+                        credit
+                      </label>
+                    )}
                   </td>
                   <td className={s.tdEdit}>
                     <select
@@ -478,6 +633,20 @@ export default function CollectionsGrid({
                       onKeyDown={(e) => onKeyDown(e, rIdx, 2)}
                       onFocus={() => setFocused({ row: rIdx, col: 2 })}
                     />
+                    {isBlank && !settled && (
+                      <label className={s.rowBlankConfirm}>
+                        <input
+                          type="checkbox"
+                          checked={!!st.confirmedBlank}
+                          disabled={busy}
+                          onChange={(e) =>
+                            update(row.billId, "confirmedBlank", e.target.checked)
+                          }
+                        />
+                        Confirm — no payment collected, {inr(row.remainingDue)} carries
+                        forward
+                      </label>
+                    )}
                     {res && !res.ok && (
                       <span className={s.rowError} role="alert">
                         <AlertCircle size={11} /> {res.message}
@@ -486,6 +655,11 @@ export default function CollectionsGrid({
                     {res?.ok && (
                       <span className={s.rowOk}>
                         <CheckCircle2 size={11} /> {res.note}
+                      </span>
+                    )}
+                    {!settled && !isBlank && !overpay && !rowResult.resolved && !res && (
+                      <span className={s.rowNeedsAction}>
+                        <AlertCircle size={11} /> {rowResult.reason}
                       </span>
                     )}
                   </td>
@@ -515,18 +689,52 @@ export default function CollectionsGrid({
               {totals.filledRows} / {rows.length}
             </span>
           </div>
+          {totals.unresolved > 0 && (
+            <div>
+              <span className={s.footLabel}>Needs attention</span>
+              <span className={`${s.footValue} ${s.footWarn}`}>
+                {totals.unresolved} row{totals.unresolved === 1 ? "" : "s"}
+              </span>
+            </div>
+          )}
         </div>
 
-        <button
-          ref={verifyBtnRef}
-          className={s.btnVerify}
-          onClick={onRequestVerify}
-          disabled={busy || rows.length === 0}
-        >
-          <Wallet size={16} />
-          Verify &amp; Submit
-          <kbd className={s.kbd}>⌘↵</kbd>
-        </button>
+        <div className={s.footerActions}>
+          <button
+            type="button"
+            className={s.btnSecondary}
+            onClick={saveDraft}
+            disabled={busy}
+            title="Save what's filled in so far — you can close this and come back to it."
+          >
+            <Save size={14} />
+            Save
+          </button>
+          {draftSavedAt && (
+            <span className={s.draftSaved}>
+              Saved {new Date(draftSavedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          )}
+          <button
+            ref={verifyBtnRef}
+            className={s.btnVerify}
+            onClick={onRequestVerify}
+            disabled={busy || rows.length === 0 || totals.unresolved > 0}
+            title={
+              totals.unresolved > 0
+                ? `${totals.unresolved} row${totals.unresolved === 1 ? "" : "s"} still need${
+                    totals.unresolved === 1 ? "s" : ""
+                  } a decision — enter a payment, confirm no payment, or confirm the extra as advance credit.`
+                : undefined
+            }
+          >
+            <Wallet size={16} />
+            {totals.unresolved > 0
+              ? `Resolve ${totals.unresolved} row${totals.unresolved === 1 ? "" : "s"} first`
+              : "Verify & Submit"}
+            {totals.unresolved === 0 && <kbd className={s.kbd}>⌘↵</kbd>}
+          </button>
+        </div>
       </div>
     </div>
   );

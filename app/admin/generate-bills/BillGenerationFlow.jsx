@@ -329,6 +329,9 @@ if (!latestPeriodId) {
         currInt: p.currentInterest ?? 0,
         interestAmount: (p.openingInterest ?? 0) + (p.currentInterest ?? 0),
         charges: p.charges || [],
+        // Rate-card heads this unit is NOT billed, with the reason. Carried
+        // through so the preview can answer "where did signage go?" on screen.
+        notCharged: p.notCharged || [],
         subtotal: p.currentCharges ?? 0,
         serviceTax: 0, // commercial heads carry their own tax treatment
         serviceTaxRate: 0,
@@ -703,11 +706,28 @@ if (!latestPeriodId) {
         }
       }
       setGenProgress({ current: total, total });
-      return { count: result.billsGenerated ?? result.count ?? 0 };
+      return {
+        count: result.billsGenerated ?? result.count ?? 0,
+        failed: result.failed ?? 0,
+        errors: result.errors ?? [],
+      };
     },
     onSuccess: (data) => {
       setGenProgress({ current: 0, total: 0 });
-      alert(`Generated ${data.count} bills successfully!`);
+      if (data.count === 0 && data.failed > 0) {
+        // Every member in the batch failed — this is not a success, and
+        // saying "Generated 0 bills successfully!" (the old message) read as
+        // one regardless. Show the actual reason instead.
+        alert(
+          `No bills were generated.\n\n${data.errors.map((e) => `• ${e.error}`).join("\n")}`,
+        );
+      } else if (data.failed > 0) {
+        alert(
+          `Generated ${data.count} bill(s), but ${data.failed} failed:\n\n${data.errors.map((e) => `• ${e.error}`).join("\n")}`,
+        );
+      } else {
+        alert(`Generated ${data.count} bill(s) successfully!`);
+      }
       setShowPreview(false);
       setBillsGeneratedForPeriod(periodLabel);
       queryClient.invalidateQueries(["bills-list"]);
@@ -792,6 +812,26 @@ if (!latestPeriodId) {
             </tr>
           </tbody>
         </table>
+        ${
+          (billData.notCharged || []).length
+            ? `
+        <div style="border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 1.5rem; overflow: hidden;">
+          <div style="padding: 0.6rem 0.75rem; background: #f9fafb; font-size: 0.8rem; font-weight: 700; color: #374151;">
+            On the rate card but not charged to this unit
+          </div>
+          ${billData.notCharged
+            .map(
+              (n) => `
+            <div style="padding: 0.6rem 0.75rem; border-top: 1px solid #e5e7eb; font-size: 0.8rem; color: #4b5563; line-height: 1.5;">
+              <b style="color: #374151;">${n.name}</b> &mdash; ${n.reason}
+            </div>
+          `,
+            )
+            .join("")}
+        </div>
+        `
+            : ""
+        }
         ${
           Math.abs(billData.previousBalance) > 0
             ? `
@@ -1377,7 +1417,11 @@ ${
             border: "2px solid #c7d2fe",
             borderRadius: "12px",
             marginBottom: "1.5rem",
-            overflow: "hidden",
+            // Was `overflow: "hidden"`, which clipped the 1380px collections
+            // table instead of letting its own scroller move. Only the vertical
+            // axis is clipped now; the inner .tableScroll owns the horizontal one.
+            overflowX: "visible",
+            overflowY: "hidden",
           }}
         >
           <div
@@ -1443,7 +1487,17 @@ ${
               </div>
             )}
 
-            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "0.75rem",
+                flexWrap: "wrap",
+                // Without this the collections panel inherits min-width:auto
+                // from its 1380px table and can never shrink, so no scrollbar
+                // is generated and the right-hand columns are unreachable.
+                minWidth: 0,
+              }}
+            >
               {hasValidPeriodLabel &&
               (commercialReadiness?.counts?.billsThisPeriod ?? 1) === 0 ? (
                 // FIXED: "Record collections" was clickable straight after a preview

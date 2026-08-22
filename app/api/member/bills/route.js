@@ -27,7 +27,11 @@ export async function GET(request) {
       isDeleted: { $ne: true },
     };
     if (status && status !== "all") {
-      query.status = status;
+      // "Unpaid" from the client covers Partial too — Partial isn't a
+      // separate bucket to filter by, just a bill with some (not all) of
+      // itself paid. Still shown as its own label on each bill, just not a
+      // distinct filter tab.
+      query.status = status === "Unpaid" ? { $in: ["Unpaid", "Partial"] } : status;
     } else {
       query.status = { $ne: "Scheduled" };
     }

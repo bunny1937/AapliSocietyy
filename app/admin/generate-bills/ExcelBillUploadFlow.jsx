@@ -68,7 +68,11 @@ export default function ExcelBillUploadFlow({
           border: "2px solid #c7d2fe",
           borderRadius: "12px",
           marginBottom: "1.5rem",
-          overflow: "hidden",
+          // Was `overflow: "hidden"`, which clipped the 1380px collections
+          // table instead of letting its own scroller move. Only the vertical
+          // axis is clipped now; the inner .tableScroll owns the horizontal one.
+          overflowX: "visible",
+          overflowY: "hidden",
         }}
       >
         <div
@@ -144,7 +148,17 @@ export default function ExcelBillUploadFlow({
               <strong>AmountPaid - PaymentMethod - PaymentDate</strong> -
               Remarks
             </div>
-            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "0.75rem",
+                flexWrap: "wrap",
+                // See the same note in BillGenerationFlow: a flex item defaults
+                // to min-width:auto, which here resolves to the table's 1380px
+                // min-content and suppresses the scrollbar entirely.
+                minWidth: 0,
+              }}
+            >
               {hasValidPeriodLabel ? (
                 <CollectionsPanel periodId={periodLabel} />
               ) : (

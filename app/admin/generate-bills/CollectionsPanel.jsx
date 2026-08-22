@@ -16,7 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { gsap } from "gsap";
 import { ClipboardList, Sparkles } from "lucide-react";
-import CollectionsGrid from "./CollectionsGrid";
+import CollectionsGrid, { resolveRow } from "./CollectionsGrid";
 import VerifyGenieOverlay from "./VerifyGenieOverlay";
 import PaymentsProcessed from "./PaymentsProcessed";
 import { useGenieMorph } from "./useGenieMorph";
@@ -89,12 +89,15 @@ export default function CollectionsPanel({ periodId, billSeries = "RESIDENTIAL" 
     const onKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
-        setOverlayOpen(true);
+        const unresolved = (sheet?.rows || []).some(
+          (r) => !resolveRow(r, rowState[r.billId]).resolved,
+        );
+        if (!unresolved) setOverlayOpen(true);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [stage]);
+  }, [stage, sheet, rowState]);
 
   const handleStale = useCallback(() => {
     setOverlayOpen(false);
@@ -125,9 +128,12 @@ export default function CollectionsPanel({ periodId, billSeries = "RESIDENTIAL" 
           .map((r) => ({
             billId: r.billId,
             sig: sheet.rows.find((x) => x.billId === r.billId)?.sig,
-            amountPaid: r.willRecord.amount,
+            amountPaid: r.willRecord.advanceCredit
+              ? Math.round((r.willRecord.amount + r.willRecord.advanceCredit) * 100) / 100
+              : r.willRecord.amount,
             mode: r.willRecord.mode,
             remarks: r.willRecord.remarks,
+            overpayAsAdvance: !!rowState[r.billId]?.overpayAsAdvance,
           }));
 
         const res = await apiClient.post("/api/bills/collection-sheet/commit", {
@@ -216,7 +222,10 @@ export default function CollectionsPanel({ periodId, billSeries = "RESIDENTIAL" 
 
   // ---- Grid -------------------------------------------------------------
   return (
-    <div ref={gridShellRef}>
+    // flex:1 + min-width:0 so this panel fills the row it sits in and is
+    // allowed to be narrower than the table inside it - that is what lets
+    // .tableScroll actually scroll instead of overflowing its card.
+    <div ref={gridShellRef} style={{ flex: "1 1 100%", minWidth: 0, width: "100%" }}>
       <div data-genie-content>
         {banner && (
           <div
