@@ -54,10 +54,12 @@ const nextConfig = {
       { key: "X-Frame-Options", value: "DENY" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
-      // Report-Only first: watch the browser console for a week, tighten
-      // script-src, then rename to Content-Security-Policy to enforce.
+      // Enforcing (was Report-Only during the staged rollout window).
+      // script-src/style-src still carry 'unsafe-inline'/'unsafe-eval' —
+      // tighten those once inline script/style usage is audited and nonced;
+      // loosening them now would have meant CSP blocked nothing meaningful.
       {
-        key: "Content-Security-Policy-Report-Only",
+        key: "Content-Security-Policy",
         value: [
           "default-src 'self'",
           "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
