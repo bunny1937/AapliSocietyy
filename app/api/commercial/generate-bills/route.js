@@ -1,12 +1,25 @@
 import { adminCommercialRoute } from "@/lib/commercial/adminRoute";
 import { CommercialError } from "@/lib/commercial/errors";
 import { generateBillsForMembers } from "@/lib/billing/generationService";
-import Member from "@/models/Member";
+import Shop from "@/models/Shop";
 import Bill from "@/models/Bill";
 
+// FIXED: this used to resolve targets from legacy `Member` records carrying
+// flatType Shop/Office, while /api/commercial/preview-bills resolves them from
+// the `Shop` collection. The admin therefore previewed one set of units and
+// generated a different one — on a society that has migrated to Shop records
+// the preview showed every shop and generation found nothing at all.
+// Both sides now read the same collection with the same billable test the
+// shop list uses (see app/api/commercial/shops/route.js `billable=1`).
 export async function resolveCommercialTargetMemberIds(societyId, memberIds) {
   if (Array.isArray(memberIds) && memberIds.length) return memberIds;
-  const rows = await Member.find({ societyId, flatType: { $in: ["Shop", "Office"] } })
+  const rows = await Shop.find({
+    societyId,
+    isDeleted: { $ne: true },
+    isActive: { $ne: false },
+    isBillable: { $ne: false },
+    areaSqft: { $gt: 0 },
+  })
     .select("_id")
     .lean();
   return rows.map((r) => r._id);

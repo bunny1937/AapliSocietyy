@@ -64,8 +64,13 @@ export const PATCH = adminCommercialRoute(
     // shop and the order could not be paid for at all.
     const methods = next.offlinePaymentMethods ?? [];
     if (methods.length) {
+      // A service shop (serviceOnly) has no pickup/delivery to speak of, but
+      // still needs to say how residents pay when they show up — the pickup
+      // methods ("cash/UPI at the shop") fit that case as-is.
       const allowed = new Set([
-        ...(next.pickupEnabled ? PAYMENT_METHODS_BY_FULFILLMENT[FULFILLMENT_TYPES.PICKUP] : []),
+        ...(next.pickupEnabled || next.serviceOnly
+          ? PAYMENT_METHODS_BY_FULFILLMENT[FULFILLMENT_TYPES.PICKUP]
+          : []),
         ...(next.deliveryEnabled ? PAYMENT_METHODS_BY_FULFILLMENT[FULFILLMENT_TYPES.DELIVERY] : []),
       ]);
       const invalid = methods.filter((m) => !allowed.has(m));

@@ -28,9 +28,10 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import ChargesSection from "./_ChargesSection";
 import { apiClient } from "@/lib/api-client";
 import { Card, Pill, Segmented, Btn, StatTile, Tabs, Icon } from "../_ui";
-import { OwnerAccessTab, ListingHoursTab, OrdersTab } from "./ShopCommerceAdmin";
+import { OwnerAccessTab, ShopStorefrontPanel } from "./ShopCommerceAdmin";
 
 const FILTERS = [
   { value: "ALL", label: "All" },
@@ -115,6 +116,7 @@ const EMPTY_FORM = {
   shutterCount: 1,
   hasSignage: false,
   signageSizeSqft: "",
+  chargeOptIns: [],
   emergencyContactName: "",
   emergencyContactPhone: "",
   openingPrincipal: 0,
@@ -262,6 +264,14 @@ export default function CommercialShopsPage() {
     (c) => c.isActive !== false,
   );
 
+  // The rate card, so the drawer can show WHICH charges this unit is billed
+  // and what they come to — the opt-in half of commercial billing.
+  const headsQuery = useQuery({
+    queryKey: ["commercial-billing-heads"],
+    queryFn: () => apiClient.get("/api/commercial/billing-heads"),
+  });
+  const heads = headsQuery.data?.heads ?? [];
+
   const settingsQuery = useQuery({
     queryKey: ["commercial-settings"],
     queryFn: () => apiClient.get("/api/commercial/settings"),
@@ -340,6 +350,7 @@ export default function CommercialShopsPage() {
       categoryId: s.categoryId || "",
       areaSqft: s.areaSqft ?? "",
       signageSizeSqft: s.signageSizeSqft ?? "",
+      chargeOptIns: Array.isArray(s.chargeOptIns) ? s.chargeOptIns : [],
     });
     setOpenId(s.id);
     setDrawerTab("unit");
@@ -451,6 +462,10 @@ export default function CommercialShopsPage() {
       openingInterest: Number(form.openingInterest) || 0,
       ownerMemberId: form.ownerMemberId || null,
       categoryId: form.categoryId || null,
+      chargeOptIns: (form.chargeOptIns || []).map((r) => ({
+        ...r,
+        quantity: Number(r.quantity) || 0,
+      })),
     };
     saveMutation.mutate(payload);
   };
@@ -867,6 +882,14 @@ export default function CommercialShopsPage() {
                   onChange={(e) => set("ownerPhone", e.target.value)}
                 />
               </Field>
+              <Field label="Email" hint="Bills and payment receipts go here.">
+                <input
+                  type="email"
+                  style={inputStyle}
+                  value={form.ownerEmail}
+                  onChange={(e) => set("ownerEmail", e.target.value)}
+                />
+              </Field>
             </div>
 
             <div style={sectionTitle}>Who occupies it</div>
@@ -990,7 +1013,7 @@ export default function CommercialShopsPage() {
                   onChange={(e) => set("waterConnectionNo", e.target.value)}
                 />
               </Field>
-              <Field label="Shutters">
+              <Field label="Shutters" hint="Record-keeping only — does not affect billing.">
                 <input
                   type="number"
                   style={inputStyle}
@@ -998,7 +1021,7 @@ export default function CommercialShopsPage() {
                   onChange={(e) => set("shutterCount", e.target.value)}
                 />
               </Field>
-              <Field label="Signage board">
+              <Field label="Signage board" hint="Record-keeping only. Turn signage billing on/off in Charges below.">
                 <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, height: 32 }}>
                   <input
                     type="checkbox"
@@ -1020,6 +1043,31 @@ export default function CommercialShopsPage() {
                 </Field>
               )}
             </div>
+            <p style={{ fontSize: 11.5, color: "var(--cx-fg-4)", margin: "-6px 0 0" }}>
+              Electricity above decides whether Common Electricity is even eligible. Whether
+              signage, parking or garbage actually bill this unit — and how much — is set per
+              charge in the Charges section right below, not by the fields above.
+            </p>
+
+            <div style={sectionTitle}>Charges</div>
+            {headsQuery.isLoading ? (
+              <div style={{ fontSize: 12.5, color: "var(--cx-fg-3)" }}>Loading the rate card...</div>
+            ) : headsQuery.error ? (
+              <div style={{ fontSize: 12.5, color: "var(--cx-danger)" }}>
+                The rate card could not be loaded, so charges cannot be set here yet.{" "}
+                {headsQuery.error?.message || ""}
+              </div>
+            ) : (
+              <ChargesSection
+                heads={heads}
+                unitKind={form.unitKind}
+                areaSqft={form.areaSqft}
+                electricityMode={form.electricityMode}
+                value={form.chargeOptIns}
+                onChange={(next) => set("chargeOptIns", next)}
+                disabled={saveMutation.isPending}
+              />
+            )}
 
             <div style={sectionTitle}>Emergency contact</div>
             <div style={grid(2)}>
@@ -1079,11 +1127,13 @@ export default function CommercialShopsPage() {
         {drawerTab === "owner" && editing && (
           <OwnerAccessTab shop={editing} onBanner={setBanner} />
         )}
-        {drawerTab === "listing" && editing && (
-          <ListingHoursTab shopId={editing.id} onBanner={setBanner} />
-        )}
-        {drawerTab === "orders" && editing && (
-          <OrdersTab shopId={editing.id} onBanner={setBanner} />
+        {(drawerTab === "listing" || drawerTab === "orders") && editing && (
+          // ONE mounted instance shared by both tabs — see the comment atop
+          // ShopStorefrontPanel's render. Two separate wrapper components
+          // (formerly ListingHoursTab / OrdersTab) meant switching tabs here
+          // unmounted whichever one was active, silently discarding any
+          // pickup/delivery/payment-method toggle the admin hadn't saved yet.
+          <ShopStorefrontPanel shopId={editing.id} onBanner={setBanner} tab={drawerTab} />
         )}
               </motion.div>
 

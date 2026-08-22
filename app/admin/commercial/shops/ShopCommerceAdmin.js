@@ -311,6 +311,7 @@ export function ShopStorefrontPanel({ shopId, onBanner, tab = "listing" }) {
     description: "",
     pickupEnabled: false,
     deliveryEnabled: false,
+    serviceOnly: false,
     deliveryNote: "",
     minOrderAmount: "",
     offlinePaymentMethods: [],
@@ -335,6 +336,7 @@ export function ShopStorefrontPanel({ shopId, onBanner, tab = "listing" }) {
       description: shop.description ?? "",
       pickupEnabled: shop.pickupEnabled === true,
       deliveryEnabled: shop.deliveryEnabled === true,
+      serviceOnly: shop.serviceOnly === true,
       deliveryNote: shop.deliveryNote ?? "",
       minOrderAmount: shop.minOrderAmount ?? "",
       offlinePaymentMethods: shop.offlinePaymentMethods ?? [],
@@ -351,10 +353,10 @@ export function ShopStorefrontPanel({ shopId, onBanner, tab = "listing" }) {
   // error the admin cannot explain.
   const availableMethods = useMemo(
     () => [
-      ...(form.pickupEnabled ? PICKUP_METHODS : []),
+      ...(form.pickupEnabled || form.serviceOnly ? PICKUP_METHODS : []),
       ...(form.deliveryEnabled ? DELIVERY_METHODS : []),
     ],
-    [form.pickupEnabled, form.deliveryEnabled],
+    [form.pickupEnabled, form.deliveryEnabled, form.serviceOnly],
   );
 
   const toggleMethod = (value) =>
@@ -419,6 +421,7 @@ export function ShopStorefrontPanel({ shopId, onBanner, tab = "listing" }) {
       weeklyHours,
       pickupEnabled: form.pickupEnabled,
       deliveryEnabled: form.deliveryEnabled,
+      serviceOnly: form.serviceOnly,
       deliveryNote: form.deliveryNote.trim() || null,
       minOrderAmount: form.minOrderAmount === "" ? null : Number(form.minOrderAmount),
       // Methods whose fulfilment was just switched off must not be sent.
@@ -450,8 +453,16 @@ export function ShopStorefrontPanel({ shopId, onBanner, tab = "listing" }) {
 
   return (
     <div>
-      {tab === "listing" && (
-        <>
+      {/* Both sections stay mounted at all times — only their CSS visibility
+          follows the active tab. Listing and Orders used to be two SEPARATE
+          mounts of this component (see ListingHoursTab/OrdersTab below and
+          their call sites in PageClient.js), so toggling pickup/delivery/
+          payment on the Orders tab and switching to Listing without clicking
+          "Save what residents see" first discarded that edit on unmount —
+          the toggle looked like it took effect (it updated local state) but
+          never reached the server, so the shop stayed stuck on "still
+          needed: Pickup or delivery, Payment methods" even after a refresh. */}
+      <div style={{ display: tab === "listing" ? "block" : "none" }}>
       <div style={{ ...bentoCard, marginBottom: 12 }}>
           <div style={bentoCardTitle}>Listing status</div>
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--cx-fg-1)" }}>
@@ -585,10 +596,9 @@ export function ShopStorefrontPanel({ shopId, onBanner, tab = "listing" }) {
         )}
       </div>
       </div>
-        </>
-      )}
+      </div>
 
-      {tab === "orders" && (
+      <div style={{ display: tab === "orders" ? "block" : "none" }}>
       <div style={bentoCard}>
           <div style={bentoCardTitle}>Orders &amp; payment</div>
       <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
@@ -608,7 +618,21 @@ export function ShopStorefrontPanel({ shopId, onBanner, tab = "listing" }) {
           />
           Delivery inside the society
         </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5 }}>
+          <input
+            type="checkbox"
+            checked={form.serviceOnly}
+            onChange={(e) => set("serviceOnly", e.target.checked)}
+          />
+          This is a service — no pickup or delivery applies
+        </label>
       </div>
+      {form.serviceOnly && (
+        <div style={{ ...help, marginTop: 8 }}>
+          Residents visit or book you directly (salon, tutor, repair, etc.) — nothing to pick
+          up or deliver. You can still say how they pay below.
+        </div>
+      )}
 
       {form.deliveryEnabled && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginTop: 12 }}>
@@ -666,7 +690,7 @@ export function ShopStorefrontPanel({ shopId, onBanner, tab = "listing" }) {
         </div>
       </div>
       </div>
-      )}
+      </div>
 
       <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
         <Btn variant="primary" disabled={saveMutation.isPending} onClick={save}>
@@ -693,10 +717,3 @@ export function OwnerAccessTab({ shop, onBanner }) {
   );
 }
 
-export function ListingHoursTab({ shopId, onBanner }) {
-  return <ShopStorefrontPanel shopId={shopId} onBanner={onBanner} tab="listing" />;
-}
-
-export function OrdersTab({ shopId, onBanner }) {
-  return <ShopStorefrontPanel shopId={shopId} onBanner={onBanner} tab="orders" />;
-}

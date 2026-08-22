@@ -32,6 +32,26 @@ const CommercialBillingHeadSchema = new mongoose.Schema(
       ),
       required: true,
     },
+    // ---- Per-unit applicability -------------------------------------------
+    // categoryScope above is a CLASS scope (Shop / Office) and can only ever be
+    // all-or-nothing for that class. This is the UNIT scope:
+    //   All      - every unit of the class is billed (maintenance, security...)
+    //   OptIn    - billed only to shops that ticked it on their own record
+    //              (signage, garbage, common electricity)
+    //   Quantity - billed rate x the count allotted to that shop (parking)
+    // Before this existed the engine charged every active head to every shop.
+    applicability: {
+      type: String,
+      enum: ["All", "OptIn", "Quantity"],
+      default: "All",
+    },
+    // Shown next to the number box on the shop form, e.g. "reserved parking
+    // slots". Only meaningful when applicability === "Quantity".
+    quantityLabel: { type: String, trim: true, maxlength: 60, default: null },
+    // Stable slug (preset key for seeded heads) so a shop's opt-in survives the
+    // head being renamed on the rate card. Nullable for admin-created heads.
+    optInKey: { type: String, trim: true, maxlength: 60, default: null },
+
     isServiceCharge: { type: Boolean, default: false },
     nonOccupancyEligible: { type: Boolean, default: false },
     sortOrder: { type: Number, default: 0, min: 0, max: 9999 },

@@ -146,6 +146,39 @@ const ShopSchema = new mongoose.Schema(
     hasSignage: { type: Boolean, default: false },
     signageSizeSqft: { type: Number, min: 0, default: null },
 
+    // ---- Per-shop charge opt-ins ------------------------------------------
+    // The single source of truth for which OPT-IN / QUANTITY rate-card heads
+    // this shop is actually billed (see CommercialBillingHead.applicability).
+    // A head marked "All" is never listed here — it always applies.
+    // A missing row means NOT billed: opting in is always an explicit act, so
+    // a shop can never be charged for something nobody ticked.
+    //
+    // hasSignage / signageSizeSqft / shutterCount above stay as descriptive
+    // facts about the unit; they are NOT billing inputs and no engine reads
+    // them.
+    chargeOptIns: {
+      type: [
+        new mongoose.Schema(
+          {
+            headId: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: "CommercialBillingHead",
+              required: true,
+            },
+            // Denormalized so an opt-in survives the head being renamed, and so
+            // the engine can special-case a known head without a join.
+            optInKey: { type: String, trim: true, maxlength: 60, default: null },
+            enabled: { type: Boolean, default: false },
+            // Only read for applicability === "Quantity".
+            quantity: { type: Number, min: 0, max: 999, default: 0 },
+            note: { type: String, trim: true, maxlength: 200, default: null },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
+
     emergencyContactName: { type: String, trim: true, maxlength: 120, default: null },
     emergencyContactPhone: { type: String, trim: true, maxlength: 20, default: null },
 
@@ -235,6 +268,11 @@ const ShopSchema = new mongoose.Schema(
       // Fulfilment is per shop. A member may only pick a mode the shop offers.
       pickupEnabled: { type: Boolean, default: false },
       deliveryEnabled: { type: Boolean, default: false },
+      // A service business (salon, tutor, repair) has neither — there is
+      // nothing to pick up or deliver, the resident just visits or is
+      // visited. Without this, the readiness checklist forced every service
+      // shop to falsely claim pickup/delivery just to satisfy it.
+      serviceOnly: { type: Boolean, default: false },
       deliveryNote: { type: String, trim: true, maxlength: 240, default: null },
       minOrderAmount: { type: Number, min: 0, default: null },
 

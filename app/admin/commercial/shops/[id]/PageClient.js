@@ -19,6 +19,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Card, CardHead, Pill, Btn } from "../../_ui";
+import ChargesSection from "../_ChargesSection";
 
 const UNIT_KINDS = ["Shop", "Office"];
 const AREA_BASIS = ["Carpet", "Built-up", "Super built-up", "Agreed/Other"];
@@ -101,6 +102,14 @@ export default function ShopDetailPage() {
     queryKey: ["commercial-shop", id],
     queryFn: () => apiClient.get(`/api/commercial/shops/${id}`),
     enabled: Boolean(id),
+  });
+
+  // The rate card. Without it this page could show signage as a size box but
+  // never as a yes/no — which is exactly why a shop created with signage off
+  // could not be switched on again.
+  const headsQ = useQuery({
+    queryKey: ["commercial-billing-heads"],
+    queryFn: () => apiClient.get("/api/commercial/billing-heads"),
   });
 
   const categoriesQ = useQuery({
@@ -212,6 +221,10 @@ export default function ShopDetailPage() {
     delete payload.id;
     delete payload._id;
     delete payload.unitLabel;
+    payload.chargeOptIns = (form.chargeOptIns || []).map((r) => ({
+      ...r,
+      quantity: Number(r.quantity) || 0,
+    }));
     save.mutate(payload);
   };
 
@@ -514,6 +527,30 @@ export default function ShopDetailPage() {
               />
             </Field>
           </div>
+
+          <SectionTitle>Charges</SectionTitle>
+          {headsQ.isLoading ? (
+            <div style={{ fontSize: 12.5, color: "var(--cx-fg-3)", marginBottom: 18 }}>
+              Loading the rate card...
+            </div>
+          ) : headsQ.error ? (
+            <div style={{ fontSize: 12.5, color: "var(--cx-danger)", marginBottom: 18 }}>
+              The rate card could not be loaded, so charges cannot be changed here yet.{" "}
+              {headsQ.error?.message || ""}
+            </div>
+          ) : (
+            <div style={{ marginBottom: 18 }}>
+              <ChargesSection
+                heads={headsQ.data?.heads ?? []}
+                unitKind={form.unitKind || "Shop"}
+                areaSqft={form.areaSqft}
+                electricityMode={form.electricityMode}
+                value={form.chargeOptIns || []}
+                onChange={(next) => set("chargeOptIns", next)}
+                disabled={save.isPending}
+              />
+            </div>
+          )}
 
           <SectionTitle>Other details</SectionTitle>
           <div style={grid(4)}>

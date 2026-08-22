@@ -202,6 +202,14 @@ export async function POST(request) {
         charges: Object.entries(computed.charges).map(([name, amount]) => ({ name, amount })),
         lines: computed.lines ?? [],
         warnings: computed.warnings ?? [],
+        // Charges on the rate card that this unit is NOT billed, each with the
+        // reason. Shown in the preview so "why is signage missing?" is answered
+        // on the screen instead of in a support call.
+        notCharged: (computed.skipped ?? []).map((sk) => ({
+          name: sk.headName,
+          code: sk.code || sk.reason,
+          reason: sk.message || "Left off this bill.",
+        })),
         openingPrincipal,
         openingInterest,
         currentCharges: computed.currentCharges,

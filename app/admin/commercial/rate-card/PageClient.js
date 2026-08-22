@@ -31,6 +31,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Card, CardHead, Pill, Segmented, Btn, Icon } from "../_ui";
 import SettingsPanel from "./SettingsPanel";
+import { selectHeadsForShop } from "@/lib/commercial/shopChargeApplicability";
 
 const TABS = ["Shop", "Office"];
 const GST_THRESHOLD = 7500; // CBIC Circular 109/28/2019 — per unit, per month
@@ -158,6 +159,13 @@ function HeadRow({ head, tab, index, total, onSave, onDelete, onMove, saving }) 
         rate: { ...head.rate, [tab]: num === "" || num === null ? null : Number(num) },
         isServiceCharge: next.isServiceCharge,
         nonOccupancyEligible: next.nonOccupancyEligible,
+        applicability: next.applicability || "All",
+        // Only meaningful for a Quantity head; cleared otherwise so a leftover
+        // label can never confuse the unit form.
+        quantityLabel:
+          next.applicability === "Quantity"
+            ? String(next.quantityLabel || "").trim() || null
+            : null,
       });
       setDraft(null);
     } catch (e) {
@@ -235,6 +243,10 @@ function HeadRow({ head, tab, index, total, onSave, onDelete, onMove, saving }) 
         <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
           {!head.isActive && <Pill tone="draft">Switched off</Pill>}
           {blank && <Pill tone="overdue">No amount</Pill>}
+          {value.applicability === "OptIn" && <Pill tone="partial">Opt-in only</Pill>}
+          {value.applicability === "Quantity" && (
+            <Pill tone="partial">Per {value.quantityLabel || "item allotted"}</Pill>
+          )}
           {value.isServiceCharge && <Pill tone="info">Service charge</Pill>}
           {value.nonOccupancyEligible && <Pill tone="neutral">Non-occupancy</Pill>}
         </div>
@@ -310,6 +322,52 @@ function HeadRow({ head, tab, index, total, onSave, onDelete, onMove, saving }) 
               </div>
               <div style={{ fontSize: 11, color: "var(--cx-fg-4)", marginTop: 4 }}>{meta.unit}</div>
             </label>
+
+            {/* Who this charge lands on. Without it, every active head was
+                billed to every shop of the class — signage to shops with no
+                board, parking to shops with no slot. */}
+            <label style={{ display: "block" }}>
+              <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--cx-fg-2)", marginBottom: 4 }}>
+                Who pays this
+              </div>
+              <select
+                style={inputStyle}
+                value={value.applicability || "All"}
+                onChange={(e) => {
+                  patch({ applicability: e.target.value });
+                  commit({ applicability: e.target.value });
+                }}
+              >
+                <option value="All">Every {tab.toLowerCase()} in the society</option>
+                <option value="OptIn">Only units that opt in</option>
+                <option value="Quantity">Per item allotted to the unit</option>
+              </select>
+              <div style={{ fontSize: 11, color: "var(--cx-fg-4)", marginTop: 4, lineHeight: 1.5 }}>
+                {(value.applicability || "All") === "All"
+                  ? "Charged on every bill for this unit type."
+                  : (value.applicability === "Quantity"
+                      ? "Charged as the amount above x the number recorded on each unit's Charges section. Units with none recorded are not charged."
+                      : "Charged only to units you tick on their own Charges section. Nobody is charged until you tick them.")}
+              </div>
+            </label>
+
+            {value.applicability === "Quantity" && (
+              <label style={{ display: "block" }}>
+                <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--cx-fg-2)", marginBottom: 4 }}>
+                  What is being counted
+                </div>
+                <input
+                  style={inputStyle}
+                  value={value.quantityLabel || ""}
+                  placeholder="e.g. reserved parking slots"
+                  onChange={(e) => patch({ quantityLabel: e.target.value })}
+                  onBlur={() => commit()}
+                />
+                <div style={{ fontSize: 11, color: "var(--cx-fg-4)", marginTop: 4 }}>
+                  Shown next to the number box on each unit.
+                </div>
+              </label>
+            )}
 
             <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12.5 }}>
               <input
@@ -427,6 +485,8 @@ export default function CommercialRateCardPage() {
     calculationType: "Fixed",
     rate: "",
     isServiceCharge: true,
+    applicability: "All",
+    quantityLabel: "",
   });
   const [addErr, setAddErr] = useState(null);
 
@@ -458,7 +518,22 @@ export default function CommercialRateCardPage() {
     queryKey: ["commercial-shops", "billable"],
     queryFn: () => apiClient.get("/api/commercial/shops?billable=1"),
     retry: false,
+    // Charge opt-ins are edited on the Shops screen and this preview is
+    // exactly where an admin comes back to check "did that take effect?" —
+    // a cached answer here is the one place it must never be stale.
+    refetchOnMount: "always",
+    staleTime: 0,
   });
+  // Sinking & repair funds bill from here, not from a rate-card head's own
+  // rate — see [[shopChargeApplicability.isFundHead]]. The preview below
+  // needs the real number, or it goes back to showing a figure the bill
+  // will never actually charge.
+  const settingsQ = useQuery({
+    queryKey: ["commercial-settings"],
+    queryFn: () => apiClient.get("/api/commercial/settings"),
+    retry: false,
+  });
+  const commercialSettings = settingsQ.data?.settings ?? null;
 
   const allHeads = headsQ.data?.heads ?? [];
   const heads = allHeads.filter((h) => h.categoryScope?.includes(tab));
@@ -517,7 +592,14 @@ export default function CommercialRateCardPage() {
   const create = useMutation({
     mutationFn: (payload) => apiClient.post("/api/commercial/billing-heads", payload),
     onSuccess: () => {
-      setNewHead({ headName: "", calculationType: "Fixed", rate: "", isServiceCharge: true });
+      setNewHead({
+        headName: "",
+        calculationType: "Fixed",
+        rate: "",
+        isServiceCharge: true,
+        applicability: "All",
+        quantityLabel: "",
+      });
       setAdding(false);
       setAddErr(null);
       invalidate();
@@ -537,40 +619,104 @@ export default function CommercialRateCardPage() {
   // ---- Live estimate on a REAL unit, using the same two-pass rule the
   //      server engine uses (fixed + per-sq-ft first, then percentages on
   //      that base). Order-independent, so it always matches the bill.
+  //
+  //      Head selection goes through the SAME helper the two server engines
+  //      use, so this preview can no longer promise a charge the bill will not
+  //      raise (or hide one it will). It also surfaces every head it left off
+  //      and why, instead of silently dropping it.
   const estimate = useMemo(() => {
     const area = Number(testUnit?.areaSqft ?? 0);
-    const active = heads.filter((h) => h.isActive !== false);
+    const { heads: selected, skipped } = selectHeadsForShop(heads, testUnit, tab);
     const lines = [];
+    // SET_IN_RULES_AND_TAX heads (Sinking/Repair) are not really "not
+    // charged" — they're charged from Rules & Tax instead of a head rate.
+    // The block below adds their real line, so they'd otherwise show up
+    // twice: once here saying "excluded", once below with a real amount.
+    const notCharged = skipped
+      .filter((sk) => sk.code !== "SET_IN_RULES_AND_TAX")
+      .map((sk) => ({ name: sk.headName, reason: sk.message }));
     let base = 0;
 
-    for (const h of active) {
+    for (const { head: h, quantity } of selected) {
       if (h.calculationType === "Percentage") continue;
       const rate = h.rate?.[tab];
-      if (rate === null || rate === undefined || rate === "") continue;
+      if (rate === null || rate === undefined || rate === "") {
+        notCharged.push({
+          name: h.headName,
+          reason: `No ${tab} amount filled in on the rate card yet.`,
+        });
+        continue;
+      }
+      const times = quantity > 1 ? ` × ${quantity}` : "";
       if (h.calculationType === "Per Sq Ft") {
         if (area <= 0) {
           lines.push({ name: h.headName, amount: 0, note: "no carpet area recorded for this unit" });
           continue;
         }
-        const amt = Math.round(area * Number(rate) * 100) / 100;
-        lines.push({ name: h.headName, amount: amt, note: `${area} sq ft × ₹${rate}` });
+        const amt = Math.round(area * Number(rate) * quantity * 100) / 100;
+        lines.push({ name: h.headName, amount: amt, note: `${area} sq ft × ₹${rate}${times}` });
         base += amt;
       } else {
-        const amt = Math.round(Number(rate) * 100) / 100;
-        lines.push({ name: h.headName, amount: amt, note: "flat monthly" });
+        const amt = Math.round(Number(rate) * quantity * 100) / 100;
+        lines.push({ name: h.headName, amount: amt, note: quantity > 1 ? `₹${rate}${times}` : "flat monthly" });
         base += amt;
       }
     }
-    for (const h of active) {
+    for (const { head: h } of selected) {
       if (h.calculationType !== "Percentage") continue;
       const pct = h.rate?.[tab];
-      if (pct === null || pct === undefined || pct === "") continue;
+      if (pct === null || pct === undefined || pct === "") {
+        notCharged.push({
+          name: h.headName,
+          reason: `No ${tab} percentage filled in on the rate card yet.`,
+        });
+        continue;
+      }
       const amt = Math.round(base * (Number(pct) / 100) * 100) / 100;
       lines.push({ name: h.headName, amount: amt, note: `${pct}% of ₹${inr(base)}` });
     }
+    // Sinking & repair are excluded from the head loop above (they are
+    // "SET_IN_RULES_AND_TAX" in `skipped`) and added here from the same
+    // settings.funds config the real engine bills from — see
+    // shopChargeApplicability.isFundHead and lib/commercial/shopBillEngine.js
+    // fundLine(). This is the one place these two numbers come from, so the
+    // preview can never again show a rate-card figure the bill won't charge.
+    for (const [fundKey, label] of [
+      ["sinking", "Sinking Fund"],
+      ["repair", "Repair & Maintenance Fund"],
+    ]) {
+      const fund = commercialSettings?.funds?.[fundKey];
+      if (!fund?.enabled) {
+        notCharged.push({
+          name: label,
+          reason: `Switched off under Rules & Tax, so ${tab.toLowerCase()}s are not charged this.`,
+        });
+        continue;
+      }
+      const value = Number(fund.value) || 0;
+      if (value <= 0) continue;
+      let amt = 0;
+      let note = "";
+      if (fund.method === "PerSqFt") {
+        if (area <= 0) {
+          lines.push({ name: label, amount: 0, note: "no carpet area recorded for this unit" });
+          continue;
+        }
+        amt = Math.round(area * value * 100) / 100;
+        note = `${area} sq ft × ₹${value} (Rules & Tax)`;
+      } else if (fund.method === "Percent") {
+        amt = Math.round(base * (value / 100) * 100) / 100;
+        note = `${value}% of ₹${inr(base)} (Rules & Tax)`;
+      } else {
+        amt = value;
+        note = "flat monthly (Rules & Tax)";
+      }
+      lines.push({ name: label, amount: amt, note });
+    }
+
     const total = lines.reduce((s, l) => s + l.amount, 0);
-    return { area, lines, total };
-  }, [heads, tab, testUnit]);
+    return { area, lines, notCharged, total };
+  }, [heads, tab, testUnit, commercialSettings]);
 
   const blockers = (readyQ.data?.issues ?? []).filter((i) => i.severity === "blocker");
   const warnings = (readyQ.data?.issues ?? []).filter((i) => i.severity === "warning");
@@ -799,6 +945,45 @@ export default function CommercialRateCardPage() {
             </Field>
           </div>
 
+          <div style={{ marginTop: 14 }}>
+            <Field
+              label="Who pays this?"
+              hint={
+                newHead.applicability === "All"
+                  ? "Charged on every bill for this unit type."
+                  : newHead.applicability === "Quantity"
+                    ? "Charged as the amount above x the number recorded on each unit. Units with none recorded are not charged."
+                    : "Charged only to units you tick on their own Charges section. Nobody is charged until you tick them."
+              }
+            >
+              <select
+                style={inputStyle}
+                value={newHead.applicability}
+                onChange={(e) => setNewHead({ ...newHead, applicability: e.target.value })}
+              >
+                <option value="All">Every {tab.toLowerCase()} in the society</option>
+                <option value="OptIn">Only units that opt in</option>
+                <option value="Quantity">Per item allotted to the unit</option>
+              </select>
+            </Field>
+          </div>
+
+          {newHead.applicability === "Quantity" && (
+            <div style={{ marginTop: 14 }}>
+              <Field
+                label="What is being counted?"
+                hint="Shown next to the number box on each unit, e.g. reserved parking slots."
+              >
+                <input
+                  style={inputStyle}
+                  placeholder="reserved parking slots"
+                  value={newHead.quantityLabel}
+                  onChange={(e) => setNewHead({ ...newHead, quantityLabel: e.target.value })}
+                />
+              </Field>
+            </div>
+          )}
+
           <label
             style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12.5, color: "var(--cx-fg-2)", marginTop: 14, cursor: "pointer" }}
           >
@@ -832,6 +1017,11 @@ export default function CommercialRateCardPage() {
                   rate: { [tab]: Number(newHead.rate) || 0 },
                   isServiceCharge: newHead.isServiceCharge,
                   nonOccupancyEligible: newHead.isServiceCharge,
+                  applicability: newHead.applicability,
+                  quantityLabel:
+                    newHead.applicability === "Quantity"
+                      ? newHead.quantityLabel.trim() || null
+                      : null,
                   sortOrder: (heads.length + 1) * 10,
                 })
               }
@@ -934,6 +1124,47 @@ export default function CommercialRateCardPage() {
                   <span className="cx-num" style={{ color: "var(--cx-brand)" }}>₹{inr(estimate.total)}</span>
                 </div>
               </div>
+
+              {estimate.notCharged.length > 0 && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    border: "1px solid var(--cx-border)",
+                    borderRadius: 8,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "8px 12px",
+                      background: "var(--cx-surface-2)",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "var(--cx-fg-2)",
+                    }}
+                  >
+                    Not charged to this unit ({estimate.notCharged.length})
+                  </div>
+                  {estimate.notCharged.map((n, i) => (
+                    <div
+                      key={`${n.name}-${i}`}
+                      style={{
+                        display: "flex",
+                        gap: 10,
+                        padding: "8px 12px",
+                        borderTop: "1px solid var(--cx-border)",
+                        fontSize: 12.5,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, color: "var(--cx-fg-2)", minWidth: 150 }}>
+                        {n.name}
+                      </span>
+                      <span style={{ color: "var(--cx-fg-3)" }}>{n.reason}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <p style={{ fontSize: 11.5, color: "var(--cx-fg-4)", marginTop: 10, lineHeight: 1.6 }}>
                 Arrears and interest are not shown here — they are added when the bill is
