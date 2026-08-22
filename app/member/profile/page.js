@@ -3,30 +3,58 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import styles from "@/styles/Dashboard.module.css";
+import {
+  RequestFamilyMember,
+  RequestRemoveFamilyMember,
+  RequestParkingSlot,
+  RequestRemoveParkingSlot,
+} from "./_ChangeRequests";
 export default function MemberProfilePage() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
-  const { data, isLoading } = useQuery({
+  const [banner, setBanner] = useState(null); // { tone: "ok" | "error", text }
+  const { data, isLoading, error: loadError } = useQuery({
     queryKey: ["my-profile"],
     queryFn: () => apiClient.get("/api/member/profile"),
-    onSuccess: (d) => {
-      setForm({
-        whatsappNumber: d.member?.whatsappNumber || "",
-        alternateContact: d.member?.alternateContact || "",
-        emailSecondary: d.member?.emailSecondary || "",
-      });
-    },
+    // NOTE: useQuery's `onSuccess` was removed in react-query v5, so seeding
+    // the form here silently never ran and `form` stayed {}. The form is now
+    // seeded when the person presses Edit, from the data already on screen.
   });
+  // What is already pending, so the family/parking request widgets never let
+  // someone ask for the same change twice.
+  const editRequestsQuery = useQuery({
+    queryKey: ["my-profile-edit-requests"],
+    queryFn: () => apiClient.get("/api/member/profile-edit-requests"),
+  });
+  const pendingRequests = editRequestsQuery.data?.requests ?? [];
+  const refetchRequests = () =>
+    queryClient.invalidateQueries({ queryKey: ["my-profile-edit-requests"] });
   const saveMutation = useMutation({
     mutationFn: (updates) => apiClient.put("/api/member/profile", updates),
     onSuccess: () => {
-      queryClient.invalidateQueries(["my-profile"]);
+      queryClient.invalidateQueries({ queryKey: ["my-profile"] });
       setEditing(false);
-      alert("✅ Profile updated!");
+      setBanner({ tone: "ok", text: "Your contact details have been updated." });
     },
-    onError: (e) => alert("Failed: " + e.message),
+    // The server's own words, in the page — not a browser alert() the person
+    // has to dismiss before they can see which field was wrong.
+    onError: (e) =>
+      setBanner({
+        tone: "error",
+        text: e?.message || "Those details could not be saved. Please try again.",
+      }),
   });
+
+  const startEditing = () => {
+    setForm({
+      whatsappNumber: data?.member?.whatsappNumber || "",
+      alternateContact: data?.member?.alternateContact || "",
+      emailSecondary: data?.member?.emailSecondary || "",
+    });
+    setBanner(null);
+    setEditing(true);
+  };
   if (isLoading)
     return (
       <div style={{ padding: "3rem", textAlign: "center" }}>
@@ -45,8 +73,11 @@ export default function MemberProfilePage() {
   const displayEmail = tenantSelf?.email || member?.emailPrimary;
   if (!member)
     return (
-      <div style={{ padding: "2rem", color: "#6B7280" }}>
-        Member profile not found.
+      <div style={{ padding: "2rem", color: "#6B7280", lineHeight: 1.6 }}>
+        {loadError
+          ? // The real reason, so "my profile is blank" is answerable.
+            `Your profile could not be loaded: ${loadError.message}`
+          : "Your profile has not been set up yet. Please contact your society office."}
       </div>
     );
   const InfoRow = ({ label, value, highlight }) =>
@@ -99,16 +130,50 @@ export default function MemberProfilePage() {
           </p>
         </div>
         <div style={{ display: "flex", gap: "0.75rem" }}>
-          <button
-            className="btn btn-secondary"
-            disabled
-            title="Profile editing coming soon"
-            style={{ opacity: 0.5, cursor: "not-allowed" }}
-          >
-            ✏️ Edit Contact Info
-          </button>
+          {editing ? (
+            <>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setEditing(false);
+                  setBanner(null);
+                }}
+                disabled={saveMutation.isPending}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => saveMutation.mutate(form)}
+                disabled={saveMutation.isPending}
+              >
+                {saveMutation.isPending ? "Saving..." : "Save changes"}
+              </button>
+            </>
+          ) : (
+            <button className="btn btn-secondary" onClick={startEditing}>
+              ✏️ Edit contact info
+            </button>
+          )}
         </div>
       </div>
+      {banner && (
+        <div
+          role={banner.tone === "error" ? "alert" : "status"}
+          style={{
+            marginBottom: "1rem",
+            padding: "0.7rem 0.9rem",
+            borderRadius: 8,
+            fontSize: 14,
+            lineHeight: 1.55,
+            background: banner.tone === "error" ? "#FEF2F2" : "#ECFDF5",
+            border: `1px solid ${banner.tone === "error" ? "#FECACA" : "#A7F3D0"}`,
+            color: banner.tone === "error" ? "#991B1B" : "#065F46",
+          }}
+        >
+          {banner.text}
+        </div>
+      )}
       {/* Identity Card */}
       <div
         style={{
@@ -285,104 +350,132 @@ export default function MemberProfilePage() {
           )}
         </Section>
       )}
-      {/* Parking Slots */}
-      {member.parkingSlots?.length > 0 && (
-        <Section title="Parking Slots" icon="🚗">
-          {member.parkingSlots.map((slot, i) => (
-            <div
-              key={i}
+      {/* Parking Slots — a wrong slot changes a bill, so add/remove goes
+          through admin approval rather than a direct edit here. Always
+          rendered (with a real empty state) rather than vanishing when
+          the flat has none, per "serve everything" — a resident with no
+          slots still needs to see how to request one. */}
+      <Section title="Parking Slots" icon="🚗">
+        {(member.parkingSlots?.length ?? 0) === 0 && (
+          <div style={{ padding: "10px 0", fontSize: 14, color: "#6B7280" }}>
+            No parking slots recorded for this flat yet.
+          </div>
+        )}
+        {(member.parkingSlots || []).map((slot, i) => (
+          <div
+            key={i}
+            style={{
+              display: "flex",
+              gap: "16px",
+              alignItems: "center",
+              padding: "10px 0",
+              borderBottom: "1px solid #F3F4F6",
+              fontSize: "14px",
+              flexWrap: "wrap",
+            }}
+          >
+            <span
               style={{
-                display: "flex",
-                gap: "16px",
-                padding: "10px 0",
-                borderBottom: "1px solid #F3F4F6",
-                fontSize: "14px",
-                flexWrap: "wrap",
+                fontWeight: "600",
+                color: "#1F2937",
+                minWidth: "100px",
               }}
             >
-              <span
-                style={{
-                  fontWeight: "600",
-                  color: "#1F2937",
-                  minWidth: "100px",
-                }}
-              >
-                {slot.slotNumber}
-              </span>
-              <span
-                style={{
-                  background: "#DBEAFE",
-                  color: "#1E40AF",
-                  padding: "2px 10px",
-                  borderRadius: "12px",
-                  fontSize: "12px",
-                }}
-              >
-                {slot.type}
-              </span>
-              <span
-                style={{
-                  background: "#F3F4F6",
-                  color: "#374151",
-                  padding: "2px 10px",
-                  borderRadius: "12px",
-                  fontSize: "12px",
-                }}
-              >
-                {slot.vehicleType}
-              </span>
-            </div>
-          ))}
-        </Section>
-      )}
-      {/* Family Members */}
-      {member.familyMembers?.length > 0 && (
-        <Section title="Family Members" icon="👨‍👩‍👧‍👦">
-          {member.familyMembers.map((fm, i) => (
-            <div
-              key={i}
+              {slot.slotNumber}
+            </span>
+            <span
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "10px 0",
-                borderBottom: "1px solid #F3F4F6",
-                fontSize: "14px",
-                flexWrap: "wrap",
-                gap: "8px",
+                background: "#DBEAFE",
+                color: "#1E40AF",
+                padding: "2px 10px",
+                borderRadius: "12px",
+                fontSize: "12px",
               }}
             >
-              <div>
-                <span style={{ fontWeight: "600", color: "#1F2937" }}>
-                  {fm.name}
+              {slot.type}
+            </span>
+            <span
+              style={{
+                background: "#F3F4F6",
+                color: "#374151",
+                padding: "2px 10px",
+                borderRadius: "12px",
+                fontSize: "12px",
+              }}
+            >
+              {slot.vehicleType}
+            </span>
+            <span style={{ marginLeft: "auto" }}>
+              <RequestRemoveParkingSlot
+                slotNumber={slot.slotNumber}
+                requests={pendingRequests}
+                onSent={refetchRequests}
+              />
+            </span>
+          </div>
+        ))}
+        <RequestParkingSlot requests={pendingRequests} onSent={refetchRequests} />
+      </Section>
+      {/* Family Members — same reasoning as Parking: always rendered with a
+          real empty state, add/remove goes through admin approval. */}
+      <Section title="Family Members" icon="👨‍👩‍👧‍👦">
+        {(member.familyMembers?.length ?? 0) === 0 && (
+          <div style={{ padding: "10px 0", fontSize: 14, color: "#6B7280" }}>
+            No family members recorded for this flat yet.
+          </div>
+        )}
+        {(member.familyMembers || []).map((fm, i) => (
+          <div
+            key={i}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "10px 0",
+              borderBottom: "1px solid #F3F4F6",
+              fontSize: "14px",
+              flexWrap: "wrap",
+              gap: "8px",
+            }}
+          >
+            <div>
+              <span style={{ fontWeight: "600", color: "#1F2937" }}>
+                {fm.name}
+              </span>
+              {fm.relation && (
+                <span
+                  style={{
+                    color: "#6B7280",
+                    marginLeft: "8px",
+                    fontSize: "13px",
+                  }}
+                >
+                  ({fm.relation})
                 </span>
-                {fm.relation && (
-                  <span
-                    style={{
-                      color: "#6B7280",
-                      marginLeft: "8px",
-                      fontSize: "13px",
-                    }}
-                  >
-                    ({fm.relation})
-                  </span>
-                )}
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "12px",
-                  fontSize: "13px",
-                  color: "#6B7280",
-                }}
-              >
-                {fm.age && <span>Age: {fm.age}</span>}
-                {fm.occupation && <span>{fm.occupation}</span>}
-                {fm.contactNumber && <span>{fm.contactNumber}</span>}
-              </div>
+              )}
             </div>
-          ))}
-        </Section>
-      )}
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                fontSize: "13px",
+                color: "#6B7280",
+                alignItems: "center",
+              }}
+            >
+              {fm.age && <span>Age: {fm.age}</span>}
+              {fm.occupation && <span>{fm.occupation}</span>}
+              {fm.contactNumber && <span>{fm.contactNumber}</span>}
+              <RequestRemoveFamilyMember
+                familyMemberId={fm._id}
+                requests={pendingRequests}
+                onSent={refetchRequests}
+              />
+            </div>
+          </div>
+        ))}
+        <RequestFamilyMember requests={pendingRequests} onSent={refetchRequests} />
+      </Section>
       {/* Current Tenant */}
       {member.ownershipType === "Rented" && member.currentTenant && (
         <Section title="Current Tenant" icon="🏠">

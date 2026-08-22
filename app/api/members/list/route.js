@@ -46,16 +46,20 @@ export async function GET(request) {
     if (cached) return NextResponse.json(cached);
     const query = { societyId };
     if (search) {
+      // FIXED: searched and sorted on `roomNo`, which is not a field on
+      // models/Member.js (it is `flatNo`), so searching by flat number never
+      // matched anything and the list came back in insertion order.
       query.$or = [
-        { roomNo: { $regex: search, $options: "i" } },
+        { flatNo: { $regex: search, $options: "i" } },
         { ownerName: { $regex: search, $options: "i" } },
         { wing: { $regex: search, $options: "i" } },
+        { contactNumber: { $regex: search, $options: "i" } },
       ];
     }
     const skip = (page - 1) * limit;
     const [members, total] = await Promise.all([
       Member.find(query)
-        .sort({ wing: 1, roomNo: 1 })
+        .sort({ wing: 1, flatNo: 1 })
         .skip(skip)
         .limit(limit)
         .lean(),

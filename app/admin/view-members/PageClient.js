@@ -1,8 +1,17 @@
 'use client';
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import styles from '@/styles/ViewMembers.module.css';
+import MemberEditor from './_MemberEditor';
+
+/** The period a parking change should re-bill: the current calendar month. */
+function currentBillPeriodId() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
 export default function ViewMembersPage() {
+  const qc = useQueryClient();
+  const billPeriodId = currentBillPeriodId();
   const [selectedMember, setSelectedMember] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -18,6 +27,17 @@ export default function ViewMembersPage() {
     }
   });
   const members = data?.members || [];
+
+  // A section saved: fold the server's own copy of what changed into the open
+  // drawer so it reflects the truth immediately, and refetch the list behind it
+  // so the cards match too. No optimistic guessing — every value here came back
+  // from the server.
+  const applyPatch = (patch) => {
+    if (patch && typeof patch === 'object') {
+      setSelectedMember((m) => (m ? { ...m, ...patch } : m));
+    }
+    qc.invalidateQueries({ queryKey: ['members-detailed'] });
+  };
   // Filter members
   const filteredMembers = members.filter(member => {
     const matchesSearch = 
@@ -144,120 +164,28 @@ export default function ViewMembersPage() {
               </button>
             </div>
             <div className={styles.dialogContent}>
-              {/* Basic Info */}
-              <section className={styles.section}>
-                <h3 className={styles.sectionTitle}>🏢 Flat Information</h3>
-                <div className={styles.grid}>
-                  <div className={styles.field}>
-                    <label>Flat Number</label>
-                    <div>{selectedMember.flatNo}</div>
-                  </div>
-                  <div className={styles.field}>
-                    <label>Wing</label>
-                    <div>{selectedMember.wing || 'N/A'}</div>
-                  </div>
-                  <div className={styles.field}>
-                    <label>Floor</label>
-                    <div>{selectedMember.floor ?? 'N/A'}</div>
-                  </div>
-                  <div className={styles.field}>
-                    <label>Flat Type</label>
-                    <div>{selectedMember.flatType}</div>
-                  </div>
-                  <div className={styles.field}>
-                    <label>Carpet Area</label>
-                    <div>{selectedMember.carpetAreaSqft} sq.ft</div>
-                  </div>
-                  <div className={styles.field}>
-                    <label>Built-up Area</label>
-                    <div>{selectedMember.builtUpAreaSqft ?? 'N/A'} sq.ft</div>
-                  </div>
-                  <div className={styles.field}>
-                    <label>Ownership Type</label>
-                    <div><span className={styles.badge}>{selectedMember.ownershipType}</span></div>
-                  </div>
-                  <div className={styles.field}>
-                    <label>Possession Date</label>
-                    <div>{selectedMember.possessionDate ? new Date(selectedMember.possessionDate).toLocaleDateString() : 'N/A'}</div>
-                  </div>
-                </div>
-              </section>
-              {/* Owner Info */}
-              <section className={styles.section}>
-                <h3 className={styles.sectionTitle}>👤 Owner Information</h3>
-                <div className={styles.grid}>
-                  <div className={styles.field}>
-                    <label>Owner Name</label>
-                    <div>{selectedMember.ownerName}</div>
-                  </div>
-                  <div className={styles.field}>
-                    <label>Contact Number</label>
-                    <div>{selectedMember.contactNumber}</div>
-                  </div>
-                  <div className={styles.field}>
-                    <label>Alternate Contact</label>
-                    <div>{selectedMember.alternateContact || 'N/A'}</div>
-                  </div>
-                  <div className={styles.field}>
-                    <label>WhatsApp</label>
-                    <div>{selectedMember.whatsappNumber || 'N/A'}</div>
-                  </div>
-                  <div className={styles.field}>
-                    <label>Primary Email</label>
-                    <div>{selectedMember.emailPrimary}</div>
-                  </div>
-                  <div className={styles.field}>
-                    <label>Secondary Email</label>
-                    <div>{selectedMember.emailSecondary || 'N/A'}</div>
-                  </div>
-                  <div className={styles.field}>
-                    <label>PAN Card</label>
-                    <div>{selectedMember.panCard || 'N/A'}</div>
-                  </div>
-                  <div className={styles.field}>
-                    <label>Aadhaar</label>
-                    <div>{selectedMember.aadhaar || 'N/A'}</div>
-                  </div>
-                </div>
-              </section>
-              {/* Family Members */}
-              {selectedMember.familyMembers && selectedMember.familyMembers.length > 0 && (
-                <section className={styles.section}>
-                  <h3 className={styles.sectionTitle}>👨‍👩‍👧‍👦 Family Members</h3>
-                  <div className={styles.familyGrid}>
-                    {selectedMember.familyMembers.map((family, idx) => (
-                      <div key={idx} className={styles.familyCard}>
-                        <div><strong>{family.name}</strong></div>
-                        <div>{family.relation} • {family.age} years</div>
-                        {family.occupation && <div>{family.occupation}</div>}
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-              {/* Parking Slots */}
-              {selectedMember.parkingSlots && selectedMember.parkingSlots.length > 0 && (
-                <section className={styles.section}>
-                  <h3 className={styles.sectionTitle}>🚗 Parking Slots</h3>
-                  {selectedMember.parkingSlots.map((slot, idx) => (
-                    <div key={idx} className={styles.parkingCard}>
-                      <strong>{slot.slotNumber}</strong> - {slot.type} - {slot.vehicleType}
-                    </div>
-                  ))}
-                </section>
-              )}
+              {/* Flat + owner details, family, parking, status and login are
+                  all editable here. This block used to be ~110 lines of
+                  read-only <div>s with no way to change anything. */}
+              <MemberEditor
+                member={selectedMember}
+                billPeriodId={billPeriodId}
+                onPatch={applyPatch}
+              />
 {/* Owner History - FIXED */}
 {selectedMember.ownerHistory && selectedMember.ownerHistory.length > 0 && (
   <section className={styles.section}>
     <h3 className={styles.sectionTitle}>📜 Ownership Timeline</h3>
     <div className={styles.infoBox}>
-      <strong>Current Owner:</strong> {selectedMember.ownerName} 
-      <span style={{ 
-        marginLeft: '1rem', 
-        color: '#10B981',
-        fontWeight: 600 
+      <strong>Current Owner:</strong> {selectedMember.ownerName}
+      {/* Was hardcoded "● Active" for every flat, including ones marked
+          Blocked or Exited. Derived from the flat's real status now. */}
+      <span style={{
+        marginLeft: '1rem',
+        color: (selectedMember.membershipStatus || 'Active') === 'Active' ? '#10B981' : '#B45309',
+        fontWeight: 600
       }}>
-        ● Active
+        ● {selectedMember.membershipStatus || 'Active'}
       </span>
     </div>
     {selectedMember.ownerHistory.length > 0 && (
@@ -274,7 +202,7 @@ export default function ViewMembersPage() {
           Previous Owners
         </h4>
         <div className={styles.timeline}>
-          {selectedMember.ownerHistory
+          {[...selectedMember.ownerHistory]
             .sort((a, b) => (b.ownerSequence || 0) - (a.ownerSequence || 0))
             .map((owner, idx) => (
               <div key={idx} className={styles.timelineItem}>

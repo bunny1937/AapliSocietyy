@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Member from "@/models/Member";
-import BillingHead from "@/models/BillingHead";
-import Bill from "@/models/Bill";
 import { getTokenFromRequest, verifyToken } from "@/lib/jwt";
 import cache from "@/lib/cache";
-import { calculateMemberCharges } from "@/lib/calculate-member-bill";
-import { validateBillInvariants } from "@/lib/billing/invariants";
-import { correctBillHistorical } from "@/lib/billing/correctionService";
 import { authorizeAny } from "@/lib/rbac/authorize";
+import { recalcMemberBillForPeriod, BillLockedError } from "@/lib/billing/memberBillRecalc";
+
 export async function POST(request) {
   try {
     // Also called from Generate Bills (inline area/parking fix before
@@ -26,9 +23,11 @@ export async function POST(request) {
     const societyId = gate.context.societyId || decoded.societyId;
     const { memberId, carpetAreaSqft, parkingSlots, recalcBillPeriodId } = await request.json();
     if (!memberId) return NextResponse.json({ error: "memberId required" }, { status: 400 });
+
     const patch = {};
     if (carpetAreaSqft !== undefined) patch.carpetAreaSqft = Number(carpetAreaSqft);
     if (parkingSlots !== undefined) patch.parkingSlots = parkingSlots;
+
     const member = await Member.findOneAndUpdate(
       { _id: memberId, societyId },
       { $set: patch },
@@ -36,88 +35,38 @@ export async function POST(request) {
     );
     if (!member) return NextResponse.json({ error: "Member not found" }, { status: 404 });
     await cache.delPattern(`members:list:${societyId}:*`);
+
+    // The recalculation rules live in lib/billing/memberBillRecalc.js so this
+    // endpoint and the member-detail parking editor apply exactly the same
+    // payment guard and the same audited correction path.
     let billRecalculated = false;
+    let recalcNote = null;
     if (recalcBillPeriodId) {
-      const existingBill = await Bill.findOne({
-        memberId,
+      const result = await recalcMemberBillForPeriod({
+        member,
         societyId,
         billPeriodId: recalcBillPeriodId,
-        isDeleted: { $ne: true },
+        performedBy: decoded.userId,
+        reason: `Member data corrected (carpetAreaSqft/parkingSlots) — bill charges recalculated from BillingHeads for period ${recalcBillPeriodId}`,
       });
-      if (existingBill && (existingBill.amountPaid || 0) > 0) {
-        return NextResponse.json(
-          {
-            error:
-              "This bill already has a payment recorded — recalculating charges now would overwrite the payment's effect on the closing balance. Use the audited bill-correction workflow instead.",
-          },
-          { status: 409 },
-        );
-      }
-      if (existingBill) {
-        const heads = await BillingHead.find({
-          societyId,
-          isActive: true,
-          isDeleted: false,
-        }).sort({ order: 1 }).lean();
-        const { subtotal, breakdown } = calculateMemberCharges(member.toObject(), heads);
-        const newCurrentCharges = parseFloat(subtotal.toFixed(2));
-        const openingPrincipal = parseFloat((existingBill.openingPrincipal || 0).toFixed(2));
-        const openingInterest = parseFloat((existingBill.openingInterest || 0).toFixed(2));
-        // currentInterest is NOT recomputed here — a member data edit (area/
-        // parking) changes currentCharges only, never interest (§10: interest
-        // depends solely on openingPrincipal, which this edit doesn't touch).
-        const currentInterest = parseFloat((existingBill.currentInterest ?? 0).toFixed(2));
-        const newBillPrincipal = parseFloat((openingPrincipal + newCurrentCharges).toFixed(2));
-        const newBillInterest = parseFloat((openingInterest + currentInterest).toFixed(2));
-        const newTotalBillDue = parseFloat((newBillPrincipal + newBillInterest).toFixed(2));
-        const alreadyPaid = parseFloat((existingBill.amountPaid || 0).toFixed(2));
-        const advApplied = parseFloat((existingBill.advanceApplied || 0).toFixed(2));
-        const newBalance = parseFloat(Math.max(0, newTotalBillDue - alreadyPaid - advApplied).toFixed(2));
-        const newStatus = newBalance <= 0.005 ? "Paid" : alreadyPaid > 0 || advApplied > 0 ? "Partial" : "Unpaid";
-        const chargesObj = Object.fromEntries(
-          Object.entries(breakdown).map(([k, v]) => [k, parseFloat(v) || 0]),
-        );
-
-        // Ledger V2 (§6/§8): validate before writing, and go through the
-        // audited correction workflow — never a bare $set on a generated
-        // bill's monetary fields.
-        validateBillInvariants({
-          openingPrincipal,
-          openingInterest,
-          currentCharges: newCurrentCharges,
-          currentInterest,
-          totalBillDue: newTotalBillDue,
-          closingPrincipal: newBillPrincipal,
-          closingInterest: newBillInterest,
-          balanceAmount: newBalance,
-          charges: chargesObj,
-        });
-
-        await correctBillHistorical({
-          bill: existingBill,
-          corrected: {
-            currentCharges: newCurrentCharges,
-            subtotal: newCurrentCharges,
-            currentBillTotal: newCurrentCharges,
-            billPrincipalBalance: newBillPrincipal,
-            billInterestBalance: newBillInterest,
-            totalBillDue: newTotalBillDue,
-            totalAmount: newTotalBillDue,
-            closingPrincipal: newBillPrincipal,
-            closingInterest: newBillInterest,
-            closingTotal: newTotalBillDue,
-            balanceAmount: newBalance,
-            status: newStatus,
-            charges: new Map(Object.entries(chargesObj)),
-          },
-          reason: `Member data corrected (carpetAreaSqft/parkingSlots) — bill charges recalculated from BillingHeads for period ${recalcBillPeriodId}`,
-          performedBy: decoded.userId,
-        });
-        billRecalculated = true;
-      }
+      billRecalculated = result.recalculated;
+      recalcNote = result.reason ?? null;
     }
-    return NextResponse.json({ member: member.toObject(), billRecalculated });
+
+    return NextResponse.json({ member: member.toObject(), billRecalculated, recalcNote });
   } catch (err) {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    if (err instanceof BillLockedError) {
+      return NextResponse.json({ error: err.message, code: err.code }, { status: err.status });
+    }
+    // The real reason, not a blanket "Internal server error" the admin cannot
+    // act on or report.
+    console.error("members/quick-patch error:", err);
+    return NextResponse.json(
+      {
+        error: err?.message || "This change could not be saved.",
+        code: err?.code || "QUICK_PATCH_FAILED",
+      },
+      { status: 500 },
+    );
   }
 }

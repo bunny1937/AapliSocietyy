@@ -1,0 +1,264 @@
+/* styles/MemberEditor.module.css
+ *
+ * Form controls for the editable member drawer. The View Members module only
+ * ever had read-only styles (.field renders a plain div), so everything an
+ * admin can actually type into lives here.
+ */
+
+.sectionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.sectionActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  margin-bottom: 0.3rem;
+}
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: #111827;
+  background: #fff;
+  font-family: inherit;
+}
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+.input:disabled,
+.select:disabled,
+.textarea:disabled {
+  background: #f9fafb;
+  color: #6b7280;
+}
+.textarea {
+  min-height: 66px;
+  resize: vertical;
+}
+.readonly {
+  font-size: 0.9rem;
+  color: #111827;
+  padding: 0.45rem 0;
+  word-break: break-word;
+}
+.muted {
+  color: #9ca3af;
+}
+.fieldError {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #b91c1c;
+}
+.hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+  line-height: 1.5;
+  margin-top: 0.3rem;
+}
+
+/* ── Buttons ─────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  font-family: inherit;
+}
+.btn:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btnPrimary {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #fff;
+}
+.btnPrimary:hover:not(:disabled) {
+  background: #4338ca;
+  border-color: #4338ca;
+}
+.btnDanger {
+  background: #fff;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+.btnDanger:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
+.btnTiny {
+  padding: 0.22rem 0.5rem;
+  font-size: 0.72rem;
+}
+
+/* ── Repeating rows (family / parking) ───────────────── */
+.rowCard {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  margin-bottom: 0.6rem;
+  background: #fff;
+}
+.rowGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.6rem;
+  align-items: end;
+}
+.rowActions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+  margin-top: 0.55rem;
+  flex-wrap: wrap;
+}
+.rowMeta {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.4rem;
+}
+.empty {
+  border: 1px dashed #d1d5db;
+  border-radius: 10px;
+  padding: 0.9rem;
+  text-align: center;
+  font-size: 0.83rem;
+  color: #6b7280;
+  line-height: 1.6;
+  background: #fafafa;
+}
+
+/* ── Feedback ────────────────────────────────────────── */
+.banner {
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  margin-bottom: 0.75rem;
+}
+.bannerOk {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+.bannerError {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+.bannerWarn {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+}
+.issueList {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+}
+
+/* ── Status / login panel ────────────────────────────── */
+.switchRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 0;
+  border-top: 1px solid #f3f4f6;
+}
+.switchRow:first-child {
+  border-top: none;
+}
+.switchText {
+  min-width: 0;
+  flex: 1 1 240px;
+}
+.switchTitle {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #111827;
+}
+.switchDesc {
+  font-size: 0.78rem;
+  color: #6b7280;
+  line-height: 1.55;
+  margin-top: 0.2rem;
+}
+.switchControls {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ── Confirm dialog ──────────────────────────────────── */
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1300;
+}
+.confirmBox {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.2rem;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+}
+.confirmTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #111827;
+}
+.confirmBody {
+  font-size: 0.86rem;
+  color: #4b5563;
+  line-height: 1.6;
+  margin-bottom: 0.9rem;
+}
+.confirmActions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}

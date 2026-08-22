@@ -25,8 +25,28 @@ export async function PUT(request) {
     }
     const validationResult = memberSchema.safeParse(updateData);
     if (!validationResult.success) {
+      // Field-by-field, in the words the admin needs, rather than a bare
+      // "Validation failed" they cannot act on.
+      const issues = validationResult.error.issues.map((i) => ({
+        field: i.path.join(".") || "form",
+        message: i.message,
+      }));
       return NextResponse.json(
-        { error: "Validation failed", details: validationResult.error.errors },
+        {
+          error: issues[0]?.message || "Some details could not be saved.",
+          code: "VALIDATION_ERROR",
+          issues,
+        },
+        { status: 400 },
+      );
+    }
+    if (Object.keys(validationResult.data).length === 0) {
+      return NextResponse.json(
+        {
+          error: "Nothing was sent to update.",
+          code: "EMPTY_UPDATE",
+          hint: "Change at least one field before saving.",
+        },
         { status: 400 },
       );
     }
@@ -61,6 +81,7 @@ export async function PUT(request) {
     const newPrincipal = finalData.openingPrincipal ?? oldMember.openingPrincipal ?? 0;
     const newInterest = finalData.openingInterest ?? oldMember.openingInterest ?? 0;
     finalData.openingBalance = parseFloat((newPrincipal + newInterest).toFixed(2));
+    finalData.lastModifiedBy = decoded.userId;
     const updatedMember = await Member.findByIdAndUpdate(
       memberId,
       { $set: finalData },
