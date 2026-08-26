@@ -4,6 +4,8 @@ import mongoose from "mongoose";
 import RetentionArchive from "@/models/RetentionArchive";
 import RetentionSetting from "@/models/RetentionSetting";
 import { policyById, RETENTION_POLICIES } from "@/lib/retention/policies";
+import { purgeExpiredTenancyDocuments } from "@/lib/tenancy/purgeExpiredDocuments";
+import { withCronRun } from "@/lib/ops/cronTracker";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,6 +65,11 @@ async function loadModel(policy) {
 
 export const GET = withRoute(async (req) => {
   if (!cronAuthorized(req)) return json({ error: "Unauthorized" }, { status: 401 });
+  const dryRun = new URL(req.url).searchParams.get("dryRun") === "1";
+  return json(await withCronRun("retention-purge", (ctx) => runRetentionPurge(ctx.req))({ dryRun, req }));
+});
+
+async function runRetentionPurge(req) {
 
   const startedAt = Date.now();
   const url = new URL(req.url);
@@ -175,7 +182,14 @@ export const GET = withRoute(async (req) => {
   // to know.
   const awaitingDownload = await RetentionArchive.countDocuments({ status: "pending" });
 
-  return json({
+  // Tenancy documents whose retention has run out. Folded in here rather than
+  // given its own cron: a retention rule with no runner is not a rule, and a
+  // third external schedule is a third thing to forget to register. Same job,
+  // same night, same purpose — delete what we said we would delete. Honours
+  // the same dry-run and kill-switch as everything above.
+  const tenancyDocuments = await purgeExpiredTenancyDocuments({ dryRun });
+
+  return {
     ok: true,
     mode: dryRun ? (killSwitchOff ? "disabled-by-kill-switch" : "dry-run") : "live",
     archivesConsidered: candidates.length,
@@ -183,8 +197,9 @@ export const GET = withRoute(async (req) => {
     skipped: results.filter((r) => r.action === "skipped").length,
     totalDeleted: results.reduce((s, r) => s + (r.deleted ?? 0), 0),
     awaitingDownload,
+    tenancyDocuments,
     archiveOnlyPolicies: RETENTION_POLICIES.filter((p) => !p.purgeable).map((p) => p.id),
     results,
     tookMs: Date.now() - startedAt,
-  });
-});
+  };
+}

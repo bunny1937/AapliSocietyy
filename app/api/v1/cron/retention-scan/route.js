@@ -10,6 +10,7 @@ import {
   retentionEmailHtml,
   sendRetentionEmails,
 } from "@/lib/retention/notifyAdmin";
+import { withCronRun } from "@/lib/ops/cronTracker";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -66,6 +67,11 @@ async function loadModel(policy) {
 
 export const GET = withRoute(async (req) => {
   if (!cronAuthorized(req)) return json({ error: "Unauthorized" }, { status: 401 });
+  const dryRun = new URL(req.url).searchParams.get("dryRun") === "1";
+  return json(await withCronRun("retention-scan", (ctx) => runRetentionScan(ctx.req))({ dryRun, req }));
+});
+
+async function runRetentionScan(req) {
 
   const startedAt = Date.now();
   const url = new URL(req.url);
@@ -207,7 +213,7 @@ export const GET = withRoute(async (req) => {
     });
   }
 
-  return json({
+  return {
     ok: true,
     mode: dryRun ? "dry-run" : "live",
     runDate,
@@ -221,5 +227,5 @@ export const GET = withRoute(async (req) => {
     recordsDeleted: 0,
     summary,
     tookMs: Date.now() - startedAt,
-  });
-});
+  };
+}
