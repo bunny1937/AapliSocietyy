@@ -8,6 +8,7 @@ import { listActiveStaffRoles } from "@/lib/rbac/assignment-service";
 import { resolveStaffRoleRoute } from "@/lib/v1/staffRoleRoutes";
 import BusinessProfile from "@/models/BusinessProfile";
 import Shop from "@/models/Shop";
+import { loadEntitlements } from "@/lib/entitlements/resolve";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -75,7 +76,26 @@ export const GET = withRoute(async (req) => {
     .filter((r) => r.route)
     .map((r) => ({ key: r.key, label: r.label, route: r.route }));
 
+  // What the society has bought, so the app can hide tabs it must not offer.
+  //
+  // A hint, exactly like the web sidebar's copy. The app hiding a tab is a
+  // convenience; the API refusing the call is the control, and that happens in
+  // middleware from a server-side snapshot this response never touches. An app
+  // build that ignores this renders tabs whose every request 404s.
+  const { modules: entitlements, lifecycle } = claims.societyId
+    ? await loadEntitlements(claims.societyId)
+    : { modules: {}, lifecycle: null };
+
   return json({
+    entitlements,
+    subscription: lifecycle
+      ? {
+          state: lifecycle.state,
+          canWrite: lifecycle.canWrite,
+          trialEndsAt: lifecycle.trialEndsAt,
+          blockedAt: lifecycle.blockedAt,
+        }
+      : null,
     capabilities: {
       commercialDirectory: commercialFlags.directoryEnabled === true,
       // LEGACY capability, unchanged: it gates the old BusinessProfile editor
