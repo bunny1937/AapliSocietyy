@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import notify from "@/lib/notify";
 const MONTH_NAMES = [
   "",
   "Jan",
@@ -17,9 +18,9 @@ const MONTH_NAMES = [
   "Dec",
 ];
 const STATUS_COLOR = {
-  Pending: "#f59e0b",
-  Approved: "#10b981",
-  Rejected: "#ef4444",
+  Pending: "var(--warning)",
+  Approved: "var(--success)",
+  Rejected: "var(--danger)",
 };
 async function adminFetch(url, opts = {}) {
   const res = await fetch(url, {
@@ -62,7 +63,7 @@ export default function SuperAdminAuditReportsPage() {
         headers: {},
       },
     );
-    if (!res.ok) return alert("Download failed");
+    if (!res.ok) return notify.error("Download failed");
     const blob = await res.blob();
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -81,7 +82,7 @@ export default function SuperAdminAuditReportsPage() {
       >
         Audit Reports
       </h1>
-      <p style={{ color: "#6b7280", marginBottom: "2rem" }}>
+      <p style={{ color: "var(--fg-4)", marginBottom: "2rem" }}>
         All society audit submissions. Review, approve, or reject each report.
       </p>
       {/* Filters */}
@@ -100,7 +101,7 @@ export default function SuperAdminAuditReportsPage() {
           style={{
             padding: "0.5rem",
             borderRadius: 6,
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border)",
             flex: 1,
             minWidth: 180,
           }}
@@ -111,7 +112,7 @@ export default function SuperAdminAuditReportsPage() {
           style={{
             padding: "0.5rem",
             borderRadius: 6,
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border)",
           }}
         >
           <option value="all">All Status</option>
@@ -122,21 +123,21 @@ export default function SuperAdminAuditReportsPage() {
         <span
           style={{
             padding: "0.5rem 1rem",
-            background: "#dbeafe",
+            background: "var(--info-bg)",
             borderRadius: 20,
             fontWeight: 600,
-            color: "#1e40af",
+            color: "var(--info)",
           }}
         >
           {reports.length} Reports
         </span>
       </div>
       {isLoading ? (
-        <div style={{ padding: "3rem", textAlign: "center", color: "#6b7280" }}>
+        <div style={{ padding: "3rem", textAlign: "center", color: "var(--fg-4)" }}>
           Loading reports...
         </div>
       ) : reports.length === 0 ? (
-        <div style={{ padding: "3rem", textAlign: "center", color: "#6b7280" }}>
+        <div style={{ padding: "3rem", textAlign: "center", color: "var(--fg-4)" }}>
           No audit reports found.
         </div>
       ) : (
@@ -151,8 +152,8 @@ export default function SuperAdminAuditReportsPage() {
             <thead>
               <tr
                 style={{
-                  background: "#f9fafb",
-                  borderBottom: "2px solid #e5e7eb",
+                  background: "var(--bg-sunken)",
+                  borderBottom: "2px solid var(--border)",
                 }}
               >
                 {[
@@ -171,7 +172,7 @@ export default function SuperAdminAuditReportsPage() {
                       padding: "10px 12px",
                       textAlign: "left",
                       fontWeight: 700,
-                      color: "#374151",
+                      color: "var(--fg-3)",
                     }}
                   >
                     {h}
@@ -181,7 +182,7 @@ export default function SuperAdminAuditReportsPage() {
             </thead>
             <tbody>
               {reports.map((r) => (
-                <tr key={r._id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                <tr key={r._id} style={{ borderBottom: "1px solid var(--bg-muted)" }}>
                   <td style={{ padding: "10px 12px", fontWeight: 600 }}>
                     {r.societyName}
                   </td>
@@ -231,9 +232,9 @@ export default function SuperAdminAuditReportsPage() {
                         style={{
                           padding: "4px 10px",
                           borderRadius: 6,
-                          border: "1px solid #1e40af",
-                          color: "#1e40af",
-                          background: "#fff",
+                          border: "1px solid var(--info)",
+                          color: "var(--info)",
+                          background: "var(--bg-surface)",
                           cursor: "pointer",
                           fontSize: "0.8rem",
                         }}
@@ -247,9 +248,9 @@ export default function SuperAdminAuditReportsPage() {
                         style={{
                           padding: "4px 10px",
                           borderRadius: 6,
-                          border: "1px solid #059669",
-                          color: "#059669",
-                          background: "#fff",
+                          border: "1px solid var(--success)",
+                          color: "var(--success)",
+                          background: "var(--bg-surface)",
                           cursor: "pointer",
                           fontSize: "0.8rem",
                         }}
@@ -281,7 +282,7 @@ export default function SuperAdminAuditReportsPage() {
         >
           <div
             style={{
-              background: "#fff",
+              background: "var(--bg-surface)",
               borderRadius: 12,
               maxWidth: 700,
               width: "100%",
@@ -325,12 +326,12 @@ export default function SuperAdminAuditReportsPage() {
                 <div
                   key={l}
                   style={{
-                    background: "#f9fafb",
+                    background: "var(--bg-sunken)",
                     padding: "0.6rem 0.75rem",
                     borderRadius: 6,
                   }}
                 >
-                  <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                  <div style={{ fontSize: "0.75rem", color: "var(--fg-4)" }}>
                     {l}
                   </div>
                   <div style={{ fontWeight: 600 }}>{v}</div>
@@ -340,7 +341,7 @@ export default function SuperAdminAuditReportsPage() {
             {selected.validation?.warnings?.length > 0 && (
               <div
                 style={{
-                  background: "#fef3c7",
+                  background: "var(--warning-bg)",
                   borderRadius: 6,
                   padding: "0.75rem",
                   marginBottom: "1rem",
@@ -373,7 +374,7 @@ export default function SuperAdminAuditReportsPage() {
                   width: "100%",
                   padding: "0.6rem",
                   borderRadius: 6,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid var(--border)",
                   resize: "vertical",
                 }}
                 placeholder="Optional notes for the society admin..."
@@ -391,7 +392,7 @@ export default function SuperAdminAuditReportsPage() {
                 disabled={reviewMutation.isPending}
                 style={{
                   padding: "0.6rem 1.5rem",
-                  background: "#059669",
+                  background: "var(--success)",
                   color: "#fff",
                   borderRadius: 6,
                   border: "none",
@@ -412,7 +413,7 @@ export default function SuperAdminAuditReportsPage() {
                 disabled={reviewMutation.isPending}
                 style={{
                   padding: "0.6rem 1.5rem",
-                  background: "#dc2626",
+                  background: "var(--danger)",
                   color: "#fff",
                   borderRadius: 6,
                   border: "none",
@@ -428,7 +429,7 @@ export default function SuperAdminAuditReportsPage() {
                 }
                 style={{
                   padding: "0.6rem 1.5rem",
-                  background: "#1e40af",
+                  background: "var(--info)",
                   color: "#fff",
                   borderRadius: 6,
                   border: "none",
@@ -442,8 +443,8 @@ export default function SuperAdminAuditReportsPage() {
                 onClick={() => setSelected(null)}
                 style={{
                   padding: "0.6rem 1.25rem",
-                  background: "#f3f4f6",
-                  color: "#374151",
+                  background: "var(--bg-muted)",
+                  color: "var(--fg-3)",
                   borderRadius: 6,
                   border: "none",
                   cursor: "pointer",

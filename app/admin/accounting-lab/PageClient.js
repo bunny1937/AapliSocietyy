@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import StatutoryStatements from "../../../components/accounting/StatutoryStatements";
+import notify from "@/lib/notify";
 
 // ══ ACCOUNTING LAB — MASTER TEST SIMULATOR ════════════════════════════════
 // Exercises Phases 2.1 → 2.20 end to end, visibly, on one page:
@@ -396,7 +397,7 @@ const printStatements = () => {
 
 const resetLab = () =>
     guard("reset", async () => {
-      if (!window.confirm("Delete all bills, receipts, vouchers and assets for this society? Setup is preserved.")) return;
+      if (!(await notify.confirm("Delete all bills, receipts, vouchers and assets for this society? Setup is preserved.", { tone: "danger" }))) return;
       await api("/api/accounting/lab/reset", { method: "POST", body: JSON.stringify({ confirm: "RESET" }) });
       setRun(null);
       setStatements(null);

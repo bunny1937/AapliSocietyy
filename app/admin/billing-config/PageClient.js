@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import styles from "@/styles/BillingConfig.module.css";
 import gridStyles from "@/styles/BillingGrid.module.css";
 import { apiClient } from "@/lib/api-client";
+import notify from "@/lib/notify";
 export default function BillingConfigPage() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("charges");
@@ -161,11 +162,11 @@ export default function BillingConfigPage() {
       }
     },
     onSuccess: () => {
-      alert("Configuration saved!");
+      notify.success("Configuration saved!");
       queryClient.invalidateQueries({ queryKey: ["society-config"] });
       queryClient.invalidateQueries({ queryKey: ["billing-heads"] });
     },
-    onError: (error) => alert(`Failed to save: ${error.message}`),
+    onError: (error) => notify.error(`Failed to save: ${error.message}`),
   });
   const addCustomCharge = () =>
     setCustomCharges([
@@ -187,12 +188,13 @@ export default function BillingConfigPage() {
   const deleteCharge = async (id) => {
     const charge = customCharges.find((c) => c.id === id);
     if (charge?.isExisting) {
-      if (!confirm(`Delete "${charge.name}"?`)) return;
+      if (!(await notify.confirm(`Delete "${charge.name}"?`, { tone: "danger" })))
+        return;
       try {
         await apiClient.delete(`/api/billing-heads/${charge.id}/delete`);
         queryClient.invalidateQueries({ queryKey: ["billing-heads"] });
       } catch (error) {
-        alert(`Failed to delete: ${error.message}`);
+        notify.error(`Failed to delete: ${error.message}`);
       }
     }
     setCustomCharges(customCharges.filter((c) => c.id !== id));
@@ -306,18 +308,18 @@ export default function BillingConfigPage() {
     },
     [gridData, customCharges, gridCustomColumns, society],
   );
-  const handleAddGridColumn = () => {
-    const name = prompt("Enter column name");
+  const handleAddGridColumn = async () => {
+    const name = await notify.prompt("Enter column name");
     if (name?.trim())
       setGridCustomColumns([
         ...gridCustomColumns,
         { id: `custom-${Date.now()}`, name: name.trim() },
       ]);
   };
-  const handleEditGridColumn = (colId) => {
+  const handleEditGridColumn = async (colId) => {
     const col = gridCustomColumns.find((c) => c.id === colId);
     if (col) {
-      const newName = prompt("Enter new column name", col.name);
+      const newName = await notify.prompt("Enter new column name", col.name);
       if (newName?.trim())
         setGridCustomColumns(
           gridCustomColumns.map((c) =>
@@ -326,8 +328,9 @@ export default function BillingConfigPage() {
         );
     }
   };
-  const handleDeleteGridColumn = (colId) => {
-    if (!confirm("Delete this column?")) return;
+  const handleDeleteGridColumn = async (colId) => {
+    if (!(await notify.confirm("Delete this column?", { tone: "danger" })))
+      return;
     setGridCustomColumns(gridCustomColumns.filter((c) => c.id !== colId));
     const newGridData = { ...gridData };
     Object.keys(newGridData).forEach(
@@ -346,19 +349,20 @@ export default function BillingConfigPage() {
   const generateGridBillsMutation = useMutation({
     mutationFn: (data) => apiClient.post("api/billing/generate", data),
     onSuccess: (data) => {
-      alert(`Generated ${data.billsGenerated} bills!`);
+      notify.success(`Generated ${data.billsGenerated} bills!`);
       setShowGridPreview(false);
       setGridData({});
       setModifiedRows(new Set());
       queryClient.invalidateQueries({ queryKey: ["generated-bills"] });
     },
-    onError: (error) => alert(`Error: ${error.message}`),
+    onError: (error) => notify.error(`Error: ${error.message}`),
   });
-  const handleGridGenerate = () => {
+  const handleGridGenerate = async () => {
     if (
-      !confirm(
+      !(await notify.confirm(
         `Generate bills for ${filteredMembers.length} members for ${year}-${String(month).padStart(2, "0")}?`,
-      )
+        { tone: "warning" },
+      ))
     )
       return;
     const billsData = filteredMembers.map((member) => {
@@ -397,23 +401,23 @@ export default function BillingConfigPage() {
       html = html.replace(new RegExp(key, "g"), value);
     });
     const tableHtml = `<table style="width:100%;border-collapse:collapse;margin:20px 0">
-      <thead><tr style="background-color:#f3f4f6">
-        <th style="border:1px solid #000;padding:8px;text-align:left">Sr.</th>
-        <th style="border:1px solid #000;padding:8px;text-align:left">Description</th>
-        <th style="border:1px solid #000;padding:8px;text-align:right">Amount</th>
+      <thead><tr style="background-color:var(--bg-muted)">
+        <th style="border:1px solid var(--fg-1);padding:8px;text-align:left">Sr.</th>
+        <th style="border:1px solid var(--fg-1);padding:8px;text-align:left">Description</th>
+        <th style="border:1px solid var(--fg-1);padding:8px;text-align:right">Amount</th>
       </tr></thead>
       <tbody>
         ${Object.entries(calc.breakdown)
           .map(
             ([desc, amt], idx) => `
-          <tr><td style="border:1px solid #ddd;padding:8px">${idx + 1}</td>
-          <td style="border:1px solid #ddd;padding:8px">${desc}</td>
-          <td style="border:1px solid #ddd;padding:8px;text-align:right">${amt.toFixed(2)}</td></tr>`,
+          <tr><td style="border:1px solid var(--border);padding:8px">${idx + 1}</td>
+          <td style="border:1px solid var(--border);padding:8px">${desc}</td>
+          <td style="border:1px solid var(--border);padding:8px;text-align:right">${amt.toFixed(2)}</td></tr>`,
           )
           .join("")}
-        <tr style="font-weight:bold;background-color:#f9fafb">
-          <td colspan="2" style="border:1px solid #000;padding:8px;text-align:right">TOTAL</td>
-          <td style="border:1px solid #000;padding:8px;text-align:right">${calc.total.toLocaleString("en-IN")}</td>
+        <tr style="font-weight:bold;background-color:var(--bg-sunken)">
+          <td colspan="2" style="border:1px solid var(--fg-1);padding:8px;text-align:right">TOTAL</td>
+          <td style="border:1px solid var(--fg-1);padding:8px;text-align:right">${calc.total.toLocaleString("en-IN")}</td>
         </tr>
       </tbody></table>`;
     html = html.replace("{{BILLING_TABLE}}", tableHtml);
@@ -459,7 +463,7 @@ export default function BillingConfigPage() {
       <div
         style={{
           display: "flex",
-          borderBottom: "2px solid #e5e7eb",
+          borderBottom: "2px solid var(--border)",
           marginBottom: "1.5rem",
           gap: 0,
         }}
@@ -473,11 +477,11 @@ export default function BillingConfigPage() {
               border: "none",
               borderBottom:
                 activeTab === tab.id
-                  ? "3px solid #1e40af"
+                  ? "3px solid var(--primary-hover)"
                   : "3px solid transparent",
               background: "none",
               fontWeight: activeTab === tab.id ? 700 : 400,
-              color: activeTab === tab.id ? "#1e40af" : "#6b7280",
+              color: activeTab === tab.id ? "var(--primary-hover)" : "var(--fg-4)",
               cursor: "pointer",
               fontSize: "0.95rem",
               transition: "all 0.15s ease",
@@ -505,7 +509,7 @@ export default function BillingConfigPage() {
                 <h2>🎯 Billing Heads</h2>
                 <p
                   style={{
-                    color: "#6b7280",
+                    color: "var(--fg-4)",
                     fontSize: "0.875rem",
                     marginTop: "0.25rem",
                   }}
@@ -521,7 +525,7 @@ export default function BillingConfigPage() {
             </div>
             {customCharges.length === 0 ? (
               <div style={{ textAlign: "center", padding: "2rem" }}>
-                <p style={{ color: "#6b7280", marginBottom: "1rem" }}>
+                <p style={{ color: "var(--fg-4)", marginBottom: "1rem" }}>
                   No billing heads yet. Import from society config or add
                   manually.
                 </p>
@@ -540,7 +544,7 @@ export default function BillingConfigPage() {
                         queryKey: ["billing-heads"],
                       });
                     } catch (e) {
-                      alert("Failed: " + e.message);
+                      notify.error("Failed: " + e.message);
                     }
                   }}
                 >
@@ -555,12 +559,12 @@ export default function BillingConfigPage() {
                     display: "flex",
                     gap: "0.5rem",
                     padding: "0.5rem 0.75rem",
-                    background: "#f9fafb",
+                    background: "var(--bg-sunken)",
                     borderRadius: "6px",
                     marginBottom: "0.5rem",
                     fontSize: "0.8rem",
                     fontWeight: 600,
-                    color: "#6b7280",
+                    color: "var(--fg-4)",
                   }}
                 >
                   <span style={{ width: 28 }}>#</span>
@@ -640,7 +644,7 @@ export default function BillingConfigPage() {
                       <span
                         style={{
                           fontSize: "0.75rem",
-                          color: "#9ca3af",
+                          color: "var(--fg-5)",
                           whiteSpace: "nowrap",
                         }}
                       >
@@ -657,7 +661,7 @@ export default function BillingConfigPage() {
                           gap: "0.5rem",
                           flexWrap: "wrap",
                           fontSize: "0.72rem",
-                          color: "#475569",
+                          color: "var(--fg-3)",
                         }}
                       >
                         {["Residential", "Shop", "Office"].map((cls) => {
@@ -744,15 +748,15 @@ export default function BillingConfigPage() {
           >
             <div>
               <h2>📊 Live Billing Matrix</h2>
-              <p style={{ color: "#6b7280", fontSize: "0.875rem" }}>
+              <p style={{ color: "var(--fg-4)", fontSize: "0.875rem" }}>
                 Auto-calculated from current billing heads. Save charges first
                 to update.
               </p>
             </div>
             <span
               style={{
-                background: "#dbeafe",
-                color: "#1e40af",
+                background: "var(--primary-tint)",
+                color: "var(--primary-hover)",
                 padding: "0.35rem 1rem",
                 borderRadius: 8,
                 fontWeight: 600,
@@ -764,7 +768,7 @@ export default function BillingConfigPage() {
           </div>
           {livePreview.length === 0 ? (
             <div
-              style={{ textAlign: "center", padding: "3rem", color: "#6b7280" }}
+              style={{ textAlign: "center", padding: "3rem", color: "var(--fg-4)" }}
             >
               No members found. Import members first, or add billing heads in
               Charge Structure tab.
@@ -815,7 +819,7 @@ export default function BillingConfigPage() {
                   style={{
                     textAlign: "center",
                     padding: "1rem",
-                    color: "#6b7280",
+                    color: "var(--fg-4)",
                   }}
                 >
                   Showing 50 of {livePreview.length} members
@@ -841,7 +845,7 @@ export default function BillingConfigPage() {
           >
             <div>
               <h2>🗃️ Billing Grid</h2>
-              <p style={{ color: "#6b7280", fontSize: "0.875rem" }}>
+              <p style={{ color: "var(--fg-4)", fontSize: "0.875rem" }}>
                 Enter dynamic/one-time charges per member before generating
                 bills.
               </p>
@@ -925,10 +929,10 @@ export default function BillingConfigPage() {
               <span
                 style={{
                   padding: "0.5rem 1rem",
-                  background: "#dbeafe",
+                  background: "var(--primary-tint)",
                   borderRadius: 8,
                   fontWeight: 600,
-                  color: "#1e40af",
+                  color: "var(--primary-hover)",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -939,7 +943,7 @@ export default function BillingConfigPage() {
           {/* Grid Table */}
           {membersLoading ? (
             <div
-              style={{ textAlign: "center", padding: "3rem", color: "#6b7280" }}
+              style={{ textAlign: "center", padding: "3rem", color: "var(--fg-4)" }}
             >
               Loading members…
             </div>
@@ -990,7 +994,7 @@ export default function BillingConfigPage() {
                                 border: "none",
                                 cursor: "pointer",
                                 fontSize: "0.875rem",
-                                color: "#DC2626",
+                                color: "var(--danger)",
                               }}
                             >
                               ✕
@@ -1014,7 +1018,7 @@ export default function BillingConfigPage() {
                         key={mid || idx}
                         style={{
                           backgroundColor: isModified
-                            ? "#FEF3C7"
+                            ? "var(--warning-bg)"
                             : "transparent",
                         }}
                       >
@@ -1052,7 +1056,7 @@ export default function BillingConfigPage() {
                         <td>{calc.subtotal.toFixed(2)}</td>
                         <td>{calc.serviceTax.toFixed(2)}</td>
                         <td>
-                          <strong style={{ color: "#DC2626" }}>
+                          <strong style={{ color: "var(--danger)" }}>
                             {calc.total.toFixed(2)}
                           </strong>
                         </td>
@@ -1105,7 +1109,7 @@ export default function BillingConfigPage() {
             >
               <div
                 style={{
-                  backgroundColor: "white",
+                  backgroundColor: "var(--bg-surface)",
                   borderRadius: 12,
                   maxWidth: 900,
                   width: "100%",
@@ -1118,13 +1122,13 @@ export default function BillingConfigPage() {
                 <div
                   style={{
                     padding: "1.5rem",
-                    borderBottom: "2px solid #E5E7EB",
+                    borderBottom: "2px solid var(--border)",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
                     position: "sticky",
                     top: 0,
-                    backgroundColor: "white",
+                    backgroundColor: "var(--bg-surface)",
                     zIndex: 1,
                   }}
                 >
@@ -1132,7 +1136,7 @@ export default function BillingConfigPage() {
                     <h2 style={{ margin: 0 }}>
                       Bill Preview {year}-{String(month).padStart(2, "0")}
                     </h2>
-                    <p style={{ margin: "0.5rem 0 0 0", color: "#6B7280" }}>
+                    <p style={{ margin: "0.5rem 0 0 0", color: "var(--fg-4)" }}>
                       Member {previewMemberIndex + 1} of{" "}
                       {filteredMembers.length}
                     </p>
@@ -1144,7 +1148,7 @@ export default function BillingConfigPage() {
                       border: "none",
                       fontSize: "2rem",
                       cursor: "pointer",
-                      color: "#9CA3AF",
+                      color: "var(--fg-5)",
                     }}
                   >
                     ✕
@@ -1155,18 +1159,18 @@ export default function BillingConfigPage() {
                   dangerouslySetInnerHTML={{
                     __html:
                       renderGridBillPreview() ??
-                      '<p style="color:#6b7280;text-align:center">No template configured. Set up a template in Bill Templates first.</p>',
+                      '<p style="color:var(--fg-4);text-align:center">No template configured. Set up a template in Bill Templates first.</p>',
                   }}
                 />
                 <div
                   style={{
                     padding: "1.5rem",
-                    borderTop: "2px solid #E5E7EB",
+                    borderTop: "2px solid var(--border)",
                     display: "flex",
                     gap: "1rem",
                     position: "sticky",
                     bottom: 0,
-                    backgroundColor: "white",
+                    backgroundColor: "var(--bg-surface)",
                   }}
                 >
                   <button
