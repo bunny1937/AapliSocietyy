@@ -60,6 +60,19 @@ export default function SelectSocietyPage() {
       sessionStorage.removeItem("pendingUserId");
       sessionStorage.removeItem("profileSelectToken");
       sessionStorage.removeItem("pendingName");
+      // Set by /auth/login when the user arrived with ?next= — see the note
+      // there. This is the leg of the journey that used to lose it.
+      let next = null;
+      try {
+        next = sessionStorage.getItem("postLoginNext");
+        sessionStorage.removeItem("postLoginNext");
+      } catch {
+        next = null;
+      }
+      if (typeof next === "string" && next.startsWith("/") && !next.startsWith("//")) {
+        router.replace(next);
+        return;
+      }
       router.replace(kind === "Staff" ? "/my-access" : "/member/dashboard");
     } catch (err) {
       setError(err.message);

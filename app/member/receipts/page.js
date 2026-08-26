@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useState } from "react";
 import styles from "@/styles/Dashboard.module.css";
+import notify from "@/lib/notify";
 export default function ReceiptsPage() {
   const [page, setPage] = useState(1);
   const { data, isLoading } = useQuery({
@@ -16,14 +17,14 @@ export default function ReceiptsPage() {
       credentials: "include",
     });
     if (!response.ok) {
-      alert("Download failed");
+      notify.error("Download failed");
       return;
     }
     const html = await response.text();
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const w = window.open(url, "_blank");
-    if (!w) alert("Popup blocked");
+    if (!w) notify.warning("Popup blocked");
     setTimeout(() => URL.revokeObjectURL(url), 30000);
   };
   return (
@@ -41,10 +42,10 @@ export default function ReceiptsPage() {
           <div className="loading-spinner" style={{ margin: "0 auto" }}></div>
         </div>
       ) : receipts.length === 0 ? (
-        <div style={{ padding: "3rem", textAlign: "center", color: "#9CA3AF" }}>
+        <div style={{ padding: "3rem", textAlign: "center", color: "var(--fg-5)" }}>
           <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🧾</div>
           <p
-            style={{ fontSize: "1.1rem", fontWeight: "600", color: "#374151" }}
+            style={{ fontSize: "1.1rem", fontWeight: "600", color: "var(--fg-3)" }}
           >
             No receipts yet
           </p>
@@ -58,11 +59,11 @@ export default function ReceiptsPage() {
             <div
               key={receipt._id}
               style={{
-                background: "white",
+                background: "var(--bg-surface)",
                 borderRadius: "10px",
                 padding: "20px 24px",
                 boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-                border: "1px solid #E5E7EB",
+                border: "1px solid var(--border)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -77,7 +78,7 @@ export default function ReceiptsPage() {
                   style={{
                     width: "44px",
                     height: "44px",
-                    background: "#D1FAE5",
+                    background: "var(--success-bg)",
                     borderRadius: "50%",
                     display: "flex",
                     alignItems: "center",
@@ -91,7 +92,7 @@ export default function ReceiptsPage() {
                   <div
                     style={{
                       fontWeight: "700",
-                      color: "#1F2937",
+                      color: "var(--fg-2)",
                       fontSize: "1rem",
                     }}
                   >
@@ -100,7 +101,7 @@ export default function ReceiptsPage() {
                   <div
                     style={{
                       fontSize: "0.8rem",
-                      color: "#6B7280",
+                      color: "var(--fg-4)",
                       marginTop: "3px",
                     }}
                   >
@@ -114,7 +115,7 @@ export default function ReceiptsPage() {
                   <div
                     style={{
                       fontSize: "0.75rem",
-                      color: "#9CA3AF",
+                      color: "var(--fg-5)",
                       marginTop: "2px",
                       fontFamily: "monospace",
                     }}
@@ -131,7 +132,7 @@ export default function ReceiptsPage() {
                     style={{
                       fontSize: "1.25rem",
                       fontWeight: "700",
-                      color: "#059669",
+                      color: "var(--success)",
                     }}
                   >
                     ₹{receipt.amount.toLocaleString("en-IN")}
@@ -143,9 +144,9 @@ export default function ReceiptsPage() {
                       borderRadius: "12px",
                       fontWeight: "600",
                       background:
-                        receipt.status === "Downloaded" ? "#DBEAFE" : "#D1FAE5",
+                        receipt.status === "Downloaded" ? "var(--primary-tint)" : "var(--success-bg)",
                       color:
-                        receipt.status === "Downloaded" ? "#1E40AF" : "#065F46",
+                        receipt.status === "Downloaded" ? "var(--info)" : "var(--success-fg)",
                     }}
                   >
                     {receipt.status}
@@ -182,7 +183,7 @@ export default function ReceiptsPage() {
           <span
             style={{
               padding: "0.5rem 1rem",
-              background: "white",
+              background: "var(--bg-surface)",
               borderRadius: "6px",
             }}
           >

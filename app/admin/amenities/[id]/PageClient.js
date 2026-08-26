@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import QRCode from "qrcode";
 import styles from "@/styles/Amenities.module.css";
+import notify from "@/lib/notify";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const TABS = [
@@ -229,7 +230,7 @@ export default function AmenityDetailPage() {
   };
 
   const removeClosure = async (closureId) => {
-    if (!confirm("Cancel this closure? The amenity will reopen per its weekly hours.")) return;
+    if (!(await notify.confirm("Cancel this closure? The amenity will reopen per its weekly hours.", { tone: "warning" }))) return;
     const res = await fetch(`/api/amenities/${id}/closures/${closureId}`, {
       method: "DELETE", credentials: "include",
     });
@@ -308,7 +309,7 @@ export default function AmenityDetailPage() {
 
   const deleteSlots = async (ids) => {
     if (!ids.length) return;
-    if (!confirm(`Delete ${ids.length} slot${ids.length === 1 ? "" : "s"}? This can't be undone.`)) return;
+    if (!(await notify.confirm(`Delete ${ids.length} slot${ids.length === 1 ? "" : "s"}? This can't be undone.`, { tone: "danger" }))) return;
     setSavingSlot(true);
     try {
       const res = await fetch(`/api/amenities/${id}/slots`, {
@@ -330,7 +331,7 @@ export default function AmenityDetailPage() {
   };
 
   const removeSlot = async (s) => {
-    if (!confirm(`Remove the ${s.startTime}–${s.endTime} slot?`)) return;
+    if (!(await notify.confirm(`Remove the ${s.startTime}–${s.endTime} slot?`, { tone: "warning" }))) return;
     setSavingSlot(true);
     try {
       const res = await fetch(`/api/amenities/${id}/slots`, {
@@ -500,7 +501,7 @@ export default function AmenityDetailPage() {
               </button>
               <button className={`${styles.btn} ${styles.btnDanger}`}
                 onClick={async () => {
-                  if (!confirm(`Delete "${amenity.name}"? Attendance and incident history is retained.`)) return;
+                  if (!(await notify.confirm(`Delete "${amenity.name}"? Attendance and incident history is retained.`, { tone: "danger" }))) return;
                   const res = await fetch(`/api/amenities/${id}`, { method: "DELETE", credentials: "include" });
                   const data = await res.json();
                   if (!res.ok) return showToast(data.error || "Delete failed", "err");
@@ -528,7 +529,7 @@ export default function AmenityDetailPage() {
               </p>
             )}
 
-            <div style={{ marginBottom: 16, padding: 10, background: "#f9fafb", borderRadius: 8 }}>
+            <div style={{ marginBottom: 16, padding: 10, background: "var(--bg-sunken)", borderRadius: 8 }}>
               <div className={styles.timeRow}>
                 <span className={styles.hint}>Open</span>
                 <input
@@ -706,7 +707,7 @@ export default function AmenityDetailPage() {
               a holiday eight months away is not news.
             </p>
 
-            <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid #f3f4f6", display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--bg-muted)", display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <div className={styles.field} style={{ flex: "1 1 140px" }}>
                   <label className={styles.label}>Type</label>
@@ -985,7 +986,7 @@ export default function AmenityDetailPage() {
                               type="button"
                               className={`${styles.slotChip} ${s.isCustom ? styles.slotCustom : ""}`}
                               style={selectingSlots
-                                ? { cursor: "pointer", outline: picked ? "2px solid #b91c1c" : "1px solid transparent", background: picked ? "#fef2f2" : undefined }
+                                ? { cursor: "pointer", outline: picked ? "2px solid var(--danger-fg)" : "1px solid transparent", background: picked ? "var(--danger-bg)" : undefined }
                                 : { cursor: "pointer" }}
                               title={selectingSlots ? "Click to select" : "Click to edit"}
                               onClick={() => (selectingSlots
@@ -1005,7 +1006,7 @@ export default function AmenityDetailPage() {
                           <button
                             type="button"
                             className={styles.slotChip}
-                            style={{ cursor: "pointer", background: "transparent", border: "1px dashed #9ca3af" }}
+                            style={{ cursor: "pointer", background: "transparent", border: "1px dashed var(--fg-5)" }}
                             onClick={() => setEditingSlot({
                               dayOfWeek: i, startTime: "", endTime: "", capacity: "", label: "", isNew: true,
                             })}
@@ -1228,7 +1229,7 @@ export default function AmenityDetailPage() {
             <h2 className={styles.cardTitle}>QR code</h2>
             {qr && qr.isActive ? (
               <div>
-                <p style={{ fontSize: 13, color: "#374151", margin: "0 0 8px" }}>
+                <p style={{ fontSize: 13, color: "var(--fg-3)", margin: "0 0 8px" }}>
                   Active code{qr.label ? ` · ${qr.label}` : ""} · {qr.mode}
                 </p>
                 <p className={styles.hint}>
@@ -1243,7 +1244,7 @@ export default function AmenityDetailPage() {
                 </p>
                 <button className={`${styles.btn} ${styles.btnDanger} ${styles.btnSm}`} style={{ marginTop: 12 }}
                   onClick={async () => {
-                    if (!confirm("Revoke this code? Printed copies stop working immediately.")) return;
+                    if (!(await notify.confirm("Revoke this code? Printed copies stop working immediately.", { tone: "danger" }))) return;
                     const res = await fetch(`/api/amenities/${id}/qr?tokenId=${qr._id}`, {
                       method: "DELETE", credentials: "include",
                     });
@@ -1337,7 +1338,7 @@ export default function AmenityDetailPage() {
                 {qrImage ? (
                   <img src={qrImage} width={220} height={220} alt="Scannable QR code" />
                 ) : (
-                  <div style={{ width: 220, height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af", fontSize: 12 }}>
+                  <div style={{ width: 220, height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--fg-5)", fontSize: 12 }}>
                     Rendering…
                   </div>
                 )}

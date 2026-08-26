@@ -12,7 +12,7 @@
   margin: 0 0 0.25rem;
 }
 .pageHeader p {
-  color: #6b7280;
+  color: var(--fg-4);
   margin: 0;
   font-size: 0.9rem;
 }
@@ -25,22 +25,22 @@
 .filterBtn {
   padding: 0.3rem 0.8rem;
   border-radius: 20px;
-  border: 1.5px solid #e5e7eb;
-  background: #fff;
+  border: 1.5px solid var(--border);
+  background: var(--bg-surface);
   font-size: 0.8rem;
   cursor: pointer;
   text-transform: capitalize;
   transition: all 0.15s;
-  color: #374151;
+  color: var(--fg-3);
 }
 .filterBtn:hover {
-  border-color: #4f46e5;
-  color: #4f46e5;
+  border-color: var(--primary);
+  color: var(--primary);
 }
 .filterActive {
-  background: #4f46e5;
-  color: #fff !important;
-  border-color: #4f46e5 !important;
+  background: var(--primary);
+  color: var(--bg-surface) !important;
+  border-color: var(--primary) !important;
 }
 .section {
   margin-bottom: 2rem;
@@ -51,7 +51,7 @@
   gap: 0.6rem;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #374151;
+  color: var(--fg-3);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 0.85rem;
@@ -63,8 +63,8 @@
   flex-shrink: 0;
 }
 .card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-left: 4px solid;
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
@@ -75,8 +75,9 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 .urgentCard {
-  background: linear-gradient(135deg, #fff5f5 0%, #fff 60%);
-  border-color: #fca5a5;
+  /* TODO: unmapped color, needs design review */
+  background: linear-gradient(135deg, var(--bg-sunken) 0%, var(--bg-surface) 60%);
+  border-color: var(--danger);
 }
 .cardTop {
   display: flex;
@@ -96,8 +97,8 @@
   font-size: 1rem;
 }
 .typeBadge {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--bg-muted);
+  color: var(--fg-3);
   font-size: 0.78rem;
   padding: 0.2rem 0.6rem;
   border-radius: 20px;
@@ -112,7 +113,7 @@
   text-transform: uppercase;
 }
 .time {
-  color: #9ca3af;
+  color: var(--fg-5);
   font-size: 0.8rem;
   white-space: nowrap;
 }
@@ -120,10 +121,10 @@
   font-size: 1rem;
   font-weight: 700;
   margin: 0 0 0.4rem;
-  color: #111827;
+  color: var(--fg-1);
 }
 .cardDesc {
-  color: #4b5563;
+  color: var(--fg-3);
   font-size: 0.88rem;
   line-height: 1.65;
   margin: 0 0 0.75rem;
@@ -135,26 +136,26 @@
   align-items: center;
   flex-wrap: wrap;
   font-size: 0.8rem;
-  color: #6b7280;
-  border-top: 1px solid #f3f4f6;
+  color: var(--fg-4);
+  border-top: 1px solid var(--bg-muted);
   padding-top: 0.6rem;
 }
 .author {
   font-style: italic;
 }
 .expiry {
-  color: #d97706;
+  color: var(--warning-fg);
   font-weight: 600;
 }
 .ackSection {
   margin-top: 0.85rem;
   padding-top: 0.85rem;
-  border-top: 1px dashed #fca5a5;
+  border-top: 1px dashed var(--danger);
 }
 .ackBtn {
-  background: #fff;
-  border: 2px solid #ef4444;
-  color: #ef4444;
+  background: var(--bg-surface);
+  border: 2px solid var(--danger);
+  color: var(--danger);
   padding: 0.5rem 1.25rem;
   border-radius: 8px;
   font-weight: 700;
@@ -163,18 +164,18 @@
   transition: all 0.15s;
 }
 .ackBtn:hover {
-  background: #ef4444;
-  color: #fff;
+  background: var(--danger);
+  color: var(--bg-surface);
 }
 .ackDone {
-  color: #059669;
+  color: var(--success);
   font-weight: 700;
   font-size: 0.88rem;
 }
 .empty {
   text-align: center;
   padding: 4rem 2rem;
-  color: #9ca3af;
+  color: var(--fg-5);
 }
 .emptyIcon {
   font-size: 3rem;
@@ -187,7 +188,7 @@
 }
 .skeleton {
   height: 130px;
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background: linear-gradient(90deg, var(--bg-muted) 25%, var(--border) 50%, var(--bg-muted) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 12px;
@@ -210,8 +211,8 @@
 .pagination button {
   padding: 0.45rem 1rem;
   border-radius: 8px;
-  border: 1.5px solid #e5e7eb;
-  background: #fff;
+  border: 1.5px solid var(--border);
+  background: var(--bg-surface);
   cursor: pointer;
   font-weight: 600;
 }
@@ -230,12 +231,12 @@
   font-size: 0.9rem;
 }
 .success {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--success-bg);
+  color: var(--success-fg);
 }
 .error {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--danger-bg);
+  color: var(--danger-fg);
 }
 @media (max-width: 600px) {
   .page {

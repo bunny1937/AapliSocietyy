@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import styles from "@/styles/Amenities.module.css";
+import notify from "@/lib/notify";
 
 const iso = (d) => d.toISOString().slice(0, 10);
 const time = (d) => (d ? new Date(d).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }) : "—");
@@ -70,7 +71,7 @@ export default function AttendancePage() {
   };
 
   const autoCheckout = async () => {
-    if (!confirm("Close all stale sessions past the society cutoff?")) return;
+    if (!(await notify.confirm("Close all stale sessions past the society cutoff?", { tone: "warning" }))) return;
     setSaving(true);
     try {
       const res = await fetch("/api/amenities/attendance/auto-checkout", {

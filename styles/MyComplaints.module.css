@@ -17,13 +17,13 @@
   margin: 0 0 0.25rem;
 }
 .topBar p {
-  color: #6b7280;
+  color: var(--fg-4);
   margin: 0;
   font-size: 0.9rem;
 }
 .newBtn {
-  background: #4f46e5;
-  color: #fff;
+  background: var(--accent);
+  color: var(--bg-surface);
   padding: 0.5rem 1.25rem;
   border-radius: 8px;
   text-decoration: none;
@@ -36,8 +36,8 @@
   gap: 1rem;
 }
 .card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
 }
@@ -57,31 +57,31 @@
   text-transform: uppercase;
 }
 .green {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--success-bg);
+  color: var(--success-fg);
 }
 .red {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--danger-bg);
+  color: var(--danger-fg);
 }
 .yellow {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--warning-bg);
+  color: var(--warning-fg);
 }
 .gray {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--bg-muted);
+  color: var(--fg-3);
 }
 .category {
   margin-left: 0.5rem;
   font-size: 0.8rem;
-  color: #4f46e5;
+  color: var(--accent);
   font-weight: 600;
   text-transform: capitalize;
 }
 .date {
   font-size: 0.8rem;
-  color: #9ca3af;
+  color: var(--fg-5);
 }
 .title {
   font-size: 1rem;
@@ -89,35 +89,35 @@
   margin: 0 0 0.35rem;
 }
 .desc {
-  color: #4b5563;
+  color: var(--fg-3);
   font-size: 0.88rem;
   line-height: 1.6;
   margin: 0 0 0.5rem;
 }
 .anonName {
   font-size: 0.82rem;
-  color: #6b7280;
+  color: var(--fg-4);
   font-style: italic;
   margin: 0 0 0.75rem;
 }
 .rejectionBox {
-  background: #fef2f2;
-  border-left: 3px solid #ef4444;
+  background: var(--danger-bg);
+  border-left: 3px solid var(--danger);
   border-radius: 6px;
   padding: 0.75rem 1rem;
   margin-bottom: 0.75rem;
   font-size: 0.85rem;
-  color: #7f1d1d;
+  color: var(--danger-fg);
 }
 .thread {
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--bg-muted);
   padding-top: 0.75rem;
   margin-top: 0.75rem;
 }
 .toggleThread {
   background: none;
   border: none;
-  color: #4f46e5;
+  color: var(--accent);
   font-size: 0.85rem;
   cursor: pointer;
   padding: 0;
@@ -131,13 +131,13 @@
   font-size: 0.88rem;
 }
 .reply.member {
-  background: #eff6ff;
-  border-left: 3px solid #3b82f6;
+  background: var(--accent-tint);
+  border-left: 3px solid var(--accent);
 }
 .reply.admin,
 .reply.secretary {
-  background: #f0fdf4;
-  border-left: 3px solid #10b981;
+  background: var(--success-bg);
+  border-left: 3px solid var(--success);
 }
 .replyAuthor {
   font-weight: 700;
@@ -147,7 +147,7 @@
 }
 .replyTime {
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--fg-5);
   display: block;
   margin-top: 0.25rem;
 }
@@ -156,7 +156,7 @@
 }
 .replyForm textarea {
   width: 100%;
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid var(--border);
   border-radius: 8px;
   padding: 0.65rem;
   font-size: 0.88rem;
@@ -165,7 +165,7 @@
   font-family: inherit;
 }
 .replyForm textarea:focus {
-  border-color: #4f46e5;
+  border-color: var(--accent);
   outline: none;
 }
 .replyMeta {
@@ -176,11 +176,11 @@
 }
 .replyMeta span {
   font-size: 0.8rem;
-  color: #9ca3af;
+  color: var(--fg-5);
 }
 .replyMeta button {
-  background: #4f46e5;
-  color: #fff;
+  background: var(--accent);
+  color: var(--bg-surface);
   border: none;
   border-radius: 8px;
   padding: 0.45rem 1rem;
@@ -194,7 +194,7 @@
 }
 .maxReplies {
   font-size: 0.82rem;
-  color: #9ca3af;
+  color: var(--fg-5);
   font-style: italic;
   margin-top: 0.5rem;
 }
@@ -205,7 +205,7 @@
 }
 .skeleton {
   height: 140px;
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background: linear-gradient(90deg, var(--bg-muted) 25%, var(--border) 50%, var(--bg-muted) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 12px;
@@ -221,7 +221,7 @@
 .empty {
   text-align: center;
   padding: 4rem 2rem;
-  color: #9ca3af;
+  color: var(--fg-5);
 }
 .emptyIcon {
   font-size: 3rem;
@@ -237,10 +237,10 @@
   z-index: 1000;
 }
 .success {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--success-bg);
+  color: var(--success-fg);
 }
 .error {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--danger-bg);
+  color: var(--danger-fg);
 }

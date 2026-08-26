@@ -18,6 +18,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import notify from "@/lib/notify";
 import { Card, CardHead, Pill, Btn } from "../../_ui";
 import ChargesSection from "../_ChargesSection";
 
@@ -273,7 +274,7 @@ export default function ShopDetailPage() {
             borderRadius: 8,
             fontSize: 13,
             lineHeight: 1.6,
-            background: banner.tone === "ok" ? "var(--cx-success-soft)" : "var(--cx-danger-soft,#fdecea)",
+            background: banner.tone === "ok" ? "var(--cx-success-soft)" : "var(--cx-danger-soft,var(--danger-bg))",
             border: `1px solid ${banner.tone === "ok" ? "var(--cx-success)" : "var(--cx-danger)"}`,
             color: "var(--cx-fg-1)",
           }}
@@ -639,10 +640,11 @@ export default function ShopDetailPage() {
             variant="danger"
             type="button"
             disabled={remove.isPending}
-            onClick={() => {
+            onClick={async () => {
               if (
-                window.confirm(
+                await notify.confirm(
                   "Remove this shop from billing?\n\nBills already generated for it are kept, and the flat it is linked to is not touched.",
+                  { tone: "danger" },
                 )
               )
                 remove.mutate();

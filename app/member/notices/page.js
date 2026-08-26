@@ -13,10 +13,10 @@ const TYPE_ICONS = {
   custom: "📋",
 };
 const PRIORITY_COLORS = {
-  low: { bg: "#f3f4f6", color: "#374151", border: "#e5e7eb" },
-  medium: { bg: "#dbeafe", color: "#1e40af", border: "#93c5fd" },
-  high: { bg: "#fef3c7", color: "#92400e", border: "#fcd34d" },
-  urgent: { bg: "#fee2e2", color: "#991b1b", border: "#fca5a5" },
+  low: { bg: "var(--bg-muted)", color: "var(--fg-3)", border: "var(--border)" },
+  medium: { bg: "var(--primary-tint)", color: "var(--primary-hover)", border: "var(--accent)" },
+  high: { bg: "var(--warning-bg)", color: "var(--warning-fg)", border: "#fcd34d" },
+  urgent: { bg: "var(--danger-bg)", color: "var(--danger-fg)", border: "#fca5a5" },
 };
 export default function MemberNoticesPage() {
   const [notices, setNotices] = useState([]);
@@ -214,7 +214,7 @@ export default function MemberNoticesPage() {
               <div className={styles.sectionHeader}>
                 <span
                   className={styles.sectionDot}
-                  style={{ background: "#ef4444" }}
+                  style={{ background: "var(--danger)" }}
                 />
                 🚨 Urgent Notices
               </div>
@@ -245,7 +245,7 @@ export default function MemberNoticesPage() {
                 <div className={styles.sectionHeader}>
                   <span
                     className={styles.sectionDot}
-                    style={{ background: "#9ca3af" }}
+                    style={{ background: "var(--fg-5)" }}
                   />
                   All Notices
                 </div>

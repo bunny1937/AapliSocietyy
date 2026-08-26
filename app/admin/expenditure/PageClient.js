@@ -11,6 +11,7 @@ import {
   tokens,
   fmtTime,
 } from "@/components/visitor/ui";
+import notify from "@/lib/notify";
 
 async function api(url, opts) {
   const res = await fetch(url, {
@@ -64,7 +65,7 @@ const S = {
   label: { fontSize: 12, color: tokens.sub, fontWeight: 600 },
   input: { padding: "8px 10px", border: `1px solid ${tokens.border}`, borderRadius: 8, fontSize: 13.5 },
   summary: { display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 16 },
-  stat: { background: tokens.bgSoft || "#f8fafc", border: `1px solid ${tokens.border}`, borderRadius: 10, padding: "12px 16px", minWidth: 150 },
+  stat: { background: tokens.bgSoft || "var(--bg-canvas)", border: `1px solid ${tokens.border}`, borderRadius: 10, padding: "12px 16px", minWidth: 150 },
 };
 
 const emptyForm = () => ({
@@ -124,7 +125,7 @@ export default function ExpenditurePage() {
   }
 
   async function remove(id) {
-    if (!window.confirm("Delete this expense?")) return;
+    if (!(await notify.confirm("Delete this expense?"))) return;
     try {
       await api(`/api/expenses/${id}`, { method: "DELETE" });
       setToast({ type: "success", message: "Expense deleted" });

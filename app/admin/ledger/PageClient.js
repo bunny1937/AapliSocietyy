@@ -5,6 +5,7 @@ import { apiClient } from "@/lib/api-client";
 import styles from "@/styles/Dashboard.module.css";
 import ledgerStyles from "@/styles/Ledger.module.css";
 import Select from "react-select";
+import notify from "@/lib/notify";
 export default function UltraAdvancedLedgerPage() {
   const queryClient = useQueryClient();
   // ========== STATE MANAGEMENT ==========
@@ -221,7 +222,7 @@ export default function UltraAdvancedLedgerPage() {
       setShowDetailModal(true);
     } catch (error) {
       console.error("Transaction detail error:", error);
-      alert("Failed to fetch transaction details");
+      notify.error("Failed to fetch transaction details");
     }
   };
   const exportData = (format) => {
@@ -230,7 +231,7 @@ export default function UltraAdvancedLedgerPage() {
   };
   const saveCurrentView = () => {
     if (!newViewName.trim()) {
-      alert("Please enter a view name");
+      notify.warning("Please enter a view name");
       return;
     }
     const view = {
@@ -243,7 +244,7 @@ export default function UltraAdvancedLedgerPage() {
     };
     setSavedViews([...savedViews, view]);
     setNewViewName("");
-    alert(`View "${newViewName}" saved!`);
+    notify.success(`View "${newViewName}" saved!`);
   };
   const loadSavedView = (view) => {
     setFilters(view.filters);
@@ -335,7 +336,7 @@ export default function UltraAdvancedLedgerPage() {
       <div className={ledgerStyles.summaryBar}>
         <div
           className={ledgerStyles.summaryCard}
-          style={{ borderLeftColor: "#3B82F6" }}
+          style={{ borderLeftColor: "var(--accent)" }}
         >
           <h3>Total Transactions</h3>
           <div className={ledgerStyles.summaryValue}>
@@ -352,7 +353,7 @@ export default function UltraAdvancedLedgerPage() {
         </div>
         <div
           className={ledgerStyles.summaryCard}
-          style={{ borderLeftColor: "#DC2626" }}
+          style={{ borderLeftColor: "var(--danger)" }}
         >
           <h3>Total Debit</h3>
           <div className={ledgerStyles.summaryValue}>
@@ -362,7 +363,7 @@ export default function UltraAdvancedLedgerPage() {
         </div>
         <div
           className={ledgerStyles.summaryCard}
-          style={{ borderLeftColor: "#10B981" }}
+          style={{ borderLeftColor: "var(--success)" }}
         >
           <h3>Total Credit</h3>
           <div className={ledgerStyles.summaryValue}>
@@ -373,7 +374,7 @@ export default function UltraAdvancedLedgerPage() {
         <div
           className={ledgerStyles.summaryCard}
           style={{
-            borderLeftColor: analytics.netBalance < 0 ? "#DC2626" : "#10B981",
+            borderLeftColor: analytics.netBalance < 0 ? "var(--danger)" : "var(--success)",
           }}
         >
           <h3>Net Balance</h3>
@@ -419,15 +420,15 @@ export default function UltraAdvancedLedgerPage() {
               <div
                 style={{
                   padding: "1.25rem",
-                  backgroundColor: "#FEF3C7",
+                  backgroundColor: "var(--warning-bg)",
                   borderRadius: "8px",
-                  borderLeft: "4px solid #F59E0B",
+                  borderLeft: "4px solid var(--warning)",
                 }}
               >
                 <div
                   style={{
                     fontSize: "0.875rem",
-                    color: "#92400E",
+                    color: "var(--warning-fg)",
                     fontWeight: "600",
                   }}
                 >
@@ -437,7 +438,7 @@ export default function UltraAdvancedLedgerPage() {
                   style={{
                     fontSize: "1.75rem",
                     fontWeight: "bold",
-                    color: "#DC2626",
+                    color: "var(--danger)",
                     marginTop: "0.5rem",
                   }}
                 >
@@ -446,7 +447,7 @@ export default function UltraAdvancedLedgerPage() {
                 <div
                   style={{
                     fontSize: "0.75rem",
-                    color: "#92400E",
+                    color: "var(--warning-fg)",
                     marginTop: "0.25rem",
                   }}
                 >
@@ -456,15 +457,15 @@ export default function UltraAdvancedLedgerPage() {
               <div
                 style={{
                   padding: "1.25rem",
-                  backgroundColor: "#FEE2E2",
+                  backgroundColor: "var(--danger-bg)",
                   borderRadius: "8px",
-                  borderLeft: "4px solid #DC2626",
+                  borderLeft: "4px solid var(--danger)",
                 }}
               >
                 <div
                   style={{
                     fontSize: "0.875rem",
-                    color: "#991B1B",
+                    color: "var(--danger-fg)",
                     fontWeight: "600",
                   }}
                 >
@@ -474,7 +475,7 @@ export default function UltraAdvancedLedgerPage() {
                   style={{
                     fontSize: "1.75rem",
                     fontWeight: "bold",
-                    color: "#DC2626",
+                    color: "var(--danger)",
                     marginTop: "0.5rem",
                   }}
                 >
@@ -486,7 +487,7 @@ export default function UltraAdvancedLedgerPage() {
                 <div
                   style={{
                     fontSize: "0.75rem",
-                    color: "#991B1B",
+                    color: "var(--danger-fg)",
                     marginTop: "0.25rem",
                   }}
                 >
@@ -496,15 +497,15 @@ export default function UltraAdvancedLedgerPage() {
               <div
                 style={{
                   padding: "1.25rem",
-                  backgroundColor: "#DBEAFE",
+                  backgroundColor: "var(--info-bg)",
                   borderRadius: "8px",
-                  borderLeft: "4px solid #3B82F6",
+                  borderLeft: "4px solid var(--accent)",
                 }}
               >
                 <div
                   style={{
                     fontSize: "0.875rem",
-                    color: "#1E40AF",
+                    color: "var(--info)",
                     fontWeight: "600",
                   }}
                 >
@@ -514,7 +515,7 @@ export default function UltraAdvancedLedgerPage() {
                   style={{
                     fontSize: "1.75rem",
                     fontWeight: "bold",
-                    color: "#1E40AF",
+                    color: "var(--info)",
                     marginTop: "0.5rem",
                   }}
                 >
@@ -523,7 +524,7 @@ export default function UltraAdvancedLedgerPage() {
                 <div
                   style={{
                     fontSize: "0.75rem",
-                    color: "#1E40AF",
+                    color: "var(--info)",
                     marginTop: "0.25rem",
                   }}
                 >
@@ -537,7 +538,7 @@ export default function UltraAdvancedLedgerPage() {
                 <h4
                   style={{
                     margin: "0 0 1rem 0",
-                    color: "#374151",
+                    color: "var(--fg-3)",
                     fontSize: "1rem",
                   }}
                 >
@@ -570,7 +571,7 @@ export default function UltraAdvancedLedgerPage() {
                           style={{
                             width: "100%",
                             height: `${heightPercent}%`,
-                            backgroundColor: "#F59E0B",
+                            backgroundColor: "var(--warning)",
                             borderRadius: "4px 4px 0 0",
                             display: "flex",
                             alignItems: "flex-end",
@@ -587,7 +588,7 @@ export default function UltraAdvancedLedgerPage() {
                         <div
                           style={{
                             fontSize: "0.75rem",
-                            color: "#6B7280",
+                            color: "var(--fg-4)",
                             marginTop: "0.5rem",
                             textAlign: "center",
                           }}
@@ -620,25 +621,26 @@ export default function UltraAdvancedLedgerPage() {
                 {
                   mode: "Cash",
                   amount: paymentAnalytics.cashPayments,
-                  color: "#10B981",
+                  color: "var(--success)",
                   icon: "💵",
                 },
                 {
                   mode: "Online",
                   amount: paymentAnalytics.onlinePayments,
-                  color: "#3B82F6",
+                  color: "var(--accent)",
                   icon: "🌐",
                 },
                 {
                   mode: "UPI",
                   amount: paymentAnalytics.upiPayments,
-                  color: "#8B5CF6",
+                  /* TODO: unmapped color, needs design review */
+                  color: "var(--accent)",
                   icon: "📱",
                 },
                 {
                   mode: "Cheque",
                   amount: paymentAnalytics.chequePayments,
-                  color: "#F59E0B",
+                  color: "var(--warning)",
                   icon: "📝",
                 },
               ].map((item, idx) => {
@@ -659,7 +661,7 @@ export default function UltraAdvancedLedgerPage() {
                         style={{
                           fontSize: "0.875rem",
                           fontWeight: "600",
-                          color: "#374151",
+                          color: "var(--fg-3)",
                         }}
                       >
                         {item.icon} {item.mode}
@@ -677,7 +679,7 @@ export default function UltraAdvancedLedgerPage() {
                     <div
                       style={{
                         height: "8px",
-                        backgroundColor: "#E5E7EB",
+                        backgroundColor: "var(--border)",
                         borderRadius: "4px",
                         overflow: "hidden",
                       }}
@@ -694,7 +696,7 @@ export default function UltraAdvancedLedgerPage() {
                     <div
                       style={{
                         fontSize: "0.75rem",
-                        color: "#6B7280",
+                        color: "var(--fg-4)",
                         marginTop: "0.25rem",
                       }}
                     >
@@ -726,9 +728,9 @@ export default function UltraAdvancedLedgerPage() {
                   key={idx}
                   style={{
                     padding: "1rem",
-                    backgroundColor: idx === 0 ? "#FEE2E2" : "#FEF3C7",
+                    backgroundColor: idx === 0 ? "var(--danger-bg)" : "var(--warning-bg)",
                     borderLeft: `4px solid ${
-                      idx === 0 ? "#DC2626" : "#F59E0B"
+                      idx === 0 ? "var(--danger)" : "var(--warning)"
                     }`,
                     borderRadius: "8px",
                     cursor: "pointer",
@@ -759,7 +761,7 @@ export default function UltraAdvancedLedgerPage() {
                         style={{
                           fontSize: "1.5rem",
                           fontWeight: "bold",
-                          color: idx === 0 ? "#DC2626" : "#F59E0B",
+                          color: idx === 0 ? "var(--danger)" : "var(--warning)",
                         }}
                       >
                         #{idx + 1}
@@ -767,7 +769,7 @@ export default function UltraAdvancedLedgerPage() {
                       <div
                         style={{
                           fontSize: "0.875rem",
-                          color: "#92400E",
+                          color: "var(--warning-fg)",
                           fontWeight: "600",
                           marginTop: "0.25rem",
                         }}
@@ -777,7 +779,7 @@ export default function UltraAdvancedLedgerPage() {
                       <div
                         style={{
                           fontSize: "0.75rem",
-                          color: "#6B7280",
+                          color: "var(--fg-4)",
                           marginTop: "0.125rem",
                         }}
                       >
@@ -789,7 +791,7 @@ export default function UltraAdvancedLedgerPage() {
                         style={{
                           fontSize: "1.5rem",
                           fontWeight: "bold",
-                          color: "#DC2626",
+                          color: "var(--danger)",
                         }}
                       >
                         ₹{item.totalInterest.toLocaleString("en-IN")}
@@ -797,7 +799,7 @@ export default function UltraAdvancedLedgerPage() {
                       <div
                         style={{
                           fontSize: "0.75rem",
-                          color: "#92400E",
+                          color: "var(--warning-fg)",
                           marginTop: "0.25rem",
                         }}
                       >
@@ -811,7 +813,7 @@ export default function UltraAdvancedLedgerPage() {
                       paddingTop: "0.75rem",
                       borderTop: "1px solid rgba(0,0,0,0.1)",
                       fontSize: "0.75rem",
-                      color: "#6B7280",
+                      color: "var(--fg-4)",
                     }}
                   >
                     Avg: ₹
@@ -1049,8 +1051,8 @@ export default function UltraAdvancedLedgerPage() {
             🔄 Reset All Filters
           </button>
           <button
-            onClick={() => {
-              const name = prompt("Enter a name for this view:");
+            onClick={async () => {
+              const name = await notify.prompt("Enter a name for this view:");
               if (name) {
                 setNewViewName(name);
                 saveCurrentView();
@@ -1128,7 +1130,7 @@ export default function UltraAdvancedLedgerPage() {
               className="loading-spinner"
               style={{ margin: "0 auto 1.5rem", width: "48px", height: "48px" }}
             ></div>
-            <p style={{ fontSize: "1rem", color: "#6B7280" }}>
+            <p style={{ fontSize: "1rem", color: "var(--fg-4)" }}>
               Loading transactions...
             </p>
           </div>
@@ -1139,13 +1141,13 @@ export default function UltraAdvancedLedgerPage() {
               style={{
                 fontSize: "1.25rem",
                 fontWeight: "600",
-                color: "#374151",
+                color: "var(--fg-3)",
                 marginBottom: "0.5rem",
               }}
             >
               No transactions found
             </p>
-            <p style={{ fontSize: "0.875rem", color: "#6B7280" }}>
+            <p style={{ fontSize: "0.875rem", color: "var(--fg-4)" }}>
               Try adjusting your filters or search term
             </p>
           </div>
@@ -1208,7 +1210,7 @@ export default function UltraAdvancedLedgerPage() {
                       style={{
                         backgroundColor:
                           txn.category === "Interest"
-                            ? "#FEF3C7"
+                            ? "var(--warning-bg)"
                             : "transparent",
                       }}
                     >
@@ -1228,7 +1230,7 @@ export default function UltraAdvancedLedgerPage() {
                             style={{
                               cursor: "pointer",
                               textDecoration: "underline",
-                              color: "#3B82F6",
+                              color: "var(--accent)",
                             }}
                           >
                             {txn.transactionId}
@@ -1239,21 +1241,21 @@ export default function UltraAdvancedLedgerPage() {
                         <td>
                           {txn.memberId ? (
                             <div>
-                              <strong style={{ color: "#1F2937" }}>
+                              <strong style={{ color: "var(--fg-2)" }}>
                                 {txn.memberId.wing}-{txn.memberId.roomNo}
                               </strong>
                               <br />
                               <span
                                 style={{
                                   fontSize: "0.8125rem",
-                                  color: "#6B7280",
+                                  color: "var(--fg-4)",
                                 }}
                               >
                                 {txn.memberId.ownerName}
                               </span>
                             </div>
                           ) : (
-                            <span style={{ color: "#9CA3AF" }}>N/A</span>
+                            <span style={{ color: "var(--fg-5)" }}>N/A</span>
                           )}
                         </td>
                       )}
@@ -1264,20 +1266,20 @@ export default function UltraAdvancedLedgerPage() {
                             style={{
                               backgroundColor:
                                 txn.category === "Interest"
-                                  ? "#FEE2E2"
+                                  ? "var(--danger-bg)"
                                   : txn.category === "Payment"
-                                  ? "#D1FAE5"
+                                  ? "var(--success-bg)"
                                   : txn.category === "Maintenance"
-                                  ? "#DBEAFE"
-                                  : "#F3F4F6",
+                                  ? "var(--info-bg)"
+                                  : "var(--bg-muted)",
                               color:
                                 txn.category === "Interest"
-                                  ? "#991B1B"
+                                  ? "var(--danger-fg)"
                                   : txn.category === "Payment"
-                                  ? "#065F46"
+                                  ? "var(--success-fg)"
                                   : txn.category === "Maintenance"
-                                  ? "#1E40AF"
-                                  : "#374151",
+                                  ? "var(--info)"
+                                  : "var(--fg-3)",
                             }}
                           >
                             {txn.category === "Interest" && "💸 "}
@@ -1290,7 +1292,7 @@ export default function UltraAdvancedLedgerPage() {
                           style={{
                             maxWidth: "300px",
                             fontSize: "0.875rem",
-                            color: "#374151",
+                            color: "var(--fg-3)",
                           }}
                         >
                           {txn.description}
@@ -1337,8 +1339,8 @@ export default function UltraAdvancedLedgerPage() {
                             style={{
                               color:
                                 txn.balanceAfterTransaction < 0
-                                  ? "#DC2626"
-                                  : "#059669",
+                                  ? "var(--danger)"
+                                  : "var(--success)",
                               fontSize: "0.75rem",
                               fontWeight: "600",
                             }}
@@ -1348,23 +1350,23 @@ export default function UltraAdvancedLedgerPage() {
                         </td>
                       )}
                       {visibleColumns.recordedBy && (
-                        <td style={{ fontSize: "0.8125rem", color: "#6B7280" }}>
+                        <td style={{ fontSize: "0.8125rem", color: "var(--fg-4)" }}>
                           {txn.createdBy?.name || "System"}
                           <br />
                           <span
-                            style={{ fontSize: "0.6875rem", color: "#9CA3AF" }}
+                            style={{ fontSize: "0.6875rem", color: "var(--fg-5)" }}
                           >
                             {txn.createdBy?.role}
                           </span>
                         </td>
                       )}
                       {visibleColumns.billPeriod && (
-                        <td style={{ fontSize: "0.8125rem", color: "#6B7280" }}>
+                        <td style={{ fontSize: "0.8125rem", color: "var(--fg-4)" }}>
                           {txn.billPeriodId || "-"}
                         </td>
                       )}
                       {visibleColumns.financialYear && (
-                        <td style={{ fontSize: "0.8125rem", color: "#6B7280" }}>
+                        <td style={{ fontSize: "0.8125rem", color: "var(--fg-4)" }}>
                           {txn.financialYear || "-"}
                         </td>
                       )}
@@ -1450,12 +1452,12 @@ export default function UltraAdvancedLedgerPage() {
                           {selectedTransaction.transaction?.memberId?.roomNo}
                         </strong>
                         <br />
-                        <span style={{ color: "#6B7280" }}>
+                        <span style={{ color: "var(--fg-4)" }}>
                           {selectedTransaction.transaction?.memberId?.ownerName}
                         </span>
                         <br />
                         <span
-                          style={{ fontSize: "0.8125rem", color: "#9CA3AF" }}
+                          style={{ fontSize: "0.8125rem", color: "var(--fg-5)" }}
                         >
                           {selectedTransaction.transaction?.memberId?.areaSqFt}{" "}
                           sq.ft |{" "}
@@ -1473,19 +1475,19 @@ export default function UltraAdvancedLedgerPage() {
                             backgroundColor:
                               selectedTransaction.transaction?.category ===
                               "Interest"
-                                ? "#FEE2E2"
+                                ? "var(--danger-bg)"
                                 : selectedTransaction.transaction?.category ===
                                   "Payment"
-                                ? "#D1FAE5"
-                                : "#DBEAFE",
+                                ? "var(--success-bg)"
+                                : "var(--info-bg)",
                             color:
                               selectedTransaction.transaction?.category ===
                               "Interest"
-                                ? "#991B1B"
+                                ? "var(--danger-fg)"
                                 : selectedTransaction.transaction?.category ===
                                   "Payment"
-                                ? "#065F46"
-                                : "#1E40AF",
+                                ? "var(--success-fg)"
+                                : "var(--info)",
                             borderRadius: "8px",
                             fontSize: "0.9375rem",
                             fontWeight: "700",
@@ -1504,8 +1506,8 @@ export default function UltraAdvancedLedgerPage() {
                           style={{
                             color:
                               selectedTransaction.transaction?.type === "Debit"
-                                ? "#DC2626"
-                                : "#059669",
+                                ? "var(--danger)"
+                                : "var(--success)",
                             fontSize: "1.125rem",
                             fontWeight: "bold",
                           }}
@@ -1525,8 +1527,8 @@ export default function UltraAdvancedLedgerPage() {
                             fontSize: "1.75rem",
                             color:
                               selectedTransaction.transaction?.type === "Debit"
-                                ? "#DC2626"
-                                : "#059669",
+                                ? "var(--danger)"
+                                : "var(--success)",
                           }}
                         >
                           ₹
@@ -1550,8 +1552,8 @@ export default function UltraAdvancedLedgerPage() {
                               color:
                                 selectedTransaction.transaction
                                   ?.balanceAfterTransaction < 0
-                                  ? "#DC2626"
-                                  : "#059669",
+                                  ? "var(--danger)"
+                                  : "var(--success)",
                             }}
                           >
                             {selectedTransaction.transaction
@@ -1575,7 +1577,7 @@ export default function UltraAdvancedLedgerPage() {
                           style={{
                             display: "inline-block",
                             padding: "0.5rem 1rem",
-                            backgroundColor: "#F3F4F6",
+                            backgroundColor: "var(--bg-muted)",
                             borderRadius: "6px",
                             fontWeight: "600",
                           }}
@@ -1612,7 +1614,7 @@ export default function UltraAdvancedLedgerPage() {
                         </strong>
                         <br />
                         <span
-                          style={{ fontSize: "0.8125rem", color: "#6B7280" }}
+                          style={{ fontSize: "0.8125rem", color: "var(--fg-4)" }}
                         >
                           {selectedTransaction.transaction?.createdBy?.role} •{" "}
                           {selectedTransaction.transaction?.createdBy?.email}
@@ -1645,8 +1647,8 @@ export default function UltraAdvancedLedgerPage() {
                               <span
                                 style={{
                                   fontSize: "0.8125rem",
-                                  color: "#6B7280",
-                                  backgroundColor: "#F3F4F6",
+                                  color: "var(--fg-4)",
+                                  backgroundColor: "var(--bg-muted)",
                                   padding: "0.25rem 0.5rem",
                                   borderRadius: "4px",
                                 }}
@@ -1661,7 +1663,7 @@ export default function UltraAdvancedLedgerPage() {
                             </td>
                           </tr>
                         ))}
-                        <tr style={{ borderTop: "2px solid #E5E7EB" }}>
+                        <tr style={{ borderTop: "2px solid var(--border)" }}>
                           <td colSpan="2">
                             <strong>Total</strong>
                           </td>
@@ -1698,21 +1700,21 @@ export default function UltraAdvancedLedgerPage() {
                             }}
                           >
                             <div>
-                              <strong style={{ color: "#374151" }}>
+                              <strong style={{ color: "var(--fg-3)" }}>
                                 {log.action}
                               </strong>
                               <br />
                               <span
                                 style={{
                                   fontSize: "0.8125rem",
-                                  color: "#6B7280",
+                                  color: "var(--fg-4)",
                                 }}
                               >
                                 by {log.user?.name} ({log.user?.role})
                               </span>
                             </div>
                             <span
-                              style={{ fontSize: "0.75rem", color: "#9CA3AF" }}
+                              style={{ fontSize: "0.75rem", color: "var(--fg-5)" }}
                             >
                               {new Date(log.timestamp).toLocaleString("en-IN")}
                             </span>

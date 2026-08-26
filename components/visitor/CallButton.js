@@ -12,11 +12,11 @@ const S = {
     fontWeight: 600,
     textDecoration: "none",
     cursor: "pointer",
-    border: "1px solid #d1d5db",
-    color: "#111827",
-    background: "#fff",
+    border: "1px solid var(--border-strong)",
+    color: "var(--fg-1)",
+    background: "var(--bg-surface)",
   },
-  primary: { border: "none", color: "#fff", background: "#2563eb" },
+  primary: { border: "none", color: "#fff", background: "var(--primary-hover)" },
   disabled: { opacity: 0.5, pointerEvents: "none" },
 };
 export default function CallButton({ phone, label, variant = "default", title = "Call" }) {

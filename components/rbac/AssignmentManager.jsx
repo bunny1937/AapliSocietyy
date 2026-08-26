@@ -27,6 +27,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { rbacFetch } from "@/lib/rbac/client/rbac-client";
 import { PermissionButton } from "@/components/rbac/PermissionButton";
+import notify from "@/lib/notify";
 
 function randomPassword(len = 12) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#$%";
@@ -197,9 +198,10 @@ export function AssignmentManager({ role, onClose, onChanged }) {
     );
     if (!a) return;
     if (
-      !window.confirm(
+      !(await notify.confirm(
         `Remove this role from ${member.name}? They will be signed out and lose the related access.`,
-      )
+        { tone: "danger" },
+      ))
     )
       return;
     try {
@@ -225,7 +227,7 @@ export function AssignmentManager({ role, onClose, onChanged }) {
             <p className="flex items-center gap-2 text-sm text-gray-500">
               <span
                 className="inline-block h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: role?.color || "#9ca3af" }}
+                style={{ backgroundColor: role?.color || "var(--fg-5)" }}
               />
               Role: <span className="font-medium">{role?.name}</span>
             </p>

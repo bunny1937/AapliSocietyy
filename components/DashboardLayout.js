@@ -6,6 +6,7 @@ import { LogOut } from "lucide-react";
 import NotificationBell from "./NotificationBell";
 import ProfileSwitcher from "./ProfileSwitcher";
 import RouteLoadingBar from "./RouteLoadingBar";
+import ThemeToggle from "./theme/ThemeToggle";
 import styles from "@/styles/Dashboard.module.css";
 // Legacy role strings a staff-hat session can carry (see legacyRoleForKey /
 // session-context.js) — flagged with a colored pill in the sidebar so a
@@ -105,14 +106,15 @@ export default function DashboardLayout({
         {/* Quick actions — static, never scrolls with the nav list below it
             (a flex sibling of sidebarNav, not a child, so sidebarNav's own
             overflow-y:auto is the only thing that scrolls). Notifications
-            live here for every role that uses this component (Admin/
-            Member/Security); NotificationBell already no-ops on routes
-            that don't need it. sidebarExtra is an optional per-role slot —
-            e.g. Admin passes the Commercial theme toggle, shown only while
-            on a Commercial page, see app/admin/layout.js. This component
-            doesn't know or care what sidebarExtra is. */}
+            and the light/dark toggle live here for every role that uses
+            this component (Admin/Member/Security) — NotificationBell
+            already no-ops on routes that don't need it, and ThemeToggle is
+            now permanent app-wide (previously shown only on Commercial
+            pages). sidebarExtra remains available for any other future
+            per-role slot; this component doesn't know or care what it is. */}
         <div className={styles.sidebarQuickActions}>
           <NotificationBell />
+          <ThemeToggle />
           {sidebarExtra}
         </div>
         {/* Nav */}

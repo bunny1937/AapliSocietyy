@@ -5,24 +5,25 @@ import { apiClient } from "@/lib/api-client";
 import styles from "@/styles/BillTemplate.module.css";
 import { OVERLAY_FIELD_KEYS } from "@/lib/bill-pdf-fields";
 import { RECEIPT_OVERLAY_FIELD_KEYS } from "@/lib/receipt-pdf-fields";
+import notify from "@/lib/notify";
 // 3 DEFAULT TEMPLATES
 const DEFAULT_TEMPLATES = {
   modern: {
     name: "Modern",
     design: {
-      headerBg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-      headerColor: "#ffffff",
+      headerBg: "linear-gradient(135deg, var(--accent) 0%, var(--fg-4) 100%)",
+      headerColor: "var(--bg-surface)",
       societyNameSize: 28,
       addressSize: 14,
       billTitleSize: 22,
       billTitleAlign: "center",
       tableHeaderBg: "#4f46e5",
-      tableHeaderColor: "#ffffff",
-      tableRowBg1: "#ffffff",
-      tableRowBg2: "#f9fafb",
-      tableBorderColor: "#e5e7eb",
-      totalBg: "#dbeafe",
-      totalColor: "#1e40af",
+      tableHeaderColor: "var(--bg-surface)",
+      tableRowBg1: "var(--bg-surface)",
+      tableRowBg2: "var(--bg-sunken)",
+      tableBorderColor: "var(--border)",
+      totalBg: "var(--primary-tint)",
+      totalColor: "var(--primary-hover)",
       totalSize: 20,
       footerSize: 10,
       footerText: [
@@ -37,19 +38,19 @@ const DEFAULT_TEMPLATES = {
   classic: {
     name: "Classic",
     design: {
-      headerBg: "#f9fafb",
-      headerColor: "#1f2937",
+      headerBg: "var(--bg-sunken)",
+      headerColor: "var(--fg-2)",
       societyNameSize: 24,
       addressSize: 12,
       billTitleSize: 20,
       billTitleAlign: "center",
-      tableHeaderBg: "#1f2937",
-      tableHeaderColor: "#ffffff",
-      tableRowBg1: "#ffffff",
-      tableRowBg2: "#ffffff",
-      tableBorderColor: "#000000",
-      totalBg: "#f3f4f6",
-      totalColor: "#1f2937",
+      tableHeaderBg: "var(--fg-2)",
+      tableHeaderColor: "var(--bg-surface)",
+      tableRowBg1: "var(--bg-surface)",
+      tableRowBg2: "var(--bg-surface)",
+      tableBorderColor: "var(--fg-1)",
+      totalBg: "var(--bg-muted)",
+      totalColor: "var(--fg-2)",
       totalSize: 18,
       footerSize: 10,
       footerText: [
@@ -64,19 +65,19 @@ const DEFAULT_TEMPLATES = {
   minimal: {
     name: "Minimal",
     design: {
-      headerBg: "#ffffff",
-      headerColor: "#000000",
+      headerBg: "var(--bg-surface)",
+      headerColor: "var(--fg-1)",
       societyNameSize: 22,
       addressSize: 11,
       billTitleSize: 18,
       billTitleAlign: "left",
-      tableHeaderBg: "#000000",
-      tableHeaderColor: "#ffffff",
-      tableRowBg1: "#ffffff",
-      tableRowBg2: "#ffffff",
-      tableBorderColor: "#000000",
-      totalBg: "#000000",
-      totalColor: "#ffffff",
+      tableHeaderBg: "var(--fg-1)",
+      tableHeaderColor: "var(--bg-surface)",
+      tableRowBg1: "var(--bg-surface)",
+      tableRowBg2: "var(--bg-surface)",
+      tableBorderColor: "var(--fg-1)",
+      totalBg: "var(--fg-1)",
+      totalColor: "var(--bg-surface)",
       totalSize: 16,
       footerSize: 9,
       footerText: ["Pay by due date", "Contact office for queries"],
@@ -240,11 +241,11 @@ export default function BillTemplateDesigner() {
       });
     },
     onSuccess: () => {
-      alert("✅ Template saved successfully!");
+      notify.success("Template saved successfully!");
       queryClient.invalidateQueries(["bill-template-full"]);
     },
     onError: (error) => {
-      alert("Failed to save: " + error.message);
+      notify.error("Failed to save: " + error.message);
     },
   });
   // Render a sample PDF from the uploaded template (PDF or image) + a real
@@ -300,16 +301,16 @@ export default function BillTemplateDesigner() {
       setPdfHasFormFields(data.hasFormFields);
       setDetectedFields(data.detectedFields || []);
       if (data.hasFormFields) {
-        alert(
-          `✅ PDF uploaded! Auto-detected ${data.detectedFields.length} fillable fields.\n\nSystem will auto-fill these when generating bills.`,
+        notify.success(
+          `PDF uploaded! Auto-detected ${data.detectedFields.length} fillable fields.\n\nSystem will auto-fill these when generating bills.`,
         );
       } else {
-        alert(
-          "✅ PDF uploaded! No fillable fields detected.\n\nSystem will overlay data on PDF.",
+        notify.success(
+          "PDF uploaded! No fillable fields detected.\n\nSystem will overlay data on PDF.",
         );
       }
     } catch (error) {
-      alert("Upload failed: " + error.message);
+      notify.error("Upload failed: " + error.message);
     }
   };
   // Upload other files
@@ -333,9 +334,9 @@ export default function BillTemplateDesigner() {
       } else if (type === "signature") {
         setUploadedSignature(data.url);
       }
-      alert(`✅ ${type} uploaded successfully!`);
+      notify.success(`${type} uploaded successfully!`);
     } catch (error) {
-      alert("Upload failed: " + error.message);
+      notify.error("Upload failed: " + error.message);
     }
   };
   // Apply default template
@@ -459,7 +460,7 @@ export default function BillTemplateDesigner() {
           MAINTENANCE BILL
         </h2>
         <!-- Bill Info -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; padding: 20px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; padding: 20px; background: var(--bg-sunken); border-radius: 8px; border: 1px solid var(--border);">
           <div><strong>Bill Period:</strong> ${sampleData.billPeriod}</div>
           <div><strong>Bill Date:</strong> ${sampleData.billDate}</div>
           <div><strong>Member:</strong> ${sampleData.flatNo}</div>
@@ -471,29 +472,29 @@ export default function BillTemplateDesigner() {
         ${
           sampleData.previousBalance > 0
             ? `
-          <div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-            <h3 style="margin: 0 0 15px 0; color: #991b1b; font-size: 16px;">⚠️ Previous Outstanding</h3>
+          <div style="background: var(--danger-bg); border-left: 4px solid var(--danger); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="margin: 0 0 15px 0; color: var(--danger-fg); font-size: 16px;">⚠️ Previous Outstanding</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
               <div>
-                <div style="font-size: 12px; color: #7f1d1d; margin-bottom: 5px;">Previous Balance</div>
-                <div style="font-size: 20px; font-weight: 700; color: #dc2626;">₹${sampleData.previousBalance.toLocaleString("en-IN")}</div>
+                <div style="font-size: 12px; color: var(--danger-fg); margin-bottom: 5px;">Previous Balance</div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--danger);">₹${sampleData.previousBalance.toLocaleString("en-IN")}</div>
               </div>
               <div>
-                <div style="font-size: 12px; color: #7f1d1d; margin-bottom: 5px;">Days Overdue</div>
-                <div style="font-size: 20px; font-weight: 700; color: #dc2626;">${sampleData.daysOverdue} days</div>
+                <div style="font-size: 12px; color: var(--danger-fg); margin-bottom: 5px;">Days Overdue</div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--danger);">${sampleData.daysOverdue} days</div>
               </div>
             </div>
             <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #fca5a5;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                  <div style="font-size: 12px; color: #7f1d1d; margin-bottom: 5px;">
+                  <div style="font-size: 12px; color: var(--danger-fg); margin-bottom: 5px;">
                     Interest @ ${sampleData.interestRate}% p.a. (${sampleData.interestMethod})
                   </div>
-                  <div style="font-size: 11px; color: #991b1b;">
+                  <div style="font-size: 11px; color: var(--danger-fg);">
                     Grace: ${sampleData.gracePeriodDays} days | Overdue: ${sampleData.daysOverdue} days
                   </div>
                 </div>
-                <div style="font-size: 18px; font-weight: 700; color: #dc2626;">
+                <div style="font-size: 18px; font-weight: 700; color: var(--danger);">
                   ₹${sampleData.interestAmount.toLocaleString("en-IN")}
                 </div>
               </div>
@@ -503,7 +504,7 @@ export default function BillTemplateDesigner() {
             : ""
         }
         <!-- Current Charges Table -->
-        <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #374151;">Current Month Charges</h3>
+        <h3 style="margin: 0 0 15px 0; font-size: 16px; color: var(--fg-3);">Current Month Charges</h3>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
           <thead>
             <tr style="background: ${template.tableHeaderBg}; color: ${template.tableHeaderColor};">
@@ -521,9 +522,9 @@ export default function BillTemplateDesigner() {
                 <td style="padding: 10px; border: 1px solid ${template.tableBorderColor};">${idx + 1}</td>
                 <td style="padding: 10px; border: 1px solid ${template.tableBorderColor};">
                   ${charge.name}
-                  ${charge.perSqFt ? `<span style="font-size: 11px; color: #6b7280;"> (${sampleData.area} sq ft)</span>` : ""}
+                  ${charge.perSqFt ? `<span style="font-size: 11px; color: var(--fg-4);"> (${sampleData.area} sq ft)</span>` : ""}
                 </td>
-                <td style="padding: 10px; text-align: center; border: 1px solid ${template.tableBorderColor}; font-size: 13px; color: #6b7280;">
+                <td style="padding: 10px; text-align: center; border: 1px solid ${template.tableBorderColor}; font-size: 13px; color: var(--fg-4);">
                   ${charge.perSqFt ? `₹${charge.rate}/sq ft` : charge.fixed ? "Fixed" : "-"}
                 </td>
                 <td style="padding: 10px; text-align: right; border: 1px solid ${template.tableBorderColor}; font-weight: 600;">
@@ -533,23 +534,23 @@ export default function BillTemplateDesigner() {
             `,
               )
               .join("")}
-            <tr style="background: #f9fafb; font-weight: 600;">
+            <tr style="background: var(--bg-sunken); font-weight: 600;">
               <td colspan="3" style="padding: 10px; text-align: right; border: 1px solid ${template.tableBorderColor};">Subtotal</td>
               <td style="padding: 10px; text-align: right; border: 1px solid ${template.tableBorderColor};">
                 ${sampleData.subtotal.toLocaleString("en-IN")}
               </td>
             </tr>
-            <tr style="background: #f9fafb;">
+            <tr style="background: var(--bg-sunken);">
               <td colspan="3" style="padding: 10px; text-align: right; border: 1px solid ${template.tableBorderColor};">Service Tax (2%)</td>
               <td style="padding: 10px; text-align: right; border: 1px solid ${template.tableBorderColor}; font-weight: 600;">
                 ${sampleData.serviceTax.toLocaleString("en-IN")}
               </td>
             </tr>
-            <tr style="background: #dbeafe; font-weight: 700; font-size: 16px;">
-              <td colspan="3" style="padding: 12px; text-align: right; border: 1px solid ${template.tableBorderColor}; color: #1e40af;">
+            <tr style="background: var(--primary-tint); font-weight: 700; font-size: 16px;">
+              <td colspan="3" style="padding: 12px; text-align: right; border: 1px solid ${template.tableBorderColor}; color: var(--primary-hover);">
                 CURRENT BILL TOTAL
               </td>
-              <td style="padding: 12px; text-align: right; border: 1px solid ${template.tableBorderColor}; color: #1e40af;">
+              <td style="padding: 12px; text-align: right; border: 1px solid ${template.tableBorderColor}; color: var(--primary-hover);">
                 ₹${sampleData.currentBillTotal.toLocaleString("en-IN")}
               </td>
             </tr>
@@ -560,7 +561,7 @@ export default function BillTemplateDesigner() {
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
               <div style="font-size: 14px; color: ${template.totalColor}; margin-bottom: 5px;">TOTAL AMOUNT PAYABLE</div>
-              <div style="font-size: 12px; color: #6b7280;">
+              <div style="font-size: 12px; color: var(--fg-4);">
                 (Previous: ₹${(sampleData.previousBalance + sampleData.currentInterestOnly).toLocaleString("en-IN")} + Current: ₹${sampleData.currentBillTotal.toLocaleString("en-IN")})
               </div>
             </div>
@@ -573,9 +574,9 @@ export default function BillTemplateDesigner() {
         ${
           template.footerText && template.footerText.length > 0
             ? `
-          <div style="border-top: 2px solid #e5e7eb; padding-top: 20px; margin-bottom: 30px;">
+          <div style="border-top: 2px solid var(--border); padding-top: 20px; margin-bottom: 30px;">
             <strong style="display: block; margin-bottom: 10px;">Terms & Conditions:</strong>
-            <ol style="margin: 0; padding-left: 20px; font-size: ${template.footerSize}px; color: #6b7280;">
+            <ol style="margin: 0; padding-left: 20px; font-size: ${template.footerSize}px; color: var(--fg-4);">
               ${template.footerText.map((text) => `<li style="margin-bottom: 5px;">${text}</li>`).join("")}
             </ol>
           </div>
@@ -593,10 +594,10 @@ export default function BillTemplateDesigner() {
               <img src="${uploadedSignature}" style="width: 150px; margin-bottom: 10px;" />
             `
                 : `
-              <div style="height: 60px; border-bottom: 2px solid #000; width: 200px; margin-left: auto; margin-bottom: 10px;"></div>
+              <div style="height: 60px; border-bottom: 2px solid var(--fg-1); width: 200px; margin-left: auto; margin-bottom: 10px;"></div>
             `
             }
-            <div style="font-size: 12px; color: #6b7280;">${template.signatureLabel || "Authorized Signatory"}</div>
+            <div style="font-size: 12px; color: var(--fg-4);">${template.signatureLabel || "Authorized Signatory"}</div>
           </div>
         `
             : ""
@@ -609,14 +610,14 @@ export default function BillTemplateDesigner() {
   // reads/writes is driven by editorMode below.
   const openPDFEditor = () => {
     if (!uploadedPDF) {
-      alert("Please upload a PDF first");
+      notify.info("Please upload a PDF first");
       return;
     }
     setEditorMode("pdf");
   };
   const openImageEditor = () => {
     if (!uploadedImage) {
-      alert("Please upload an image first");
+      notify.info("Please upload an image first");
       return;
     }
     setEditorMode("image");
@@ -631,7 +632,7 @@ export default function BillTemplateDesigner() {
       width: 150,
       height: 30,
       fontSize: 12,
-      fontColor: "#000000",
+      fontColor: "var(--fg-1)",
     };
     if (editorMode === "image") {
       setImageFields((fields) => [...fields, newField]);
@@ -696,8 +697,8 @@ export default function BillTemplateDesigner() {
             style={{
               padding: "8px 16px",
               borderRadius: 8,
-              border: scope === s ? "2px solid #4f46e5" : "1px solid #d1d5db",
-              background: scope === s ? "#eef2ff" : "#fff",
+              border: scope === s ? "2px solid var(--primary)" : "1px solid var(--border-strong)",
+              background: scope === s ? "var(--primary-tint)" : "var(--bg-surface)",
               fontWeight: scope === s ? 700 : 500,
               cursor: "pointer",
             }}
@@ -711,11 +712,11 @@ export default function BillTemplateDesigner() {
           style={{
             marginBottom: 16,
             padding: "10px 14px",
-            background: "#eef2ff",
-            border: "1px solid #c7d2fe",
+            background: "var(--primary-tint)",
+            border: "1px solid var(--border-strong)",
             borderRadius: 8,
             fontSize: 13,
-            color: "#3730a3",
+            color: "var(--primary)",
           }}
         >
           Designing the <strong>receipt</strong> template (used for payment &
@@ -819,94 +820,109 @@ export default function BillTemplateDesigner() {
           {/* Controls - SAME AS BEFORE but more organized */}
           <div className={styles.controlPanel}>
             <h3>Header</h3>
-            <label>Background</label>
-            <input
-              type="text"
-              value={template.headerBg}
-              onChange={(e) => updateTemplate("headerBg", e.target.value)}
-              className={styles.input}
-              placeholder="#ffffff or gradient"
-            />
-            <label>Text Color</label>
-            <input
-              type="color"
-              value={
-                template.headerColor?.startsWith("#")
-                  ? template.headerColor
-                  : "#ffffff"
-              }
-              onChange={(e) => updateTemplate("headerColor", e.target.value)}
-            />
-            <label>Society Name Size (px)</label>
-            <input
-              type="number"
-              value={template.societyNameSize}
-              onChange={(e) =>
-                updateTemplate("societyNameSize", +e.target.value)
-              }
-              className={styles.input}
-            />
+            <div className={styles.control}>
+              <label>Background</label>
+              <input
+                type="text"
+                value={template.headerBg}
+                onChange={(e) => updateTemplate("headerBg", e.target.value)}
+                placeholder="var(--bg-surface) or gradient"
+              />
+            </div>
+            <div className={styles.control}>
+              <label>Text Color</label>
+              <input
+                type="color"
+                value={
+                  template.headerColor?.startsWith("#")
+                    ? template.headerColor
+                    : "#f5f7fb"
+                }
+                onChange={(e) => updateTemplate("headerColor", e.target.value)}
+              />
+            </div>
+            <div className={styles.control}>
+              <label>Society Name Size (px)</label>
+              <input
+                type="number"
+                value={template.societyNameSize}
+                onChange={(e) =>
+                  updateTemplate("societyNameSize", +e.target.value)
+                }
+              />
+            </div>
             <h3>Table</h3>
-            <label>Header Background</label>
-            <input
-              type="color"
-              value={
-                template.tableHeaderBg?.startsWith("#")
-                  ? template.tableHeaderBg
-                  : "#000000"
-              }
-              onChange={(e) => updateTemplate("tableHeaderBg", e.target.value)}
-            />
-            <label>Header Text Color</label>
-            <input
-              type="color"
-              value={
-                template.tableHeaderColor?.startsWith("#")
-                  ? template.tableHeaderColor
-                  : "#ffffff"
-              }
-              onChange={(e) =>
-                updateTemplate("tableHeaderColor", e.target.value)
-              }
-            />
-            <label>Border Color</label>
-            <input
-              type="color"
-              value={
-                template.tableBorderColor?.startsWith("#")
-                  ? template.tableBorderColor
-                  : "#e5e7eb"
-              }
-              onChange={(e) =>
-                updateTemplate("tableBorderColor", e.target.value)
-              }
-            />
+            <div className={styles.control}>
+              <label>Header Background</label>
+              <input
+                type="color"
+                value={
+                  template.tableHeaderBg?.startsWith("#")
+                    ? template.tableHeaderBg
+                    : "#1f2a44"
+                }
+                onChange={(e) => updateTemplate("tableHeaderBg", e.target.value)}
+              />
+            </div>
+            <div className={styles.control}>
+              <label>Header Text Color</label>
+              <input
+                type="color"
+                value={
+                  template.tableHeaderColor?.startsWith("#")
+                    ? template.tableHeaderColor
+                    : "#f5f7fb"
+                }
+                onChange={(e) =>
+                  updateTemplate("tableHeaderColor", e.target.value)
+                }
+              />
+            </div>
+            <div className={styles.control}>
+              <label>Border Color</label>
+              <input
+                type="color"
+                value={
+                  template.tableBorderColor?.startsWith("#")
+                    ? template.tableBorderColor
+                    : "#374151"
+                }
+                onChange={(e) =>
+                  updateTemplate("tableBorderColor", e.target.value)
+                }
+              />
+            </div>
             <h3>Total Box</h3>
-            <label>Background</label>
-            <input
-              type="color"
-              value={
-                template.totalBg?.startsWith("#") ? template.totalBg : "#dbeafe"
-              }
-              onChange={(e) => updateTemplate("totalBg", e.target.value)}
-            />
-            <label>Text Color</label>
-            <input
-              type="color"
-              value={
-                template.totalColor?.startsWith("#")
-                  ? template.totalColor
-                  : "#1e40af"
-              }
-              onChange={(e) => updateTemplate("totalColor", e.target.value)}
-            />
-            <label>Total Font Size (px)</label>
-            <input
-              type="number"
-              value={template.totalSize}
-              onChange={(e) => updateTemplate("totalSize", +e.target.value)}
-              className={styles.input}
-            />
+            <div className={styles.control}>
+              <label>Background</label>
+              <input
+                type="color"
+                value={
+                  template.totalBg?.startsWith("#") ? template.totalBg : "#c7d2fe"
+                }
+                onChange={(e) => updateTemplate("totalBg", e.target.value)}
+              />
+            </div>
+            <div className={styles.control}>
+              <label>Text Color</label>
+              <input
+                type="color"
+                value={
+                  template.totalColor?.startsWith("#")
+                    ? template.totalColor
+                    : "#4f46e5"
+                }
+                onChange={(e) => updateTemplate("totalColor", e.target.value)}
+              />
+            </div>
+            <div className={styles.control}>
+              <label>Total Font Size (px)</label>
+              <input
+                type="number"
+                value={template.totalSize}
+                onChange={(e) => updateTemplate("totalSize", +e.target.value)}
+              />
+            </div>
             <h3>Footer</h3>
             {template.footerText?.map((line, i) => (
               <div
@@ -921,12 +937,11 @@ export default function BillTemplateDesigner() {
                   type="text"
                   value={line}
                   onChange={(e) => updateFooterLine(i, e.target.value)}
-                  className={styles.input}
                   style={{ flex: 1 }}
                 />
                 <button
                   onClick={() => removeFooterLine(i)}
-                  style={{ color: "red" }}
+                  style={{ color: "var(--danger)" }}
                 >
                   ✕
                 </button>
@@ -952,15 +967,16 @@ export default function BillTemplateDesigner() {
               Show Signature Block
             </label>
             {template.showSignature && (
-              <input
-                type="text"
-                value={template.signatureLabel}
-                onChange={(e) =>
-                  updateTemplate("signatureLabel", e.target.value)
-                }
-                className={styles.input}
-                placeholder="Authorized Signatory"
-              />
+              <div className={styles.control}>
+                <input
+                  type="text"
+                  value={template.signatureLabel}
+                  onChange={(e) =>
+                    updateTemplate("signatureLabel", e.target.value)
+                  }
+                  placeholder="Authorized Signatory"
+                />
+              </div>
             )}
             <h3>Logo / Signature Image</h3>
             <label>Upload Logo</label>
@@ -992,17 +1008,17 @@ export default function BillTemplateDesigner() {
               {previewLoading ? <span style={{ fontSize: 12 }}>Loading real bill…</span> : null}
             </div>
             {previewError ? (
-              <div style={{ background: "#fee2e2", color: "#991b1b", padding: 10, borderRadius: 6, marginBottom: 10, fontSize: 13 }}>
+              <div style={{ background: "var(--danger-bg)", color: "var(--danger-fg)", padding: 10, borderRadius: 6, marginBottom: 10, fontSize: 13 }}>
                 Could not load a real bill: {String(previewError.message || previewError)}. The preview below is showing sample figures.
               </div>
             ) : null}
             {!previewLoading && !previewError && !previewBill ? (
-              <div style={{ background: "#fef3c7", color: "#92400e", padding: 10, borderRadius: 6, marginBottom: 10, fontSize: 13 }}>
+              <div style={{ background: "var(--warning-bg)", color: "var(--warning-fg)", padding: 10, borderRadius: 6, marginBottom: 10, fontSize: 13 }}>
                 This member has no generated bill yet, so sample figures are shown. Generate a bill to verify real mapping.
               </div>
             ) : null}
             {previewBill ? (
-              <div style={{ background: "#dcfce7", color: "#166534", padding: 10, borderRadius: 6, marginBottom: 10, fontSize: 13 }}>
+              <div style={{ background: "var(--success-bg)", color: "var(--success-fg)", padding: 10, borderRadius: 6, marginBottom: 10, fontSize: 13 }}>
                 Showing real bill <strong>{previewBill.billPeriodId}</strong> for{" "}
                 <strong>{(previewBill.member?.wing ? previewBill.member.wing + "-" : "") + (previewBill.member?.flatNo || "")}</strong>{" "}
                 — total <strong>₹{previewBill.totalAmount}</strong>, area{" "}
@@ -1056,7 +1072,7 @@ export default function BillTemplateDesigner() {
               <div className={styles.uploadedPreview}>
                 <p
                   style={{
-                    color: "#059669",
+                    color: "var(--success)",
                     fontWeight: "600",
                     marginBottom: "1rem",
                   }}
@@ -1066,7 +1082,7 @@ export default function BillTemplateDesigner() {
                 {pdfHasFormFields ? (
                   <div
                     style={{
-                      background: "#d1fae5",
+                      background: "var(--success-bg)",
                       padding: "1.5rem",
                       borderRadius: "8px",
                       marginBottom: "1rem",
@@ -1076,7 +1092,7 @@ export default function BillTemplateDesigner() {
                       style={{
                         margin: "0 0 0.75rem 0",
                         fontWeight: "600",
-                        color: "#065f46",
+                        color: "var(--success-fg)",
                       }}
                     >
                       🎉 Great! Your PDF has {detectedFields.length} fillable
@@ -1094,12 +1110,12 @@ export default function BillTemplateDesigner() {
                         <div
                           key={idx}
                           style={{
-                            background: "white",
+                            background: "var(--bg-surface)",
                             padding: "0.5rem",
                             borderRadius: "4px",
                             fontSize: "0.875rem",
                             fontWeight: "500",
-                            color: "#374151",
+                            color: "var(--fg-3)",
                           }}
                         >
                           {field}
@@ -1110,7 +1126,7 @@ export default function BillTemplateDesigner() {
                       style={{
                         margin: "1rem 0 0 0",
                         fontSize: "0.875rem",
-                        color: "#065f46",
+                        color: "var(--success-fg)",
                       }}
                     >
                       System will auto-fill these when generating bills
@@ -1119,14 +1135,14 @@ export default function BillTemplateDesigner() {
                 ) : (
                   <div
                     style={{
-                      background: "#fef3c7",
+                      background: "var(--warning-bg)",
                       padding: "1.5rem",
                       borderRadius: "8px",
                       marginBottom: "1rem",
                     }}
                   >
                     <p
-                      style={{ margin: 0, fontWeight: "600", color: "#92400e" }}
+                      style={{ margin: 0, fontWeight: "600", color: "var(--warning-fg)" }}
                     >
                       ℹ️ No fillable fields detected. System will overlay data
                       on PDF.
@@ -1146,16 +1162,16 @@ export default function BillTemplateDesigner() {
                     ⚙️ Configure fields & preview a real sample {scope === "receipt" ? "receipt" : "bill"}
                   </button>
                   {previewConfirmed ? (
-                    <span style={{ color: "#059669", fontWeight: 600, fontSize: 13 }}>
+                    <span style={{ color: "var(--success)", fontWeight: 600, fontSize: 13 }}>
                       ✅ Sample confirmed — Save is unlocked
                     </span>
                   ) : (
-                    <span style={{ color: "#92400e", fontWeight: 600, fontSize: 13 }}>
+                    <span style={{ color: "var(--warning-fg)", fontWeight: 600, fontSize: 13 }}>
                       ⚠️ Save is locked until you preview &amp; confirm a real sample {scope === "receipt" ? "receipt" : "bill"}
                     </span>
                   )}
                 </div>
-                <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 0.5rem 0" }}>
+                <p style={{ fontSize: 12, color: "var(--fg-4)", margin: "0 0 0.5rem 0" }}>
                   Raw uploaded file (unfilled):
                 </p>
                 <iframe
@@ -1163,7 +1179,7 @@ export default function BillTemplateDesigner() {
                   style={{
                     width: "100%",
                     height: "400px",
-                    border: "2px solid #e5e7eb",
+                    border: "2px solid var(--border)",
                     borderRadius: "8px",
                     marginTop: "0.25rem",
                   }}
@@ -1197,16 +1213,16 @@ export default function BillTemplateDesigner() {
                     ⚙️ Configure fields & preview a real sample {scope === "receipt" ? "receipt" : "bill"}
                   </button>
                   {previewConfirmed ? (
-                    <span style={{ color: "#059669", fontWeight: 600, fontSize: 13 }}>
+                    <span style={{ color: "var(--success)", fontWeight: 600, fontSize: 13 }}>
                       ✅ Sample confirmed — Save is unlocked
                     </span>
                   ) : (
-                    <span style={{ color: "#92400e", fontWeight: 600, fontSize: 13 }}>
+                    <span style={{ color: "var(--warning-fg)", fontWeight: 600, fontSize: 13 }}>
                       ⚠️ Save is locked until you preview &amp; confirm a real sample {scope === "receipt" ? "receipt" : "bill"}
                     </span>
                   )}
                 </div>
-                <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 0.5rem 0" }}>
+                <p style={{ fontSize: 12, color: "var(--fg-4)", margin: "0 0 0.5rem 0" }}>
                   Raw uploaded file (unfilled):
                 </p>
                 <img
@@ -1236,7 +1252,7 @@ export default function BillTemplateDesigner() {
         >
           <div
             style={{
-              background: "#fff",
+              background: "var(--bg-surface)",
               borderRadius: 12,
               width: "min(900px, 100%)",
               maxHeight: "90vh",
@@ -1256,13 +1272,13 @@ export default function BillTemplateDesigner() {
             </div>
 
             {editorMode === "pdf" && pdfHasFormFields ? (
-              <div style={{ background: "#eef2ff", padding: 14, borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
+              <div style={{ background: "var(--primary-tint)", padding: 14, borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
                 This PDF has {detectedFields.length} fillable form fields. The system automatically
                 matches each one (by name, case/space-insensitive) to the bill data below — no manual
                 mapping needed. Detected fields:
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
                   {detectedFields.map((f, i) => (
-                    <span key={i} style={{ background: "#fff", border: "1px solid #c7d2fe", borderRadius: 6, padding: "2px 8px", fontSize: 12 }}>
+                    <span key={i} style={{ background: "var(--bg-surface)", border: "1px solid var(--border-strong)", borderRadius: 6, padding: "2px 8px", fontSize: 12 }}>
                       {f}
                     </span>
                   ))}
@@ -1270,7 +1286,7 @@ export default function BillTemplateDesigner() {
               </div>
             ) : (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ background: "#fef3c7", padding: 14, borderRadius: 8, marginBottom: 12, fontSize: 13, color: "#92400e" }}>
+                <div style={{ background: "var(--warning-bg)", padding: 14, borderRadius: 8, marginBottom: 12, fontSize: 13, color: "var(--warning-fg)" }}>
                   {editorMode === "image"
                     ? "The system overlays (draws) text onto the uploaded image at fixed positions. Add the fields you want drawn and set their X/Y position (from the top-left corner, in points) and font size below."
                     : "No fillable form fields were detected, so the system overlays (draws) text onto the PDF at fixed positions instead. Add the fields you want drawn and set their X/Y position (from the top-left corner, in PDF points) and font size below."}
@@ -1295,7 +1311,7 @@ export default function BillTemplateDesigner() {
                       {activeFields.length > 0 && (
                         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                           <thead>
-                            <tr style={{ background: "#f9fafb" }}>
+                            <tr style={{ background: "var(--bg-sunken)" }}>
                               <th style={{ textAlign: "left", padding: 6 }}>Field</th>
                               <th style={{ padding: 6 }}>X</th>
                               <th style={{ padding: 6 }}>Y</th>
@@ -1305,7 +1321,7 @@ export default function BillTemplateDesigner() {
                           </thead>
                           <tbody>
                             {activeFields.map((f) => (
-                              <tr key={f.id} style={{ borderTop: "1px solid #e5e7eb" }}>
+                              <tr key={f.id} style={{ borderTop: "1px solid var(--border)" }}>
                                 <td style={{ padding: 6 }}>
                                   {fieldVocab.find((k) => k.key === f.name)?.label || f.name}
                                 </td>
@@ -1349,7 +1365,7 @@ export default function BillTemplateDesigner() {
               </div>
             )}
 
-            <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 16, marginTop: 8 }}>
+            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16, marginTop: 8 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
                 <label style={{ fontSize: 13, fontWeight: 600 }}>Preview as member:</label>
                 <select value={previewMemberId} onChange={(e) => setPreviewMemberId(e.target.value)}>
@@ -1370,7 +1386,7 @@ export default function BillTemplateDesigner() {
                 </button>
               </div>
               {pdfPreviewError ? (
-                <div style={{ background: "#fee2e2", color: "#991b1b", padding: 10, borderRadius: 6, marginBottom: 10, fontSize: 13 }}>
+                <div style={{ background: "var(--danger-bg)", color: "var(--danger-fg)", padding: 10, borderRadius: 6, marginBottom: 10, fontSize: 13 }}>
                   {pdfPreviewError}
                 </div>
               ) : null}
@@ -1379,7 +1395,7 @@ export default function BillTemplateDesigner() {
                   <iframe
                     src={pdfPreviewUrl}
                     title={`Sample ${scope === "receipt" ? "receipt" : "bill"} preview`}
-                    style={{ width: "100%", height: "500px", border: "2px solid #e5e7eb", borderRadius: 8, marginBottom: 12 }}
+                    style={{ width: "100%", height: "500px", border: "2px solid var(--border)", borderRadius: 8, marginBottom: 12 }}
                   />
                   <button
                     type="button"
@@ -1390,7 +1406,7 @@ export default function BillTemplateDesigner() {
                   </button>
                 </>
               ) : (
-                <p style={{ fontSize: 13, color: "#6b7280" }}>
+                <p style={{ fontSize: 13, color: "var(--fg-4)" }}>
                   Generate a sample to see the real, filled-in PDF before confirming.
                 </p>
               )}

@@ -42,7 +42,7 @@ const S = {
     padding: "10px 12px",
     borderRadius: tokens.radiusSm,
     border: active ? `1.5px solid ${color}` : tokens.border,
-    background: active ? `${color}14` : "#fff",
+    background: active ? `${color}14` : "var(--bg-surface)",
     color: active ? color : tokens.sub,
     fontWeight: 700,
     fontSize: 13,
@@ -51,7 +51,7 @@ const S = {
   listHead: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 12 },
   listTitle: { fontSize: 16, fontWeight: 700, color: tokens.text },
   filterRow: { display: "flex", gap: 8, alignItems: "center" },
-  row: { display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid #f3f4f6" },
+  row: { display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid var(--bg-muted)" },
   rowMain: { flex: 1, minWidth: 0 },
   rowName: { fontWeight: 600, color: tokens.text, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" },
   rowMeta: { fontSize: 12.5, color: tokens.sub, marginTop: 3 },
@@ -145,7 +145,7 @@ export default function BlacklistPage() {
               <div style={S.toggleRow}>
                 <button
                   type="button"
-                  style={S.sevBtn(form.severity === "flag", "#f59e0b")}
+                  style={S.sevBtn(form.severity === "flag", "var(--warning)")}
                   onClick={() => set("severity", "flag")}
                 >
                   ⚠️ Flag (warn guard)
@@ -205,7 +205,7 @@ export default function BlacklistPage() {
             />
           ) : (
             entries.map((en) => {
-              const sevColor = en.severity === "block" ? tokens.danger : "#f59e0b";
+              const sevColor = en.severity === "block" ? tokens.danger : "var(--warning)";
               const sevLabel = en.severity === "block" ? "Blocked" : "Flagged";
               const rowStyle = en.active === false ? Object.assign({}, S.row, S.dim) : S.row;
               return (

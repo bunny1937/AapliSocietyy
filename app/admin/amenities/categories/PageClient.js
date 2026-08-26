@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import styles from "@/styles/Amenities.module.css";
+import notify from "@/lib/notify";
 
 const BLANK = { name: "", description: "", isActive: true };
 
@@ -69,7 +70,7 @@ export default function AmenityCategoriesPage() {
   const remove = async (cat) => {
     // The API refuses to delete a category that still has amenities and tells us
     // how many. Surfacing that verbatim is more useful than a generic failure.
-    if (!confirm(`Delete "${cat.name}"? This cannot be undone.`)) return;
+    if (!(await notify.confirm(`Delete "${cat.name}"? This cannot be undone.`, { tone: "danger" }))) return;
     try {
       const res = await fetch(`/api/amenities/categories/${cat._id}`, {
         method: "DELETE",
@@ -160,7 +161,7 @@ export default function AmenityCategoriesPage() {
                   onDrop={() => onDrop(c._id)}
                   className={`${styles.dragRow} ${dragId === c._id ? styles.dragging : ""}`}
                 >
-                  <td style={{ color: "#d1d5db", cursor: "grab" }}>⠇</td>
+                  <td style={{ color: "var(--border-strong)", cursor: "grab" }}>⠇</td>
                   <td>
                     <div className={styles.rowName}>{c.name}</div>
                     {c.description ? <div className={styles.rowSub}>{c.description}</div> : null}

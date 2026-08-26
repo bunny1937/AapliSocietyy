@@ -70,7 +70,7 @@ export default function IncomeExpenditureScreen() {
       ) : !ie ? (
         <EmptyState text="No Financial Year found" hint="Create a Financial Year under Accounting first." />
       ) : (
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
+        <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 12, padding: 20 }}>
           <PrintArea>
             <StatutoryStatements
               incomeExpenditure={ie}

@@ -1,5 +1,7 @@
 "use client";
 
+import notify from "@/lib/notify";
+
 // app/admin/commercial/shops/page.js
 //
 // NEW 2026-08-07. The one place a shop or office exists.
@@ -716,10 +718,11 @@ export default function CommercialShopsPage() {
                   {!isNew && (
                     <Btn
                       variant="danger"
-                      onClick={() => {
+                      onClick={async () => {
                         if (
-                          window.confirm(
+                          await notify.confirm(
                             "Remove this shop? Its past bills are kept, and the linked flat is not changed.",
+                            { tone: "danger" },
                           )
                         )
                           deleteMutation.mutate(openId);

@@ -1,7 +1,7 @@
 .container {
   min-height: 100vh;
-  background: #0a0a0a;
-  color: #fff;
+  background: var(--bg-sunken);
+  color: var(--fg-1);
   padding: 2rem;
 }
 .header {
@@ -15,19 +15,19 @@
   font-size: 2rem;
 }
 .header p {
-  color: #999;
+  color: var(--fg-4);
   margin: 0;
 }
 .backBtn {
-  background: #333;
-  color: #fff;
+  background: var(--border);
+  color: var(--fg-1);
   border: none;
   padding: 0.75rem 1.5rem;
   border-radius: 6px;
   cursor: pointer;
 }
 .backBtn:hover {
-  background: #444;
+  background: var(--border-strong);
 }
 .filters {
   display: flex;
@@ -35,74 +35,74 @@
   margin-bottom: 2rem;
 }
 .filters button {
-  background: #1a1a1a;
-  color: #fff;
-  border: 1px solid #333;
+  background: var(--bg-surface);
+  color: var(--bg-surface);
+  border: 1px solid var(--border);
   padding: 0.75rem 1.5rem;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
 }
 .filters button:hover {
-  background: #252525;
-  border-color: #4CAF50;
+  background: var(--bg-muted);
+  border-color: var(--success);
 }
 .activeFilter {
-  background: #4CAF50 !important;
-  border-color: #4CAF50 !important;
+  background: var(--success) !important;
+  border-color: var(--success) !important;
 }
 .loading,
 .empty {
   text-align: center;
   padding: 3rem;
-  color: #999;
+  color: var(--fg-4);
   font-size: 1.2rem;
 }
 .table {
-  background: #1a1a1a;
+  background: var(--bg-surface);
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #333;
+  border: 1px solid var(--border);
 }
 .table table {
   width: 100%;
   border-collapse: collapse;
 }
 .table th {
-  background: #252525;
+  background: var(--bg-muted);
   padding: 1rem;
   text-align: left;
   font-weight: 600;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border);
 }
 .table td {
   padding: 1rem;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border);
 }
 .table tr:hover {
-  background: #1f1f1f;
+  background: var(--bg-canvas);
 }
 .badge {
-  background: #333;
+  background: var(--border);
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
   font-size: 0.85rem;
   text-transform: uppercase;
 }
 .daysRemaining {
-  color: #ffa500;
+  color: var(--warning);
   font-weight: 600;
 }
 .restored {
-  color: #4CAF50;
+  color: var(--success);
   font-weight: 600;
 }
 .active {
-  color: #999;
+  color: var(--fg-4);
 }
 .restoreBtn {
-  background: #4CAF50;
-  color: #fff;
+  background: var(--success);
+  color: var(--bg-surface);
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 4px;
@@ -110,5 +110,5 @@
   font-size: 0.9rem;
 }
 .restoreBtn:hover {
-  background: #45a049;
+  background: var(--success);
 }

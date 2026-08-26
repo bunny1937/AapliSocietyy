@@ -142,11 +142,11 @@ function MyAccessInner() {
                   <span
                     key={r.id}
                     className="flex items-center gap-1 rounded-full border px-2 py-0.5"
-                    style={{ borderColor: r.color || "#e5e7eb" }}
+                    style={{ borderColor: r.color || "var(--border)" }}
                   >
                     <span
                       className="inline-block h-2 w-2 rounded-full"
-                      style={{ backgroundColor: r.color || "#9ca3af" }}
+                      style={{ backgroundColor: r.color || "var(--fg-5)" }}
                     />
                     {r.name}
                   </span>

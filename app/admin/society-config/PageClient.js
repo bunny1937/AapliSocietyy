@@ -386,9 +386,9 @@ export default function SocietyConfigPage() {
                 Tax applied on total charges (e.g., GST 2%)
               </span>
             </div>
-            <div style={{ gridColumn: "1 / -1", border: "1px solid #bfdbfe", borderRadius: "10px", padding: "1.25rem", background: "#eff6ff" }}>
-              <h3 style={{ margin: "0 0 0.5rem", fontSize: "0.95rem", color: "#1e40af", fontWeight: 700 }}>Monthly billing schedule</h3>
-              <p style={{ margin: "0 0 1rem", color: "#475569", fontSize: "0.85rem" }}>
+            <div style={{ gridColumn: "1 / -1", border: "1px solid var(--primary-tint)", borderRadius: "10px", padding: "1.25rem", background: "var(--accent-tint)" }}>
+              <h3 style={{ margin: "0 0 0.5rem", fontSize: "0.95rem", color: "var(--info)", fontWeight: 700 }}>Monthly billing schedule</h3>
+              <p style={{ margin: "0 0 1rem", color: "var(--fg-3)", fontSize: "0.85rem" }}>
                 Enter only a day number. Example: 30 means the 30th of every month. February automatically uses its last day. Admins receive email and in-app reminders one day before bill creation and payment upload.
               </p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem" }}>
@@ -402,19 +402,19 @@ export default function SocietyConfigPage() {
                     <input type="number" min="1" max="31" step="1" value={formData.config[key]}
                       onChange={(e) => handleChange(`config.${key}`, Number(e.target.value))}
                       className={`input ${errors[key] ? "input-error" : ""}`} />
-                    <span style={{ display: "block", marginTop: "0.3rem", fontSize: "0.75rem", color: "#64748b" }}>{help}</span>
+                    <span style={{ display: "block", marginTop: "0.3rem", fontSize: "0.75rem", color: "var(--fg-4)" }}>{help}</span>
                     {errors[key] && <p className="error-text">{errors[key]}</p>}
                   </div>
                 ))}
               </div>
             </div>
             {/* Interest After Days — display label only, no logic gate */}
-            <div style={{ gridColumn: "1 / -1", border: "1px solid #c7d2fe", borderRadius: "10px", padding: "1.25rem", background: "#f5f3ff" }}>
-              <h3 style={{ margin: "0 0 0.75rem", fontSize: "0.95rem", color: "#4338ca", fontWeight: 700 }}>
+            <div style={{ gridColumn: "1 / -1", border: "1px solid var(--primary-tint)", borderRadius: "10px", padding: "1.25rem", background: "var(--bg-canvas)" }}>
+              <h3 style={{ margin: "0 0 0.75rem", fontSize: "0.95rem", color: "var(--primary-hover)", fontWeight: 700 }}>
                 Interest Info
               </h3>
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <label style={{ fontSize: "0.875rem", fontWeight: 600, color: "#374151", whiteSpace: "nowrap" }}>
+                <label style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--fg-3)", whiteSpace: "nowrap" }}>
                   Interest starts after due date
                 </label>
                 <input
@@ -423,10 +423,10 @@ export default function SocietyConfigPage() {
                   max="365"
                   value={formData.config.interestAfterDays}
                   onChange={(e) => handleChange("config.interestAfterDays", parseInt(e.target.value) || 0)}
-                  style={{ width: "80px", padding: "0.4rem 0.6rem", border: "1px solid #c7d2fe", borderRadius: "6px", fontSize: "0.875rem", textAlign: "center" }}
+                  style={{ width: "80px", padding: "0.4rem 0.6rem", border: "1px solid var(--primary-tint)", borderRadius: "6px", fontSize: "0.875rem", textAlign: "center" }}
                 />
-                <span style={{ fontSize: "0.875rem", color: "#6b7280" }}>days after the recurring bill due day</span>
-                {errors.interestAfterDays && <span style={{ color: "#dc2626", fontSize: "0.8rem" }}>{errors.interestAfterDays}</span>}
+                <span style={{ fontSize: "0.875rem", color: "var(--fg-4)" }}>days after the recurring bill due day</span>
+                {errors.interestAfterDays && <span style={{ color: "var(--danger)", fontSize: "0.8rem" }}>{errors.interestAfterDays}</span>}
               </div>
             </div>
           </div>
@@ -438,7 +438,7 @@ export default function SocietyConfigPage() {
             <h2 className={styles.cardTitle}>Commercial Module</h2>
           </div>
           <div style={{ padding: "0 1.25rem 1.25rem" }}>
-            <p style={{ margin: "0 0 1rem", color: "#475569", fontSize: "0.85rem" }}>
+            <p style={{ margin: "0 0 1rem", color: "var(--fg-3)", fontSize: "0.85rem" }}>
               Directory of the shops and offices inside this society. Changes save
               immediately - the Save button below does not apply to this section.
               Turning the master switch off hides the module instantly for members
@@ -486,7 +486,7 @@ export default function SocietyConfigPage() {
                       <span style={{ display: "block", fontWeight: 700, fontSize: "0.875rem" }}>
                         {label}
                       </span>
-                      <span style={{ display: "block", fontSize: "0.78rem", color: "#64748b" }}>
+                      <span style={{ display: "block", fontSize: "0.78rem", color: "var(--fg-4)" }}>
                         {help}
                       </span>
                     </span>
@@ -495,7 +495,7 @@ export default function SocietyConfigPage() {
               })}
             </div>
             {commercialFlags.enabled && (
-              <p style={{ marginTop: "1rem", fontSize: "0.8rem", color: "#475569" }}>
+              <p style={{ marginTop: "1rem", fontSize: "0.8rem", color: "var(--fg-3)" }}>
                 Manage listings under Commercial in the sidebar.
               </p>
             )}

@@ -1,4 +1,5 @@
 "use client";
+import notify from "@/lib/notify";
 // app/admin/commercial/rate-card/page.js
 //
 // FULL REWRITE — commercial fix 2026-08-07.
@@ -95,7 +96,7 @@ function Banner({ tone = "info", title, children, action }) {
     info: { bg: "var(--cx-surface-2)", border: "var(--cx-border)", fg: "var(--cx-fg-2)" },
     warn: { bg: "var(--cx-surface-2)", border: "var(--cx-warning)", fg: "var(--cx-warning)" },
     error: { bg: "var(--cx-surface-2)", border: "var(--cx-danger)", fg: "var(--cx-danger)" },
-    ok: { bg: "var(--cx-surface-2)", border: "var(--cx-success, #16a34a)", fg: "var(--cx-success, #16a34a)" },
+    ok: { bg: "var(--cx-surface-2)", border: "var(--cx-success, var(--success))", fg: "var(--cx-success, var(--success))" },
   }[tone];
   return (
     <div
@@ -406,7 +407,7 @@ function HeadRow({ head, tab, index, total, onSave, onDelete, onMove, saving }) 
                 borderRadius: 7,
                 fontSize: 12,
                 lineHeight: 1.5,
-                background: "var(--cx-danger-soft,#fdecea)",
+                background: "var(--cx-danger-soft,var(--danger-bg))",
                 border: "1px solid var(--cx-danger)",
                 color: "var(--cx-fg-1)",
               }}
@@ -447,10 +448,11 @@ function HeadRow({ head, tab, index, total, onSave, onDelete, onMove, saving }) 
             <Btn
               variant="danger"
               disabled={saving}
-              onClick={() => {
+              onClick={async () => {
                 if (
-                  window.confirm(
+                  await notify.confirm(
                     `Remove "${head.headName}" from the rate card?\n\nBills already generated keep it. It just stops appearing on new ones.`,
+                    { tone: "danger" },
                   )
                 )
                   onDelete(head.id);

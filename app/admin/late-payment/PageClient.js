@@ -87,10 +87,10 @@ export default function LatePaymentsPage() {
   }
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: 0 }}>
-      <h1 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: "#0f172a", letterSpacing: "-0.01em" }}>
+      <h1 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: "var(--fg-1)", letterSpacing: "-0.01em" }}>
         Late Payments
       </h1>
-      <p style={{ color: "#64748b", fontSize: 13, marginBottom: "1.25rem" }}>
+      <p style={{ color: "var(--fg-4)", fontSize: 13, marginBottom: "1.25rem" }}>
         Members whose oldest unpaid bill is past the payment deadline. Payment
         window is closed for them — record cash/cheque payments manually here.
         Interest-satisfy-first allocation applied automatically.
@@ -98,12 +98,12 @@ export default function LatePaymentsPage() {
       {success && (
         <div
           style={{
-            background: "#d1fae5",
-            border: "1px solid #6ee7b7",
+            background: "var(--success-bg)",
+            border: "1px solid var(--success)",
             borderRadius: 8,
             padding: "1rem",
             marginBottom: "1rem",
-            color: "#065f46",
+            color: "var(--success-fg)",
             fontWeight: 600,
           }}
         >
@@ -111,17 +111,17 @@ export default function LatePaymentsPage() {
         </div>
       )}
       {isLoading ? (
-        <div style={{ padding: "3rem", textAlign: "center", color: "#6b7280" }}>
+        <div style={{ padding: "3rem", textAlign: "center", color: "var(--fg-4)" }}>
           Loading late payments…
         </div>
       ) : lateMembers.length === 0 ? (
         <div
           style={{
-            background: "#d1fae5",
+            background: "var(--success-bg)",
             borderRadius: 8,
             padding: "2rem",
             textAlign: "center",
-            color: "#065f46",
+            color: "var(--success-fg)",
             fontWeight: 600,
           }}
         >
@@ -133,7 +133,7 @@ export default function LatePaymentsPage() {
             style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}
           >
             <thead>
-              <tr style={{ background: "#fef2f2", color: "#7f1d1d" }}>
+              <tr style={{ background: "var(--danger-bg)", color: "var(--danger-fg)" }}>
                 <th style={th}>Wing-Flat</th>
                 <th style={th}>Member</th>
                 <th style={th}>Oldest Period</th>
@@ -148,30 +148,30 @@ export default function LatePaymentsPage() {
               {lateMembers.map((m, i) => (
                 <tr
                   key={m.memberId}
-                  style={{ background: i % 2 === 0 ? "#fff" : "#fff5f5" }}
+                  style={{ background: i % 2 === 0 ? "var(--bg-surface)" : "var(--danger-bg)" }}
                 >
                   <td style={td}>
                     {m.wing}-{m.flatNo}
                   </td>
                   <td style={td}>{m.ownerName}</td>
                   <td style={td}>{m.oldestPeriod}</td>
-                  <td style={{ ...td, color: "#dc2626", fontWeight: 700 }}>
+                  <td style={{ ...td, color: "var(--danger)", fontWeight: 700 }}>
                     {m.deadline
                       ? new Date(m.deadline).toLocaleDateString("en-IN")
                       : "—"}
                   </td>
                   <td style={td}>₹{fmt(m.principalOutstanding)}</td>
-                  <td style={{ ...td, color: "#dc2626" }}>
+                  <td style={{ ...td, color: "var(--danger)" }}>
                     ₹{fmt(m.interestOutstanding)}
                   </td>
-                  <td style={{ ...td, fontWeight: 700, color: "#1e40af" }}>
+                  <td style={{ ...td, fontWeight: 700, color: "var(--info-fg)" }}>
                     ₹{fmt(m.totalOutstanding)}
                   </td>
                   <td style={td}>
                     <button
                       onClick={() => openModal(m)}
                       style={{
-                        background: "#1e40af",
+                        background: "var(--primary-hover)",
                         color: "white",
                         border: "none",
                         borderRadius: 6,
@@ -223,7 +223,7 @@ export default function LatePaymentsPage() {
               Record Late Payment
             </h2>
             <p
-              style={{ color: "#6b7280", fontSize: 13, marginBottom: "1.5rem" }}
+              style={{ color: "var(--fg-4)", fontSize: 13, marginBottom: "1.5rem" }}
             >
               {modal.wing}-{modal.flatNo} — {modal.ownerName} — Oldest:{" "}
               {modal.oldestPeriod}
@@ -231,8 +231,8 @@ export default function LatePaymentsPage() {
             {/* Outstanding summary */}
             <div
               style={{
-                background: "#fef2f2",
-                border: "1px solid #fca5a5",
+                background: "var(--danger-bg)",
+                border: "1px solid var(--danger)",
                 borderRadius: 8,
                 padding: "1rem",
                 marginBottom: "1.25rem",
@@ -246,8 +246,8 @@ export default function LatePaymentsPage() {
                   marginBottom: 4,
                 }}
               >
-                <span style={{ color: "#6b7280" }}>Interest Outstanding</span>
-                <strong style={{ color: "#dc2626" }}>
+                <span style={{ color: "var(--fg-4)" }}>Interest Outstanding</span>
+                <strong style={{ color: "var(--danger)" }}>
                   ₹{fmt(modal.interestOutstanding)}
                 </strong>
               </div>
@@ -258,20 +258,20 @@ export default function LatePaymentsPage() {
                   marginBottom: 4,
                 }}
               >
-                <span style={{ color: "#6b7280" }}>Principal Outstanding</span>
+                <span style={{ color: "var(--fg-4)" }}>Principal Outstanding</span>
                 <strong>₹{fmt(modal.principalOutstanding)}</strong>
               </div>
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  borderTop: "1px solid #fca5a5",
+                  borderTop: "1px solid var(--danger)",
                   paddingTop: 6,
                   marginTop: 6,
                 }}
               >
                 <span style={{ fontWeight: 700 }}>Total Outstanding</span>
-                <strong style={{ color: "#1e40af", fontSize: 15 }}>
+                <strong style={{ color: "var(--info-fg)", fontSize: 15 }}>
                   ₹{fmt(modal.totalOutstanding)}
                 </strong>
               </div>
@@ -279,7 +279,7 @@ export default function LatePaymentsPage() {
                 style={{
                   margin: "8px 0 0",
                   fontSize: 11,
-                  color: "#7f1d1d",
+                  color: "var(--danger-fg)",
                   fontWeight: 600,
                 }}
               >
@@ -290,12 +290,12 @@ export default function LatePaymentsPage() {
             {error && (
               <div
                 style={{
-                  background: "#fee2e2",
-                  border: "1px solid #fca5a5",
+                  background: "var(--danger-bg)",
+                  border: "1px solid var(--danger)",
                   borderRadius: 6,
                   padding: "0.75rem",
                   marginBottom: "1rem",
-                  color: "#7f1d1d",
+                  color: "var(--danger-fg)",
                   fontSize: 13,
                 }}
               >
@@ -376,7 +376,7 @@ export default function LatePaymentsPage() {
                 style={{
                   flex: 1,
                   padding: "0.75rem",
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid var(--border)",
                   borderRadius: 8,
                   background: "white",
                   cursor: "pointer",
@@ -393,7 +393,7 @@ export default function LatePaymentsPage() {
                   padding: "0.75rem",
                   border: "none",
                   borderRadius: 8,
-                  background: "#1e40af",
+                  background: "var(--primary-hover)",
                   color: "white",
                   cursor: "pointer",
                   fontWeight: 700,
@@ -414,23 +414,23 @@ export default function LatePaymentsPage() {
 const th = {
   padding: "10px 12px",
   textAlign: "left",
-  borderBottom: "2px solid #fecaca",
+  borderBottom: "2px solid var(--danger)",
   fontWeight: 700,
   fontSize: 12,
   textTransform: "uppercase",
 };
-const td = { padding: "10px 12px", borderBottom: "1px solid #f3f4f6" };
+const td = { padding: "10px 12px", borderBottom: "1px solid var(--bg-muted)" };
 const label = {
   display: "block",
   fontSize: 12,
   fontWeight: 600,
-  color: "#374151",
+  color: "var(--fg-3)",
   marginBottom: 4,
 };
 const input = {
   width: "100%",
   padding: "0.6rem 0.75rem",
-  border: "1px solid #d1d5db",
+  border: "1px solid var(--border-strong)",
   borderRadius: 6,
   fontSize: 14,
   boxSizing: "border-box",

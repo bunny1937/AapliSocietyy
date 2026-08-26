@@ -53,7 +53,7 @@ export default function MyLedgerPage() {
       <div className={styles.statsGrid} style={{ marginBottom: "1.5rem" }}>
         <div
           className={styles.statCard}
-          style={{ borderLeft: "4px solid #DC2626" }}
+          style={{ borderLeft: "4px solid var(--danger)" }}
         >
           <div className={styles.statLabel}>Total Billed</div>
           <h2 className={styles.statValue}>
@@ -62,10 +62,10 @@ export default function MyLedgerPage() {
         </div>
         <div
           className={styles.statCard}
-          style={{ borderLeft: "4px solid #10B981" }}
+          style={{ borderLeft: "4px solid var(--success)" }}
         >
           <div className={styles.statLabel}>Total Paid</div>
-          <h2 className={styles.statValue} style={{ color: "#059669" }}>
+          <h2 className={styles.statValue} style={{ color: "var(--success)" }}>
             ₹{(summary.totalCredit || 0).toLocaleString("en-IN")}
           </h2>
         </div>
@@ -74,15 +74,15 @@ export default function MyLedgerPage() {
           style={{
             borderLeft:
               summary.currentBalance > 0
-                ? "4px solid #DC2626"
-                : "4px solid #10B981",
+                ? "4px solid var(--danger)"
+                : "4px solid var(--success)",
           }}
         >
           <div className={styles.statLabel}>Current Balance</div>
           <h2
             className={styles.statValue}
             style={{
-              color: summary.currentBalance > 0 ? "#DC2626" : "#059669",
+              color: summary.currentBalance > 0 ? "var(--danger)" : "var(--success)",
             }}
           >
             ₹{Math.abs(summary.currentBalance || 0).toLocaleString("en-IN")}
@@ -109,7 +109,7 @@ export default function MyLedgerPage() {
           </div>
         ) : transactions.length === 0 ? (
           <div
-            style={{ padding: "3rem", textAlign: "center", color: "#9CA3AF" }}
+            style={{ padding: "3rem", textAlign: "center", color: "var(--fg-5)" }}
           >
             <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📭</div>
             <p>No transactions found</p>
@@ -120,8 +120,8 @@ export default function MyLedgerPage() {
               <thead>
                 <tr
                   style={{
-                    background: "#F9FAFB",
-                    borderBottom: "2px solid #E5E7EB",
+                    background: "var(--bg-sunken)",
+                    borderBottom: "2px solid var(--border)",
                   }}
                 >
                   <th
@@ -129,7 +129,7 @@ export default function MyLedgerPage() {
                       padding: "12px 16px",
                       textAlign: "left",
                       fontSize: "13px",
-                      color: "#6B7280",
+                      color: "var(--fg-4)",
                     }}
                   >
                     Date
@@ -139,7 +139,7 @@ export default function MyLedgerPage() {
                       padding: "12px 16px",
                       textAlign: "left",
                       fontSize: "13px",
-                      color: "#6B7280",
+                      color: "var(--fg-4)",
                     }}
                   >
                     Description
@@ -149,7 +149,7 @@ export default function MyLedgerPage() {
                       padding: "12px 16px",
                       textAlign: "center",
                       fontSize: "13px",
-                      color: "#6B7280",
+                      color: "var(--fg-4)",
                     }}
                   >
                     Type
@@ -159,7 +159,7 @@ export default function MyLedgerPage() {
                       padding: "12px 16px",
                       textAlign: "right",
                       fontSize: "13px",
-                      color: "#6B7280",
+                      color: "var(--fg-4)",
                     }}
                   >
                     Debit (₹)
@@ -169,7 +169,7 @@ export default function MyLedgerPage() {
                       padding: "12px 16px",
                       textAlign: "right",
                       fontSize: "13px",
-                      color: "#6B7280",
+                      color: "var(--fg-4)",
                     }}
                   >
                     Credit (₹)
@@ -179,7 +179,7 @@ export default function MyLedgerPage() {
                       padding: "12px 16px",
                       textAlign: "right",
                       fontSize: "13px",
-                      color: "#6B7280",
+                      color: "var(--fg-4)",
                     }}
                   >
                     Balance (₹)
@@ -191,8 +191,8 @@ export default function MyLedgerPage() {
                   <tr
                     key={txn._id}
                     style={{
-                      borderBottom: "1px solid #F3F4F6",
-                      background: i % 2 === 0 ? "white" : "#FAFAFA",
+                      borderBottom: "1px solid var(--bg-muted)",
+                      background: i % 2 === 0 ? "white" : "var(--bg-sunken)",
                     }}
                   >
                     <td
@@ -215,14 +215,14 @@ export default function MyLedgerPage() {
                         maxWidth: "280px",
                       }}
                     >
-                      <div style={{ fontWeight: "500", color: "#1F2937" }}>
+                      <div style={{ fontWeight: "500", color: "var(--fg-2)" }}>
                         {txn.description}
                       </div>
                       {txn.billPeriodId && (
                         <div
                           style={{
                             fontSize: "11px",
-                            color: "#9CA3AF",
+                            color: "var(--fg-5)",
                             marginTop: "2px",
                           }}
                         >
@@ -235,16 +235,16 @@ export default function MyLedgerPage() {
                         style={{
                           background:
                             txn.category === "Interest"
-                              ? "#FEF3C7"
+                              ? "var(--warning-bg)"
                               : txn.type === "Credit"
-                                ? "#D1FAE5"
-                                : "#FEE2E2",
+                                ? "var(--success-bg)"
+                                : "var(--danger-bg)",
                           color:
                             txn.category === "Interest"
-                              ? "#92400E"
+                              ? "var(--warning-fg)"
                               : txn.type === "Credit"
-                                ? "#065F46"
-                                : "#991B1B",
+                                ? "var(--success-fg)"
+                                : "var(--danger-fg)",
                           padding: "3px 10px",
                           borderRadius: "12px",
                           fontSize: "11px",
@@ -258,7 +258,7 @@ export default function MyLedgerPage() {
                       style={{
                         padding: "12px 16px",
                         textAlign: "right",
-                        color: "#DC2626",
+                        color: "var(--danger)",
                         fontWeight: "600",
                         fontSize: "13px",
                       }}
@@ -271,7 +271,7 @@ export default function MyLedgerPage() {
                       style={{
                         padding: "12px 16px",
                         textAlign: "right",
-                        color: "#059669",
+                        color: "var(--success)",
                         fontWeight: "600",
                         fontSize: "13px",
                       }}
@@ -297,8 +297,8 @@ export default function MyLedgerPage() {
                           fontSize: "11px",
                           color:
                             txn.balanceAfterTransaction > 0
-                              ? "#DC2626"
-                              : "#059669",
+                              ? "var(--danger)"
+                              : "var(--success)",
                           marginLeft: "4px",
                         }}
                       >

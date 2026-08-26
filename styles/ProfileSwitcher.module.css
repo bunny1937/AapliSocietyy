@@ -1,4 +1,4 @@
-.wrap {
+﻿.wrap {
   position: relative;
   width: 100%;
 }
@@ -9,18 +9,18 @@
   gap: 6px;
   width: 100%;
   padding: 0.4rem 0.6rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #fff;
-  color: #4b5563;
+  background: var(--bg-surface);
+  color: var(--fg-3);
   font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
 }
 .trigger:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
+  background: var(--bg-sunken);
+  border-color: var(--border-strong);
 }
 .triggerLabel {
   overflow: hidden;
@@ -35,8 +35,8 @@
   width: 260px;
   max-height: 320px;
   overflow-y: auto;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
   padding: 0.4rem;
@@ -46,15 +46,15 @@
   padding: 0.4rem 0.5rem;
   margin-bottom: 0.3rem;
   font-size: 0.75rem;
-  color: #b91c1c;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  color: var(--danger-fg);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-bg);
   border-radius: 6px;
 }
 .group + .group {
   margin-top: 0.4rem;
   padding-top: 0.4rem;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--bg-muted);
 }
 .groupLabel {
   padding: 0.2rem 0.5rem;
@@ -62,7 +62,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #9ca3af;
+  color: var(--fg-5);
 }
 .item {
   display: flex;
@@ -77,10 +77,10 @@
   cursor: pointer;
   font-family: inherit;
   text-align: left;
-  color: #4f46e5;
+  color: var(--accent);
 }
 .item:hover:not(:disabled) {
-  background: #f5f5ff;
+  background: var(--accent-tint);
 }
 .item:disabled {
   cursor: default;
@@ -94,17 +94,17 @@
 .itemTitle {
   font-size: 0.84rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg-1);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .itemRole {
   font-size: 0.7rem;
-  color: #6b7280;
+  color: var(--fg-4);
 }
 .itemBusy {
   font-size: 0.7rem;
-  color: #9ca3af;
+  color: var(--fg-5);
   white-space: nowrap;
 }

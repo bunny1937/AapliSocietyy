@@ -231,9 +231,9 @@ export default function AnalyticsPage() {
                         title={`${hourLabel(h)} — ${count} check-ins`}
                         style={{
                           background: count === 0
-                            ? "#f3f4f6"
+                            ? "var(--bg-muted)"
                             : `rgba(37, 99, 235, ${0.15 + intensity * 0.8})`,
-                          color: intensity > 0.55 ? "#fff" : "#374151",
+                          color: intensity > 0.55 ? "var(--bg-surface)" : "var(--fg-3)",
                         }}
                       >
                         {count || ""}

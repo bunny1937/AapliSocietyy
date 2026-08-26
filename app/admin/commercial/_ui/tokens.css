@@ -30,34 +30,41 @@
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 /* Dark mode is opt-in ONLY, via the ThemeToggle switch — never automatic
-   from OS `prefers-color-scheme`. No other page in this app has a dark
-   mode, so Commercial must never silently diverge from the rest of the
-   admin console just because a visitor's OS theme happens to be dark.
-   The toggle sets `data-cx-theme="dark"` on the layout wrapper that
-   contains every .commercial-scope div (app/admin/commercial/layout.js);
-   CSS custom properties inherit down through it. */
-[data-cx-theme="dark"] .commercial-scope,
-.commercial-scope[data-cx-theme="dark"] {
-  --cx-canvas: #0b0b0f;
-  --cx-surface: #131318;
-  --cx-surface-2: #16161c;
-  --cx-surface-3: #1c1c24;
-  --cx-border: #24242c;
-  --cx-border-strong: #33333e;
-  --cx-fg-1: #f5f5f7;
-  --cx-fg-2: #e2e2e6;
-  --cx-fg-3: #a8a8b3;
-  --cx-fg-4: #76767f;
-  --cx-fg-5: #50505a;
-  --cx-brand: #6b8eef;
-  --cx-brand-soft: #1c2545;
-  --cx-brand-ink: #0b0b0f;
-  --cx-success: #34d399;
-  --cx-success-soft: #0f2a20;
-  --cx-danger: #f87171;
-  --cx-danger-soft: #2c1212;
-  --cx-warning: #fbbf24;
-  --cx-warning-soft: #2a1d08;
+   from OS `prefers-color-scheme`.
+
+   Single source of truth: this block no longer hardcodes its own dark
+   palette. It reacts to the SAME global `[data-theme="dark"]` on <html>
+   that every other page now uses (components/theme/ThemeToggle.jsx,
+   styles/globals.css), and every --cx-* value below just points at the
+   matching global token. This is also the fix for two real bugs the old
+   hardcoded block had: --cx-warning jumped from burnt-orange (#b54708) in
+   light to a bright amber-YELLOW (#fbbf24) in dark — a different color
+   family, not just a lighter version of the same one — and --cx-canvas
+   (#0b0b0f) was a near-neutral almost-black with no brand hue at all.
+   Both are gone now: warning stays in the orange family via the shared
+   --warning token (see globals.css), and canvas is the shared blue-tinted
+   --bg-canvas, never a flat near-black. */
+:root[data-theme="dark"] .commercial-scope {
+  --cx-canvas: var(--bg-canvas);
+  --cx-surface: var(--bg-surface);
+  --cx-surface-2: var(--bg-muted);
+  --cx-surface-3: var(--border);
+  --cx-border: var(--border);
+  --cx-border-strong: var(--border-strong);
+  --cx-fg-1: var(--fg-1);
+  --cx-fg-2: var(--fg-2);
+  --cx-fg-3: var(--fg-3);
+  --cx-fg-4: var(--fg-4);
+  --cx-fg-5: var(--fg-5);
+  --cx-brand: var(--primary);
+  --cx-brand-soft: var(--primary-tint);
+  --cx-brand-ink: var(--bg-canvas);
+  --cx-success: var(--success);
+  --cx-success-soft: var(--success-bg);
+  --cx-danger: var(--danger);
+  --cx-danger-soft: var(--danger-bg);
+  --cx-warning: var(--warning);
+  --cx-warning-soft: var(--warning-bg);
 }
 .cx-num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; letter-spacing: -0.01em; }
 
@@ -130,27 +137,6 @@
 @keyframes cx-fade { from { opacity: 0; } to { opacity: 1; } }
 .cx-fade { animation: cx-fade 0.18s ease-out; }
 
-/* ── Theme-toggle flood transition ───────────────────────────────────────
-   ThemeToggle.jsx drives a View Transition (document.startViewTransition)
-   and animates its ::view-transition-new(root) clip-path from a 0px circle
-   at the click point out to a circle big enough to cover the viewport —
-   that's the "smooth flood filling from root" effect. These pseudo-
-   elements only ever exist in the DOM while a view transition triggered by
-   OUR OWN toggle is running (nothing outside Commercial ever calls
-   startViewTransition), so despite the selector looking page-global, it
-   has zero effect on any of the other ~200 pages in this app. Disabling
-   the browser's default cross-fade here is what makes the click-driven
-   clip-path animation (added inline by ThemeToggle) the only visible
-   transition, instead of it fighting a simultaneous opacity fade. */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
-/* Compositor hint for the clip-path keyframes ThemeToggle.jsx animates on
-   this pseudo-element — without it the browser may not promote the layer
-   until the animation has already started, costing a dropped frame or two
-   right at the beginning. */
-::view-transition-new(root) {
-  will-change: clip-path;
-}
+/* Theme-toggle flood transition (::view-transition-* rules) now lives in
+   styles/globals.css — the toggle is app-wide, not Commercial-only, so the
+   transition styling moved with it. */

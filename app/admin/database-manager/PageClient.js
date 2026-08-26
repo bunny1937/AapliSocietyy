@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import styles from '@/styles/DatabaseManager.module.css';
+import notify from '@/lib/notify';
 export default function DatabaseManagerPage() {
   const [selectedEntity, setSelectedEntity] = useState('society');
   const [filters, setFilters] = useState({});
@@ -59,11 +60,11 @@ export default function DatabaseManagerPage() {
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries(['dbData']);
-      alert(`Import successful! ${result.imported || 0} records imported.`);
+      notify.success(`Import successful! ${result.imported || 0} records imported.`);
       setImportFile(null);
     },
     onError: (error) => {
-      alert(`Import failed: ${error.message}`);
+      notify.error(`Import failed: ${error.message}`);
     }
   });
   const deleteMutation = useMutation({
@@ -84,20 +85,20 @@ export default function DatabaseManagerPage() {
   onSuccess: (data) => {
     queryClient.invalidateQueries(['db-data']);
 setSelectedIds([]);
-    alert(`Successfully deleted ${data.deletedCount} records`);
+    notify.success(`Successfully deleted ${data.deletedCount} records`);
   },
   onError: (error) => {
     console.error('Delete error:', error);
-    alert(`Delete failed: ${error.message}`);
+    notify.error(`Delete failed: ${error.message}`);
   }
 });
   // Reset/Clear all mutation
   const resetMutation = useMutation({
     mutationFn: async ({ entity }) => {
-      if (!confirm(`⚠️ ARE YOU ABSOLUTELY SURE?\n\nThis will PERMANENTLY DELETE ALL ${entity.toUpperCase()} data!\n\nType "DELETE ALL" to confirm.`)) {
+      if (!(await notify.confirm(`⚠️ ARE YOU ABSOLUTELY SURE?\n\nThis will PERMANENTLY DELETE ALL ${entity.toUpperCase()} data!\n\nType "DELETE ALL" to confirm.`, { tone: "danger" }))) {
         throw new Error('Cancelled');
       }
-      const userConfirmation = prompt('Type "DELETE ALL" to confirm:');
+      const userConfirmation = await notify.prompt('Type "DELETE ALL" to confirm:');
       if (userConfirmation !== 'DELETE ALL') {
         throw new Error('Confirmation failed');
       }
@@ -110,7 +111,7 @@ setSelectedIds([]);
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries(['dbData']);
-      alert(`Reset successful! ${result.deleted || 0} records deleted.`);
+      notify.success(`Reset successful! ${result.deleted || 0} records deleted.`);
     }
   });
   const entities = [
@@ -274,7 +275,7 @@ setSelectedIds([]);
   <button 
     className={`${styles.btn} ${styles.btnWarning}`}
   onClick={async () => {
-  if (!confirm('Check and fix duplicate membership numbers?')) return;
+  if (!(await notify.confirm('Check and fix duplicate membership numbers?', { tone: "warning" }))) return;
   try {
     const response = await fetch('/api/members/fix-duplicates', {
       method: 'POST',
@@ -284,21 +285,21 @@ setSelectedIds([]);
     if (result.success) {
   const fixedCount = typeof result.fixed === 'number' ? result.fixed : result.fixed?.length || 0;
   if (fixedCount > 0) {
-    const fixedList = Array.isArray(result.fixed) 
+    const fixedList = Array.isArray(result.fixed)
       ? result.fixed.map(f => `${f.flatNo}: ${f.oldNumber} → ${f.newNumber}`).join('\n')
       : 'Check console for details';
-    alert(`✅ Fixed ${fixedCount} duplicates!\n\n${fixedList}`);
+    notify.success(`Fixed ${fixedCount} duplicates!\n\n${fixedList}`);
   } else {
-    alert('✅ No duplicates found - all membership numbers are unique!');
+    notify.success('No duplicates found - all membership numbers are unique!');
   }
   refetch();
 }
  else {
-      alert(`❌ Error: ${result.error || 'Unknown error'}`);
+      notify.error(`Error: ${result.error || 'Unknown error'}`);
     }
   } catch (error) {
     console.error('Fix duplicates error:', error);
-    alert(`❌ Error: ${error.message}`);
+    notify.error(`Error: ${error.message}`);
   }
 }}
   >
@@ -413,13 +414,13 @@ setSelectedIds([]);
                 <div className={styles.dangerActions}>
             <button 
               className={`${styles.btn} ${styles.btnDanger}`}
-              onClick={() => {
+              onClick={async () => {
   if (selectedIds.length === 0) {
-    alert('No rows selected');
+    notify.warning('No rows selected');
     return;
   }
-  if (confirm(`Delete ${selectedIds.length} ${selectedEntity}?`)) {
-    deleteMutation.mutate({ 
+  if (await notify.confirm(`Delete ${selectedIds.length} ${selectedEntity}?`, { tone: "danger" })) {
+    deleteMutation.mutate({
       entity: selectedEntity, 
       ids: selectedIds.map(id => String(id))  // ✅ Ensure IDs are strings
     });

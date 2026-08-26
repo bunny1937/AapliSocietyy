@@ -16,7 +16,7 @@ const S = {
     border: "none",
     cursor: "pointer",
     color: "#fff",
-    background: "#2563eb",
+    background: "var(--primary)",
   },
   btnOn: {
     display: "inline-flex",
@@ -28,11 +28,11 @@ const S = {
     borderRadius: 10,
     border: "none",
     color: "#fff",
-    background: "#16a34a",
+    background: "var(--success)",
     cursor: "default",
   },
-  btnOff: { background: "#9ca3af", cursor: "not-allowed" },
-  hint: { fontSize: 12, color: "#6b7280", maxWidth: 320, lineHeight: 1.4 },
+  btnOff: { background: "var(--fg-5)", cursor: "not-allowed" },
+  hint: { fontSize: 12, color: "var(--fg-4)", maxWidth: 320, lineHeight: 1.4 },
 };
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);

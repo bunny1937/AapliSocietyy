@@ -12,7 +12,7 @@
   margin: 0 0 0.25rem;
 }
 .pageHeader p {
-  color: #6b7280;
+  color: var(--fg-4);
   margin: 0;
 }
 .tabs {
@@ -24,16 +24,16 @@
 .tab {
   padding: 0.45rem 1rem;
   border-radius: 8px;
-  border: 1.5px solid #e5e7eb;
-  background: #fff;
+  border: 1.5px solid var(--border);
+  background: var(--bg-surface);
   cursor: pointer;
   font-weight: 600;
   font-size: 0.85rem;
 }
 .tabActive {
-  background: #1f2937;
-  color: #fff;
-  border-color: #1f2937;
+  background: var(--fg-2);
+  color: var(--bg-surface);
+  border-color: var(--fg-2);
 }
 .catFilter {
   display: flex;
@@ -44,16 +44,16 @@
 .catBtn {
   padding: 0.3rem 0.75rem;
   border-radius: 20px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border: 1px solid var(--border);
+  background: var(--bg-sunken);
   font-size: 0.8rem;
   cursor: pointer;
   text-transform: capitalize;
 }
 .catActive {
-  background: #4f46e5;
-  color: #fff;
-  border-color: #4f46e5;
+  background: var(--primary-hover);
+  color: var(--bg-surface);
+  border-color: var(--primary-hover);
 }
 .list {
   display: flex;
@@ -61,8 +61,8 @@
   gap: 1rem;
 }
 .card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
 }
@@ -75,7 +75,7 @@
   gap: 0.5rem;
   flex-wrap: wrap;
   font-size: 0.85rem;
-  color: #374151;
+  color: var(--fg-3);
 }
 .statusDot {
   width: 10px;
@@ -85,23 +85,23 @@
   flex-shrink: 0;
 }
 .separator {
-  color: #d1d5db;
+  color: var(--border-strong);
 }
 .category {
   text-transform: capitalize;
   font-weight: 600;
-  color: #4f46e5;
+  color: var(--primary-hover);
 }
 .date {
-  color: #9ca3af;
+  color: var(--fg-5);
 }
 .memberInfo {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: var(--success-bg);
+  border: 1px solid var(--success);
   border-radius: 8px;
   padding: 0.5rem 0.85rem;
   font-size: 0.82rem;
-  color: #166534;
+  color: var(--success-fg);
   margin-bottom: 0.75rem;
   font-weight: 500;
 }
@@ -111,7 +111,7 @@
   margin: 0 0 0.4rem;
 }
 .cardDesc {
-  color: #4b5563;
+  color: var(--fg-3);
   font-size: 0.9rem;
   line-height: 1.6;
   margin: 0 0 0.85rem;
@@ -122,8 +122,8 @@
 }
 .approveBtn {
   padding: 0.45rem 1.25rem;
-  background: #10b981;
-  color: #fff;
+  background: var(--success);
+  color: var(--bg-surface);
   border: none;
   border-radius: 8px;
   font-weight: 700;
@@ -131,7 +131,7 @@
   font-size: 0.9rem;
 }
 .approveBtn:hover {
-  background: #059669;
+  background: var(--success);
 }
 .approveBtn:disabled {
   opacity: 0.5;
@@ -139,25 +139,25 @@
 }
 .rejectBtn {
   padding: 0.45rem 1.25rem;
-  background: #fff;
-  color: #ef4444;
-  border: 1.5px solid #ef4444;
+  background: var(--bg-surface);
+  color: var(--danger);
+  border: 1.5px solid var(--danger);
   border-radius: 8px;
   font-weight: 700;
   cursor: pointer;
   font-size: 0.9rem;
 }
 .rejectBtn:hover {
-  background: #fef2f2;
+  background: var(--danger-bg);
 }
 .rejectionNote {
   margin-top: 0.75rem;
   padding: 0.65rem 1rem;
-  background: #fef2f2;
-  border-left: 3px solid #ef4444;
+  background: var(--danger-bg);
+  border-left: 3px solid var(--danger);
   border-radius: 6px;
   font-size: 0.85rem;
-  color: #7f1d1d;
+  color: var(--danger-fg);
 }
 .modalOverlay {
   position: fixed;
@@ -170,7 +170,7 @@
   padding: 1rem;
 }
 .modal {
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 14px;
   padding: 2rem;
   width: 100%;
@@ -181,13 +181,13 @@
   font-size: 1.25rem;
 }
 .modalNote {
-  color: #6b7280;
+  color: var(--fg-4);
   font-size: 0.85rem;
   margin-bottom: 1rem;
 }
 .reasonInput {
   width: 100%;
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid var(--border);
   border-radius: 8px;
   padding: 0.75rem;
   font-size: 0.9rem;
@@ -196,16 +196,16 @@
   box-sizing: border-box;
 }
 .reasonInput:focus {
-  border-color: #4f46e5;
+  border-color: var(--primary-hover);
 }
 .charCount {
   text-align: right;
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--fg-4);
   margin: 0.35rem 0 1rem;
 }
 .charWarn {
-  color: #ef4444;
+  color: var(--danger);
 }
 .modalActions {
   display: flex;
@@ -214,16 +214,16 @@
 }
 .cancelBtn {
   padding: 0.5rem 1.25rem;
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid var(--border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--bg-surface);
   cursor: pointer;
   font-weight: 600;
 }
 .confirmRejectBtn {
   padding: 0.5rem 1.5rem;
-  background: #ef4444;
-  color: #fff;
+  background: var(--danger);
+  color: var(--bg-surface);
   border: none;
   border-radius: 8px;
   font-weight: 700;
@@ -236,7 +236,7 @@
 .empty {
   text-align: center;
   padding: 4rem 2rem;
-  color: #9ca3af;
+  color: var(--fg-5);
 }
 .emptyIcon {
   font-size: 3rem;
@@ -244,7 +244,7 @@
 }
 .skeleton {
   height: 130px;
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background: linear-gradient(90deg, var(--bg-muted) 25%, var(--border) 50%, var(--bg-muted) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 12px;
@@ -267,8 +267,8 @@
 .pagination button {
   padding: 0.45rem 1rem;
   border-radius: 8px;
-  border: 1.5px solid #e5e7eb;
-  background: #fff;
+  border: 1.5px solid var(--border);
+  background: var(--bg-surface);
   cursor: pointer;
   font-weight: 600;
 }
@@ -286,10 +286,10 @@
   z-index: 200;
 }
 .success {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--success-bg);
+  color: var(--success-fg);
 }
 .error {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--danger-bg);
+  color: var(--danger-fg);
 }

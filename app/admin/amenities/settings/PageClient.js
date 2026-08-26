@@ -45,7 +45,7 @@ function TagEditor({ label, hint, values, onChange, placeholder }) {
             {v}
             <button
               onClick={() => onChange(values.filter((x) => x !== v))}
-              style={{ border: "none", background: "none", cursor: "pointer", color: "#9ca3af", marginLeft: 5, padding: 0 }}
+              style={{ border: "none", background: "none", cursor: "pointer", color: "var(--fg-5)", marginLeft: 5, padding: 0 }}
               aria-label={`Remove ${v}`}
             >×</button>
           </span>

@@ -33,6 +33,7 @@
   --bg-surface:  #ffffff;   /* cards, sidebar */
   --bg-sunken:   #f9fafb;   /* table headers */
   --bg-muted:    #f3f4f6;   /* secondary buttons, chips */
+  --bg-input:    #ffffff;   /* inputs/selects — same as surface in light mode */
   /* aliases used by existing code */
   --bg-primary:   #ffffff;
   --bg-secondary: #f8fafc;
@@ -86,6 +87,145 @@
   --duration-fast: 120ms;
   --duration-base: 200ms;
   --duration-slow: 300ms;
+  /* ── Revamp "Pulse" token layer (--r-*) ──────────────────────────
+     Source of truth: design system ui_kits/revamp/RevampPrimitives.jsx,
+     ThemeStyles() — :root (light) and .theme-dark (dark). Kept under the
+     same --r-* names as the kit so revamped screens can be lifted from
+     the kit verbatim. The app-level tokens above/below are remapped onto
+     these values, so this block is the single place a palette change
+     has to happen. */
+  --r-canvas:        #f6f7f9;
+  --r-surface:       #ffffff;
+  --r-surface-2:     #fafbfc;
+  --r-surface-3:     #f3f4f6;
+  --r-border:        #ececef;
+  --r-border-strong: #dcdde1;
+  --r-hairline:      #f1f1f3;
+  --r-fg-1:          #0a0a0a;
+  --r-fg-2:          #1f1f23;
+  --r-fg-3:          #46464f;
+  --r-fg-4:          #767680;
+  --r-fg-5:          #a0a0aa;
+  --r-brand:         #1e3a8a;
+  --r-brand-soft:    #e8edf9;
+  --r-brand-ink:     #ffffff;
+  --r-accent:        #6b8eef;
+  --r-success:       #0f9d58;
+  --r-success-soft:  #e7f7ee;
+  --r-danger:        #d92d20;
+  --r-danger-soft:   #fdecec;
+  --r-warning:       #b54708;
+  --r-warning-soft:  #fdf2d8;
+  --r-rail:          #ffffff;
+  --r-shadow-card:   0 1px 0 rgba(0,0,0,0.02), 0 1px 3px rgba(15,15,30,0.04);
+  --r-shadow-pop:    0 12px 32px -8px rgba(15,15,30,0.18), 0 2px 6px rgba(15,15,30,0.06);
+  --r-shadow-inset:  inset 0 0 0 1px var(--r-border);
+  --r-glow-brand:    none;
+  --r-radius-sm: 6px;
+  --r-radius:    10px;
+  --r-radius-lg: 14px;
+  --r-radius-xl: 20px;
+  --r-pad-card:  18px;
+  --r-row-h:     44px;
+  --r-font-num:  "Inter", "SF Pro Display", system-ui, sans-serif;
+}
+/* ══════════════════════════════════════════════════
+   DARK MODE — single source of truth for the whole app.
+   Toggled by setting data-theme="dark" on <html> (see
+   lib/theme/store.js + components/theme/ThemeToggle.jsx). Opt-in via the
+   toggle, never automatic from OS prefers-color-scheme.
+
+   Palette imported from the design system's revamp kit
+   (ui_kits/revamp/RevampPrimitives.jsx → .theme-dark). It is a
+   near-neutral ink palette (canvas #0b0b0f, surface #131318) rather than
+   the blue-tinted one this file used to carry — brand blue is lifted to
+   #7c9cf7 so it still reads on that ground, and --r-glow-brand adds the
+   kit's hover glow. Every app-level token below is an alias onto an
+   --r-* value, so this block plus the --r-* block in :root are the only
+   two places the dark palette is defined. */
+:root[data-theme="dark"] {
+  /* ── Revamp --r-* layer (kit's .theme-dark, verbatim) ──────────── */
+  --r-canvas:        #0b0b0f;
+  --r-surface:       #131318;
+  --r-surface-2:     #16161c;
+  --r-surface-3:     #1c1c24;
+  --r-border:        #24242c;
+  --r-border-strong: #33333e;
+  --r-hairline:      #1d1d24;
+  --r-fg-1:          #f5f5f7;
+  --r-fg-2:          #e2e2e6;
+  --r-fg-3:          #a8a8b3;
+  --r-fg-4:          #76767f;
+  --r-fg-5:          #50505a;
+  --r-brand:         #7c9cf7;
+  --r-brand-soft:    #202d54;
+  --r-brand-ink:     #0d0d12;
+  --r-accent:        #a3b9f5;
+  --r-success:       #3ddc9b;
+  --r-success-soft:  #103428;
+  --r-danger:        #ff8383;
+  --r-danger-soft:   #351616;
+  --r-warning:       #ffc94d;
+  --r-warning-soft:  #332208;
+  --r-rail:          #0e0e13;
+  --r-shadow-card:   0 1px 0 rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.5);
+  --r-shadow-pop:    0 16px 40px -8px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.4);
+  --r-glow-brand:    0 0 0 1px rgba(124,156,247,0.25), 0 8px 24px -6px rgba(124,156,247,0.28);
+
+  /* ── App tokens, aliased onto the --r-* layer ──────────────────── */
+  --primary:        var(--r-brand);
+  --primary-hover:  #93aefa;
+  --primary-press:  #6a89e6;
+  --primary-tint:   var(--r-brand-soft);
+  --primary-muted:  rgba(124, 156, 247, 0.14);
+  --accent:         var(--r-accent);
+  --accent-tint:    var(--r-brand-soft);
+  --brand-secondary: var(--r-surface-2);
+  /* Semantic — text colour on a soft background is the solid colour
+     itself in this palette, so the *-fg aliases point at it. */
+  --success:      var(--r-success);
+  --success-fg:   var(--r-success);
+  --success-bg:   var(--r-success-soft);
+  --danger:       var(--r-danger);
+  --danger-fg:    var(--r-danger);
+  --danger-bg:    var(--r-danger-soft);
+  --warning:      var(--r-warning);
+  --warning-fg:   var(--r-warning);
+  --warning-bg:   var(--r-warning-soft);
+  --info:         var(--r-brand);
+  --info-fg:      var(--r-brand);
+  --info-bg:      var(--r-brand-soft);
+  /* ── Surfaces ───────────────────────────────────── */
+  --bg-canvas:   var(--r-canvas);
+  --bg-surface:  var(--r-surface);
+  --bg-sunken:   var(--r-surface-2);
+  --bg-muted:    var(--r-surface-3);
+  --bg-input:    var(--r-surface-3);
+  --bg-primary:   var(--r-surface);
+  --bg-secondary: var(--r-canvas);
+  --bg-tertiary:  var(--r-surface-3);
+  /* ── Foreground ─────────────────────────────────── */
+  --fg-1: var(--r-fg-1);
+  --fg-2: var(--r-fg-2);
+  --fg-3: var(--r-fg-3);
+  --fg-4: var(--r-fg-4);
+  --fg-5: var(--r-fg-5);
+  --text-primary:   var(--r-fg-1);
+  --text-secondary: var(--r-fg-3);
+  --text-tertiary:  var(--r-fg-4);
+  /* ── Borders ────────────────────────────────────── */
+  --border:         var(--r-border);
+  --border-strong:  var(--r-border-strong);
+  --border-focus:   var(--r-brand);
+  --border-hover:   var(--r-border-strong);
+  /* ── Shadows ────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-sm: var(--r-shadow-card);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+  --shadow-xl: var(--r-shadow-pop);
+  --shadow-glow: 0 0 0 3px rgba(124, 156, 247, 0.25);
+  --shadow-accent-glow: 0 0 0 3px rgba(163, 185, 245, 0.3);
 }
 /* ── Reset ──────────────────────────────────────── */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -100,11 +240,34 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-::selection { background: rgba(30, 58, 138, 0.12); color: var(--primary); }
+/* ── Theme-toggle flood transition ───────────────────────────────────────
+   components/theme/ThemeToggle.jsx drives a View Transition
+   (document.startViewTransition) and animates its ::view-transition-new(root)
+   clip-path from a 0px circle at the click point out to a circle big enough
+   to cover the viewport — the "smooth flood filling from root" effect.
+   These pseudo-elements only ever exist in the DOM while a view transition
+   triggered by OUR OWN toggle is running, so this has no effect outside an
+   actual toggle click. Disabling the browser's default cross-fade here is
+   what makes the click-driven clip-path animation (added inline by
+   ThemeToggle) the only visible transition, instead of it fighting a
+   simultaneous opacity fade. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+/* Compositor hint for the clip-path keyframes ThemeToggle.jsx animates on
+   this pseudo-element — without it the browser may not promote the layer
+   until the animation has already started, costing a dropped frame or two
+   right at the beginning. */
+::view-transition-new(root) {
+  will-change: clip-path;
+}
+::selection { background: var(--primary-muted); color: var(--primary); }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--fg-5); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 input, textarea, select, button { font-family: inherit; font-size: inherit; line-height: inherit; }
 button { cursor: pointer; border: none; outline: none; }
@@ -137,57 +300,57 @@ a:hover { color: var(--primary-hover); }
 .btn:active:not(:disabled) { transform: scale(0.98); }
 /* Primary */
 .btn-primary {
-  background: #1e3a8a;
+  background: var(--primary);
   color: #ffffff;
 }
 .btn-primary:hover:not(:disabled) {
-  background: #1e40af;
+  background: var(--primary-hover);
   box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
 }
 /* Secondary */
 .btn-secondary {
-  background: #f3f4f6;
-  color: #1f2937;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-muted);
+  color: var(--fg-1);
+  border: 1px solid var(--border-strong);
 }
 .btn-secondary:hover:not(:disabled) {
-  background: #e5e7eb;
-  border-color: #d1d5db;
+  background: var(--bg-sunken);
+  border-color: var(--fg-5);
 }
 /* Accent */
 .btn-accent {
-  background: #6b8eef;
+  background: var(--accent);
   color: #ffffff;
 }
 .btn-accent:hover:not(:disabled) {
-  background: #4f6fd4;
+  background: var(--primary-hover);
   box-shadow: 0 4px 12px rgba(107, 142, 239, 0.35);
 }
 /* Danger */
 .btn-danger {
-  background: #dc2626;
+  background: var(--danger);
   color: #ffffff;
 }
 .btn-danger:hover:not(:disabled) {
-  background: #b91c1c;
+  background: var(--danger);
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }
 /* Success */
 .btn-success {
-  background: #059669;
+  background: var(--success);
   color: #ffffff;
 }
 .btn-success:hover:not(:disabled) {
-  background: #047857;
+  background: var(--success);
   box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
 }
 /* Ghost */
 .btn-ghost {
   background: transparent;
-  color: #1e3a8a;
+  color: var(--primary);
   border: none;
 }
-.btn-ghost:hover:not(:disabled) { background: #f3f4f6; }
+.btn-ghost:hover:not(:disabled) { background: var(--bg-muted); }
 /* Sizes */
 .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
 .btn-lg { padding: 12px 22px; font-size: 15px; border-radius: 10px; }
@@ -211,35 +374,35 @@ a:hover { color: var(--primary-hover); }
 .input {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   font-size: 14px;
   font-family: inherit;
-  background: #ffffff;
-  color: #0f172a;
+  background: var(--bg-input);
+  color: var(--fg-1);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
   box-sizing: border-box;
 }
-.input::placeholder { color: #9ca3af; }
-.input:hover:not(:disabled):not(:focus) { border-color: #9ca3af; }
+.input::placeholder { color: var(--fg-4); }
+.input:hover:not(:disabled):not(:focus) { border-color: var(--fg-4); }
 .input:focus {
-  border-color: #1e3a8a;
-  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.15);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-muted, rgba(30, 58, 138, 0.15));
 }
-.input:disabled { background: #f9fafb; cursor: not-allowed; opacity: 0.7; }
-.input-error { border-color: #dc2626 !important; }
+.input:disabled { background: var(--bg-muted); cursor: not-allowed; opacity: 0.7; }
+.input-error { border-color: var(--danger) !important; }
 .input-error:focus { box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important; }
 .label {
   display: block;
   font-size: 14px;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--fg-1);
   margin-bottom: 8px;
 }
 .error-text {
   font-size: 12px;
-  color: #dc2626;
+  color: var(--danger);
   margin-top: 6px;
   display: flex;
   align-items: center;
@@ -257,11 +420,11 @@ select.input {
    CARDS — from design spec
 ══════════════════════════════════════════════════ */
 .card {
-  background: #ffffff;
+  background: var(--bg-surface);
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   transition: box-shadow 0.2s ease;
 }
 .card:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
@@ -286,43 +449,43 @@ select.input {
   letter-spacing: 0.5px;
   white-space: nowrap;
 }
-.badge-success  { background: #d1fae5; color: #065f46; }
-.badge-danger   { background: #fee2e2; color: #991b1b; }
-.badge-warning  { background: #fef3c7; color: #92400e; }
-.badge-info     { background: #dbeafe; color: #1e40af; }
-.badge-secondary{ background: #f3f4f6; color: #374151; }
-.badge-primary  { background: #dbeafe; color: #1e3a8a; }
+.badge-success  { background: var(--success-bg); color: var(--success-fg); }
+.badge-danger   { background: var(--danger-bg); color: var(--danger-fg); }
+.badge-warning  { background: var(--warning-bg); color: var(--warning-fg); }
+.badge-info     { background: var(--info-bg); color: var(--info-fg); }
+.badge-secondary{ background: var(--bg-muted); color: var(--fg-2); }
+.badge-primary  { background: var(--primary-tint); color: var(--primary); }
 /* ══════════════════════════════════════════════════
    TABLES
 ══════════════════════════════════════════════════ */
 .table-container {
   overflow-x: auto;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--bg-surface);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 table { width: 100%; border-collapse: collapse; }
 thead { position: sticky; top: 0; z-index: 10; }
 th {
-  background: #f9fafb;
+  background: var(--bg-sunken);
   padding: 11px 16px;
   text-align: left;
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
-  border-bottom: 1px solid #e5e7eb;
+  color: var(--fg-4);
+  border-bottom: 1px solid var(--border);
   white-space: nowrap;
   letter-spacing: 0.3px;
 }
 td {
   padding: 12px 16px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--bg-muted);
   font-size: 14px;
-  color: #1f2937;
+  color: var(--fg-1);
 }
 tbody tr { transition: background 0.1s; }
-tbody tr:hover td { background: #f9fafb; }
+tbody tr:hover td { background: var(--bg-sunken); }
 tbody tr:last-child td { border-bottom: none; }
 /* ══════════════════════════════════════════════════
    LOADING STATES
@@ -341,7 +504,7 @@ tbody tr:last-child td { border-bottom: none; }
 .loading-spinner-white { border-color: rgba(255,255,255,0.3); border-top-color: white; }
 /* Skeleton shimmer */
 .skeleton {
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background: linear-gradient(90deg, var(--bg-muted) 25%, var(--bg-sunken) 50%, var(--bg-muted) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
   border-radius: 4px;
@@ -370,10 +533,10 @@ tbody tr:last-child td { border-bottom: none; }
   animation: slideInRight 0.3s ease forwards;
   max-width: 360px;
 }
-.toast-success { background: #059669; color: white; }
-.toast-error   { background: #dc2626; color: white; }
-.toast-warning { background: #f59e0b; color: white; }
-.toast-info    { background: #1e3a8a; color: white; }
+.toast-success { background: var(--success); color: white; }
+.toast-error   { background: var(--danger); color: white; }
+.toast-warning { background: var(--warning); color: white; }
+.toast-info    { background: var(--primary); color: white; }
 .toast-exit    { animation: slideOutRight 0.2s ease forwards; }
 /* ══════════════════════════════════════════════════
    MODALS
@@ -587,3 +750,23 @@ tbody tr:last-child td { border-bottom: none; }
 .acct-input { border: 1px solid transparent; background: transparent; font-family: inherit; border-radius: 6px; }
 .acct-input:hover { border-color: #e2e8f0; }
 .acct-input:focus { outline: none; border-color: #1e3a8a; box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12); background: #fff; }
+
+/* ══════════════════════════════════════════════════
+   REVAMP ("Pulse") UTILITIES
+   Lifted from ui_kits/revamp/RevampPrimitives.jsx → ThemeStyles().
+   Used by components/revamp/* and the revamped admin screens.
+   ══════════════════════════════════════════════════ */
+.revamp-num  { font-variant-numeric: tabular-nums; font-feature-settings: "tnum", "cv11"; letter-spacing: -0.01em; }
+.revamp-mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", monospace; }
+.revamp-row:hover { background: var(--r-surface-2); }
+.revamp-dot { width: 6px; height: 6px; border-radius: 999px; display: inline-block; }
+.revamp-pulse-dot { animation: revamp-pulse 2s ease-in-out infinite; }
+@keyframes revamp-pulse   { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes revamp-slide-r { from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes revamp-fade    { from { opacity: 0; } to { opacity: 1; } }
+@keyframes revamp-pop     { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes revamp-spin    { to { transform: rotate(360deg); } }
+.revamp-spin { animation: revamp-spin 0.9s linear infinite; }
+.revamp-scroll::-webkit-scrollbar       { width: 10px; height: 10px; }
+.revamp-scroll::-webkit-scrollbar-thumb { background: var(--r-border); border-radius: 8px; }
+.revamp-scroll::-webkit-scrollbar-track { background: transparent; }

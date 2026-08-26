@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import styles from "@/styles/Dashboard.module.css";
+import notify from "@/lib/notify";
 export default function GeneratedBillsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -59,7 +60,7 @@ console.log('📋 Bill data:', billsData?.bills[0]);
   };
   const handleDownloadAll = () => {
     if (filteredBills.length === 0) {
-      alert("No bills to download");
+      notify.info("No bills to download");
       return;
     }
     const printWindow = window.open("", "_blank");
@@ -149,10 +150,10 @@ console.log('📋 Bill data:', billsData?.bills[0]);
           <span
             style={{
               padding: "0.5rem 1rem",
-              backgroundColor: "#DBEAFE",
+              backgroundColor: "var(--info-bg)",
               borderRadius: "8px",
               fontWeight: "600",
-              color: "#1E40AF",
+              color: "var(--info)",
             }}
           >
             {filteredBills.length} BILLS
@@ -171,7 +172,7 @@ console.log('📋 Bill data:', billsData?.bills[0]);
           </div>
         ) : filteredBills.length === 0 ? (
           <div
-            style={{ padding: "3rem", textAlign: "center", color: "#9CA3AF" }}
+            style={{ padding: "3rem", textAlign: "center", color: "var(--fg-5)" }}
           >
             <p>No bills found</p>
           </div>
@@ -180,8 +181,8 @@ console.log('📋 Bill data:', billsData?.bills[0]);
             <thead>
               <tr
                 style={{
-                  backgroundColor: "#F9FAFB",
-                  borderBottom: "2px solid #E5E7EB",
+                  backgroundColor: "var(--bg-sunken)",
+                  borderBottom: "2px solid var(--border)",
                 }}
               >
                 <th style={{ padding: "1rem", textAlign: "left" }}>
@@ -202,7 +203,7 @@ console.log('📋 Bill data:', billsData?.bills[0]);
               {filteredBills.map((bill) => (
                 <tr
                   key={bill._id}
-                  style={{ borderBottom: "1px solid #F3F4F6" }}
+                  style={{ borderBottom: "1px solid var(--border)" }}
                 >
                   <td style={{ padding: "1rem" }}>
                     <strong>{bill.billPeriodId}</strong>
@@ -213,7 +214,7 @@ console.log('📋 Bill data:', billsData?.bills[0]);
                         {bill.memberId?.wing}-{bill.memberId?.roomNo}
                       </strong>
                       <br />
-                      <span style={{ fontSize: "0.875rem", color: "#6B7280" }}>
+                      <span style={{ fontSize: "0.875rem", color: "var(--fg-4)" }}>
                         {bill.memberId?.ownerName}
                       </span>
                     </div>
@@ -234,12 +235,12 @@ console.log('📋 Bill data:', billsData?.bills[0]);
                         padding: "0.25rem 0.75rem",
                         backgroundColor:
                           bill.balanceAfterTransaction < 0
-                            ? "#FEE2E2"
-                            : "#D1FAE5",
+                            ? "var(--danger-bg)"
+                            : "var(--success-bg)",
                         color:
                           bill.balanceAfterTransaction < 0
-                            ? "#991B1B"
-                            : "#065F46",
+                            ? "var(--danger-fg)"
+                            : "var(--success-fg)",
                         borderRadius: "12px",
                         fontSize: "0.75rem",
                         fontWeight: "600",
@@ -253,7 +254,7 @@ console.log('📋 Bill data:', billsData?.bills[0]);
                       padding: "1rem",
                       textAlign: "center",
                       fontSize: "0.875rem",
-                      color: "#6B7280",
+                      color: "var(--fg-4)",
                     }}
                   >
                     {new Date(bill.date).toLocaleDateString("en-IN")}
@@ -308,7 +309,7 @@ console.log('📋 Bill data:', billsData?.bills[0]);
         >
           <div
             style={{
-              backgroundColor: "white",
+              backgroundColor: "var(--bg-surface)",
               borderRadius: "12px",
               maxWidth: "900px",
               width: "100%",
@@ -321,13 +322,13 @@ console.log('📋 Bill data:', billsData?.bills[0]);
             <div
               style={{
                 padding: "1.5rem",
-                borderBottom: "2px solid #E5E7EB",
+                borderBottom: "2px solid var(--border)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
                 position: "sticky",
                 top: 0,
-                backgroundColor: "white",
+                backgroundColor: "var(--bg-surface)",
                 zIndex: 1,
               }}
             >
@@ -342,7 +343,7 @@ console.log('📋 Bill data:', billsData?.bills[0]);
                   border: "none",
                   fontSize: "2rem",
                   cursor: "pointer",
-                  color: "#9CA3AF",
+                  color: "var(--fg-5)",
                 }}
               >
                 ✕
@@ -357,10 +358,10 @@ console.log('📋 Bill data:', billsData?.bills[0]);
             <div
               style={{
                 padding: "1.5rem",
-                borderTop: "2px solid #E5E7EB",
+                borderTop: "2px solid var(--border)",
                 position: "sticky",
                 bottom: 0,
-                backgroundColor: "white",
+                backgroundColor: "var(--bg-surface)",
                 textAlign: "center",
               }}
             >

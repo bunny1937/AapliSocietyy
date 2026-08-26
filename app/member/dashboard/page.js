@@ -15,19 +15,19 @@ export default function MemberDashboardPage() {
   const recentBills = billsData?.bills || [];
   const recentTxns = ledgerData?.transactions || [];
   const statusColors = {
-    Paid: { bg: "#D1FAE5", color: "#065F46" },
-    Unpaid: { bg: "#FEE2E2", color: "#991B1B" },
-    Partial: { bg: "#FEF3C7", color: "#92400E" },
-    Overdue: { bg: "#FFE4E6", color: "#9F1239" },
+    Paid: { bg: "var(--success-bg)", color: "var(--success-fg)" },
+    Unpaid: { bg: "var(--danger-bg)", color: "var(--danger-fg)" },
+    Partial: { bg: "var(--warning-bg)", color: "var(--warning-fg)" },
+    Overdue: { bg: "var(--danger-bg)", color: "var(--danger-fg)" },
   };
   return (
     <div style={{ padding: "0 0 2rem 0" }}>
       {/* Header */}
       <div style={{ marginBottom: "1.5rem" }}>
-        <h1 style={{ fontSize: "1.5rem", fontWeight: "700", color: "#111827", margin: 0 }}>
+        <h1 style={{ fontSize: "1.5rem", fontWeight: "700", color: "var(--fg-1)", margin: 0 }}>
           📊 Dashboard
         </h1>
-        <p style={{ color: "#6B7280", marginTop: "4px", fontSize: "0.9rem" }}>
+        <p style={{ color: "var(--fg-4)", marginTop: "4px", fontSize: "0.9rem" }}>
           Welcome back! Here's your account overview.
         </p>
       </div>
@@ -44,44 +44,45 @@ export default function MemberDashboardPage() {
           {
             label: "Total Bills",
             value: summary.total || 0,
-            color: "#3B82F6",
+            color: "var(--primary)",
             icon: "📄",
           },
           {
             label: "Total Paid",
             value: `₹${(summary.totalPaid || 0).toLocaleString("en-IN")}`,
-            color: "#10B981",
+            color: "var(--success)",
             icon: "✅",
           },
           {
             label: "Outstanding",
             value: `₹${(summary.totalOutstanding || 0).toLocaleString("en-IN")}`,
-            color: "#EF4444",
+            color: "var(--danger)",
             icon: "⚠️",
           },
           {
             label: "Total Billed",
+            /* TODO: unmapped color, needs design review */
+            color: "var(--accent)",
             value: `₹${(summary.totalAmount || 0).toLocaleString("en-IN")}`,
-            color: "#8B5CF6",
             icon: "💰",
           },
         ].map((stat) => (
           <div
             key={stat.label}
             style={{
-              background: "white",
+              background: "var(--bg-surface)",
               borderRadius: "10px",
               padding: "20px",
               boxShadow: "0 1px 4px rgba(0,0,0,0.07)",
-              border: "1px solid #E5E7EB",
+              border: "1px solid var(--border)",
               borderLeft: `4px solid ${stat.color}`,
             }}
           >
             <div style={{ fontSize: "1.4rem", marginBottom: "6px" }}>{stat.icon}</div>
-            <div style={{ fontSize: "0.78rem", color: "#6B7280", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <div style={{ fontSize: "0.78rem", color: "var(--fg-4)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>
               {stat.label}
             </div>
-            <div style={{ fontSize: "1.35rem", fontWeight: "700", color: "#111827", marginTop: "4px" }}>
+            <div style={{ fontSize: "1.35rem", fontWeight: "700", color: "var(--fg-1)", marginTop: "4px" }}>
               {billsLoading ? "..." : stat.value}
             </div>
           </div>
@@ -108,13 +109,13 @@ export default function MemberDashboardPage() {
             key={link.path}
             href={link.path}
             style={{
-              background: "white",
-              border: "1px solid #E5E7EB",
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border)",
               borderRadius: "10px",
               padding: "16px 12px",
               textAlign: "center",
               textDecoration: "none",
-              color: "#374151",
+              color: "var(--fg-3)",
               fontWeight: "600",
               fontSize: "0.85rem",
               boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
@@ -138,9 +139,9 @@ export default function MemberDashboardPage() {
         {/* Recent Bills */}
         <div
           style={{
-            background: "white",
+            background: "var(--bg-surface)",
             borderRadius: "10px",
-            border: "1px solid #E5E7EB",
+            border: "1px solid var(--border)",
             boxShadow: "0 1px 4px rgba(0,0,0,0.07)",
             overflow: "hidden",
           }}
@@ -148,24 +149,24 @@ export default function MemberDashboardPage() {
           <div
             style={{
               padding: "16px 20px",
-              borderBottom: "1px solid #F3F4F6",
+              borderBottom: "1px solid var(--border)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
             }}
           >
-            <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: "700", color: "#111827" }}>
+            <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: "700", color: "var(--fg-1)" }}>
               📄 Recent Bills
             </h2>
-            <Link href="/member/my-bills" style={{ fontSize: "0.8rem", color: "#3B82F6", textDecoration: "none" }}>
+            <Link href="/member/my-bills" style={{ fontSize: "0.8rem", color: "var(--primary)", textDecoration: "none" }}>
               View all →
             </Link>
           </div>
           <div style={{ padding: "0 12px 12px" }}>
             {billsLoading ? (
-              <div style={{ padding: "2rem", textAlign: "center", color: "#9CA3AF" }}>Loading...</div>
+              <div style={{ padding: "2rem", textAlign: "center", color: "var(--fg-5)" }}>Loading...</div>
             ) : recentBills.length === 0 ? (
-              <div style={{ padding: "2rem", textAlign: "center", color: "#9CA3AF" }}>No bills yet</div>
+              <div style={{ padding: "2rem", textAlign: "center", color: "var(--fg-5)" }}>No bills yet</div>
             ) : (
               recentBills.map((bill) => {
                 const sc = statusColors[bill.status] || statusColors.Unpaid;
@@ -177,19 +178,19 @@ export default function MemberDashboardPage() {
                       justifyContent: "space-between",
                       alignItems: "center",
                       padding: "10px 8px",
-                      borderBottom: "1px solid #F9FAFB",
+                      borderBottom: "1px solid var(--border)",
                     }}
                   >
                     <div>
-                      <div style={{ fontWeight: "600", fontSize: "0.875rem", color: "#1F2937" }}>
+                      <div style={{ fontWeight: "600", fontSize: "0.875rem", color: "var(--fg-2)" }}>
                         {bill.billPeriodId}
                       </div>
-                      <div style={{ fontSize: "0.75rem", color: "#6B7280" }}>
+                      <div style={{ fontSize: "0.75rem", color: "var(--fg-4)" }}>
                         Due: {new Date(bill.dueDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                       </div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontWeight: "700", fontSize: "0.9rem", color: "#111827" }}>
+                      <div style={{ fontWeight: "700", fontSize: "0.9rem", color: "var(--fg-1)" }}>
                         ₹{bill.totalAmount?.toLocaleString("en-IN")}
                       </div>
                       <span
@@ -214,9 +215,9 @@ export default function MemberDashboardPage() {
         {/* Recent Transactions */}
         <div
           style={{
-            background: "white",
+            background: "var(--bg-surface)",
             borderRadius: "10px",
-            border: "1px solid #E5E7EB",
+            border: "1px solid var(--border)",
             boxShadow: "0 1px 4px rgba(0,0,0,0.07)",
             overflow: "hidden",
           }}
@@ -224,24 +225,24 @@ export default function MemberDashboardPage() {
           <div
             style={{
               padding: "16px 20px",
-              borderBottom: "1px solid #F3F4F6",
+              borderBottom: "1px solid var(--border)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
             }}
           >
-            <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: "700", color: "#111827" }}>
+            <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: "700", color: "var(--fg-1)" }}>
               📒 Recent Transactions
             </h2>
-            <Link href="/member/my-ledger" style={{ fontSize: "0.8rem", color: "#3B82F6", textDecoration: "none" }}>
+            <Link href="/member/my-ledger" style={{ fontSize: "0.8rem", color: "var(--primary)", textDecoration: "none" }}>
               View all →
             </Link>
           </div>
           <div style={{ padding: "0 12px 12px" }}>
             {ledgerLoading ? (
-              <div style={{ padding: "2rem", textAlign: "center", color: "#9CA3AF" }}>Loading...</div>
+              <div style={{ padding: "2rem", textAlign: "center", color: "var(--fg-5)" }}>Loading...</div>
             ) : recentTxns.length === 0 ? (
-              <div style={{ padding: "2rem", textAlign: "center", color: "#9CA3AF" }}>No transactions yet</div>
+              <div style={{ padding: "2rem", textAlign: "center", color: "var(--fg-5)" }}>No transactions yet</div>
             ) : (
               recentTxns.map((txn, i) => (
                 <div
@@ -251,14 +252,14 @@ export default function MemberDashboardPage() {
                     justifyContent: "space-between",
                     alignItems: "center",
                     padding: "10px 8px",
-                    borderBottom: "1px solid #F9FAFB",
+                    borderBottom: "1px solid var(--border)",
                   }}
                 >
                   <div>
-                    <div style={{ fontWeight: "600", fontSize: "0.875rem", color: "#1F2937" }}>
+                    <div style={{ fontWeight: "600", fontSize: "0.875rem", color: "var(--fg-2)" }}>
                       {txn.description || txn.type || "Transaction"}
                     </div>
-                    <div style={{ fontSize: "0.75rem", color: "#6B7280" }}>
+                    <div style={{ fontSize: "0.75rem", color: "var(--fg-4)" }}>
                       {txn.date
                         ? new Date(txn.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
                         : "—"}
@@ -268,7 +269,7 @@ export default function MemberDashboardPage() {
                     style={{
                       fontWeight: "700",
                       fontSize: "0.9rem",
-                      color: txn.type === "Credit" || txn.credit > 0 ? "#059669" : "#DC2626",
+                      color: txn.type === "Credit" || txn.credit > 0 ? "var(--success)" : "var(--danger)",
                     }}
                   >
                     {txn.credit > 0

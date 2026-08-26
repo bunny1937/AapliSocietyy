@@ -1,20 +1,20 @@
 /* ══════════════════════════════════════════════════
    DASHBOARD LAYOUT — matches design spec exactly
-   Sidebar: 260px white | TopHeader: 56px transparent
-   Canvas: #f8fafc
+   Sidebar: 260px | TopHeader: 56px transparent
+   All colors from styles/globals.css tokens — flips with data-theme.
 ══════════════════════════════════════════════════ */
 .dashboardContainer {
   display: flex;
   min-height: 100vh;
-  background: #f8fafc;
+  background: var(--bg-canvas);
 }
 /* ══════════════════════════════════════════════════
-   SIDEBAR — 260px, white, left border only
+   SIDEBAR — 260px, left border only
 ══════════════════════════════════════════════════ */
 .sidebar {
   width: 260px;
-  background: #ffffff;
-  border-right: 1px solid #e5e7eb;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -31,7 +31,7 @@
 /* ── Sidebar Header ─────────────────────────────── */
 .sidebarHeader {
   padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -45,7 +45,7 @@
 .sidebarLogoMark {
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, #1e3a8a 0%, #6b8eef 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -59,13 +59,13 @@
   margin: 0;
   font-size: 17px;
   font-weight: 700;
-  color: #1e3a8a;
+  color: var(--primary);
   letter-spacing: -0.2px;
   line-height: 1.2;
 }
 .sidebarSubtitle {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--fg-4);
   margin-top: 2px;
   line-height: 1;
 }
@@ -79,7 +79,7 @@
   justify-content: space-between;
   gap: 8px;
   padding: 10px 14px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 /* ── Nav ─────────────────────────────────────────── */
@@ -97,7 +97,7 @@
 .navGroupTitle {
   font-size: 11px;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--fg-5);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding: 0 8px;
@@ -111,7 +111,7 @@
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: #475569;
+  color: var(--fg-3);
   background: transparent;
   cursor: pointer;
   margin-bottom: 2px;
@@ -123,19 +123,19 @@
   position: relative;
 }
 .navItem:hover {
-  background: #f3f4f6;
-  color: #0f172a;
+  background: var(--bg-muted);
+  color: var(--fg-1);
 }
 .navItem:active {
   transform: scale(0.98);
 }
 .navItemActive {
-  background: #1e3a8a !important;
+  background: var(--primary) !important;
   color: #ffffff !important;
   font-weight: 500;
 }
 .navItemActive:hover {
-  background: #1e40af !important;
+  background: var(--primary-hover) !important;
   color: #ffffff !important;
 }
 .navItemActive .navIcon {
@@ -156,7 +156,7 @@
 /* ── Sidebar Footer ─────────────────────────────── */
 .sidebarFooter {
   padding: 14px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
 .userInfo {
@@ -171,7 +171,7 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1e3a8a 0%, #6b8eef 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -187,14 +187,14 @@
 .userName {
   font-size: 13px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--fg-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .userRole {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--fg-5);
 }
 /* Staff/admin hats get a colored pill instead of plain gray text — the
    "which hat am I on" confusion (2026-08-22) came from this row looking
@@ -206,8 +206,8 @@
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: #b91c1c;
-  background: #fee2e2;
+  color: var(--danger-fg);
+  background: var(--danger-bg);
   border-radius: 4px;
   padding: 1px 6px;
   margin-top: 2px;
@@ -215,7 +215,7 @@
 .logoutBtn {
   background: none;
   border: none;
-  color: #dc2626;
+  color: var(--danger);
   padding: 6px;
   border-radius: 6px;
   cursor: pointer;
@@ -225,7 +225,7 @@
   flex-shrink: 0;
 }
 .logoutBtn:hover {
-  background: #fee2e2;
+  background: var(--danger-bg);
 }
 /* ══════════════════════════════════════════════════
    MAIN AREA
@@ -270,7 +270,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #1e3a8a;
+  background: var(--primary);
   color: #fff;
   display: flex;
   align-items: center;
@@ -281,7 +281,7 @@
 .headerUserName {
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: var(--fg-3);
 }
 /* ── Main Content — padding 24px ─────────────────── */
 .mainContent {
@@ -308,7 +308,8 @@
 .navLoadingOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(248, 250, 252, 0.7);
+  background: var(--bg-canvas);
+  opacity: 0.85;
   backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
@@ -319,15 +320,15 @@
 .navLoadingSpinner {
   width: 36px;
   height: 36px;
-  border: 3px solid rgba(30, 58, 138, 0.15);
-  border-top-color: #1e3a8a;
+  border: 3px solid var(--primary-muted);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
 /* ══════════════════════════════════════════════════
    PAGE COMPONENTS — from design spec
 ══════════════════════════════════════════════════ */
-/* PageHeader — title 28px/700, subtitle 14px/#6b7280 */
+/* PageHeader — title 28px/700, subtitle 14px */
 .pageHeader {
   display: flex;
   justify-content: space-between;
@@ -338,14 +339,14 @@
   margin: 0 0 4px;
   font-size: 28px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--fg-2);
   letter-spacing: -0.3px;
   line-height: 1.2;
 }
 .pageSubtitle {
   margin: 0;
   font-size: 14px;
-  color: #6b7280;
+  color: var(--fg-4);
   font-weight: 400;
 }
 .pageActions {
@@ -362,23 +363,23 @@
   margin-bottom: 20px;
 }
 .statCard {
-  background: #ffffff;
+  background: var(--bg-surface);
   border-radius: 12px;
   padding: 18px 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e5e7eb;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
   transition:
     box-shadow 0.2s ease,
     transform 0.2s ease;
   cursor: default;
 }
 .statCard:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 .statLabel {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--fg-4);
   font-weight: 500;
   margin-bottom: 8px;
   display: flex;
@@ -388,7 +389,7 @@
 .statValue {
   font-size: 26px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--fg-2);
   margin: 0;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
@@ -401,18 +402,18 @@
   gap: 4px;
 }
 .statChangePositive {
-  color: #059669;
+  color: var(--success);
 }
 .statChangeNegative {
-  color: #dc2626;
+  color: var(--danger);
 }
 /* ── Content Card ────────────────────────────────── */
 .contentCard {
-  background: #ffffff;
+  background: var(--bg-surface);
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e5e7eb;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
   margin-bottom: 20px;
 }
 .cardHeader {
@@ -421,13 +422,13 @@
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border);
 }
 .cardTitle {
   margin: 0;
   font-size: 17px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--fg-2);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -436,7 +437,7 @@
 .emptyState {
   text-align: center;
   padding: 56px 24px;
-  color: #6b7280;
+  color: var(--fg-4);
 }
 .emptyStateIcon {
   font-size: 44px;
@@ -447,14 +448,14 @@
 }
 .emptyStateText {
   font-size: 14px;
-  color: #9ca3af;
+  color: var(--fg-5);
   margin-bottom: 16px;
 }
 /* ── Modal ───────────────────────────────────────── */
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -464,9 +465,9 @@
   animation: fadeIn 0.15s ease;
 }
 .modalContent {
-  background: #ffffff;
+  background: var(--bg-surface);
   border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-xl);
   max-width: 600px;
   width: 100%;
   max-height: 90vh;
@@ -475,24 +476,24 @@
 }
 .modalHeader {
   padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: sticky;
   top: 0;
-  background: #ffffff;
+  background: var(--bg-surface);
   z-index: 1;
   border-radius: 16px 16px 0 0;
 }
 .modalTitle {
   font-size: 17px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--fg-2);
   margin: 0;
 }
 .modalClose {
-  background: #f3f4f6;
+  background: var(--bg-muted);
   border: none;
   width: 30px;
   height: 30px;
@@ -500,15 +501,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+  color: var(--fg-4);
   cursor: pointer;
   transition: all 0.15s;
   font-size: 18px;
   line-height: 1;
 }
 .modalClose:hover {
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--danger-bg);
+  color: var(--danger);
   transform: rotate(90deg);
 }
 .modalBody {
@@ -516,11 +517,11 @@
 }
 .modalFooter {
   padding: 16px 24px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border);
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  background: #f9fafb;
+  background: var(--bg-sunken);
   border-radius: 0 0 16px 16px;
 }
 /* ══════════════════════════════════════════════════
@@ -532,7 +533,7 @@
   width: 100%;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
+  background: var(--bg-canvas);
   flex-direction: column;
   gap: 0;
 }
@@ -544,12 +545,13 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: rgba(30, 58, 138, 0.3);
+  background: var(--primary);
+  opacity: 0.3;
   animation: bounceDot 1.4s ease-in-out infinite;
 }
 .fullPageLoaderDot:nth-child(2) {
   animation-delay: 0.16s;
-  background: rgba(30, 58, 138, 0.55);
+  opacity: 0.55;
 }
 .fullPageLoaderDot:nth-child(3) {
   animation-delay: 0.32s;

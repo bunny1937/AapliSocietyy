@@ -5,6 +5,7 @@ import {
   Card, PageHeader, Button, Badge, Spinner, Toast, EmptyState,
   Modal, StatCard, tokens, grid, Field, Input, Select, Textarea,
 } from "@/components/visitor/ui";
+import notify from "@/lib/notify";
 
 async function api(url, opts) {
   const res = await fetch(url, {
@@ -127,7 +128,7 @@ export default function PaymentsPage() {
   }
 
   async function reverse(row) {
-    const reason = window.prompt(
+    const reason = await notify.prompt(
       `Reverse ${row.transactionId} (${money(row.amount)})?\n\nThe original stays in the ledger flagged as reversed and a mirror entry cancels it. Reason:`,
       "",
     );
@@ -367,10 +368,10 @@ export default function PaymentsPage() {
         <>
           <div style={{ ...grid(190), marginBottom: 18 }}>
             <StatCard label="Payments" value={summary.count} color={tokens.primary} />
-            <StatCard label="Total received" value={money(summary.amount)} color="#16a34a" />
-            <StatCard label="Interest cleared" value={money(summary.interest)} color="#d97706" />
-            <StatCard label="Principal cleared" value={money(summary.principal)} color="#2563eb" />
-            <StatCard label="Advance credit" value={money(summary.advance)} color="#7c3aed" />
+            <StatCard label="Total received" value={money(summary.amount)} color="var(--success)" />
+            <StatCard label="Interest cleared" value={money(summary.interest)} color="var(--warning)" />
+            <StatCard label="Principal cleared" value={money(summary.principal)} color="var(--primary)" />
+            <StatCard label="Advance credit" value={money(summary.advance)} color="var(--accent)" />
           </div>
 
           <Card>
@@ -430,7 +431,7 @@ export default function PaymentsPage() {
                         <tr key={r._id} style={r.isReversed ? { opacity: 0.55 } : undefined}>
                           <td style={S.td}>
                             <div style={{ fontWeight: 700 }}>{r.transactionId}</div>
-                            {r.isReversed && <Badge color="#991b1b">Reversed</Badge>}
+                            {r.isReversed && <Badge color="var(--danger-fg)">Reversed</Badge>}
                             {r.billPeriodId && <div style={S.sub}>{r.billPeriodId}</div>}
                           </td>
                           <td style={S.td}>{fmtDate(r.date)}</td>
@@ -450,7 +451,7 @@ export default function PaymentsPage() {
                           <td style={S.td}>
                             <div style={S.sub}>Interest {money(b.interestCleared)}</div>
                             <div style={S.sub}>Principal {money(b.principalCleared)}</div>
-                            {b.advanceCredit ? <div style={{ ...S.sub, color: "#7c3aed", fontWeight: 700 }}>Advance {money(b.advanceCredit)}</div> : null}
+                            {b.advanceCredit ? <div style={{ ...S.sub, color: "var(--accent)", fontWeight: 700 }}>Advance {money(b.advanceCredit)}</div> : null}
                           </td>
                           <td style={S.td}>
                             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -481,7 +482,7 @@ export default function PaymentsPage() {
       {tab === "pending" && (
         <>
           {pendingDone?.bills?.length > 0 && (
-            <Card style={{ marginBottom: 18, borderLeft: "4px solid #F59E0B" }}>
+            <Card style={{ marginBottom: 18, borderLeft: "4px solid var(--warning)" }}>
               <div style={{ fontWeight: 700, marginBottom: 10 }}>
                 Payment Done — awaiting Excel confirmation ({pendingDone.bills.length})
               </div>
@@ -521,9 +522,9 @@ export default function PaymentsPage() {
 
           <div style={{ ...grid(190), marginBottom: 18 }}>
             <StatCard label="Late members" value={pending?.totalMembers ?? 0} color={tokens.danger} />
-            <StatCard label="Total due" value={money(pending?.totalDue)} color="#dc2626" />
-            <StatCard label="Interest due" value={money(pending?.totalInterestDue)} color="#d97706" />
-            <StatCard label="Principal due" value={money(pending?.totalPrincipalDue)} color="#2563eb" />
+            <StatCard label="Total due" value={money(pending?.totalDue)} color="var(--danger)" />
+            <StatCard label="Interest due" value={money(pending?.totalInterestDue)} color="var(--warning)" />
+            <StatCard label="Principal due" value={money(pending?.totalPrincipalDue)} color="var(--primary)" />
           </div>
 
           <Card>
@@ -557,9 +558,9 @@ export default function PaymentsPage() {
                         <td style={S.td}>{m.wing}-{m.flatNo}</td>
                         <td style={S.td}>{m.ownerName}</td>
                         <td style={S.td}>{m.oldestPeriod}</td>
-                        <td style={{ ...S.td, color: "#dc2626", fontWeight: 700 }}>{fmtDate(m.deadline)}</td>
+                        <td style={{ ...S.td, color: "var(--danger)", fontWeight: 700 }}>{fmtDate(m.deadline)}</td>
                         <td style={{ ...S.td, ...S.num }}>{money(m.principalOutstanding)}</td>
-                        <td style={{ ...S.td, ...S.num, color: "#dc2626" }}>{money(m.interestOutstanding)}</td>
+                        <td style={{ ...S.td, ...S.num, color: "var(--danger)" }}>{money(m.interestOutstanding)}</td>
                         <td style={{ ...S.td, ...S.num, fontWeight: 800 }}>{money(m.totalOutstanding)}</td>
                         <td style={S.td}>
                           <Button size="sm" onClick={() => openRecordModal(m.memberId)}>Record payment</Button>
@@ -589,7 +590,7 @@ export default function PaymentsPage() {
       >
         {edit && (
           <div style={{ display: "grid", gap: 12 }}>
-            <div style={{ padding: 10, borderRadius: 8, background: "#f3f4f6", fontSize: 12.5, color: tokens.sub }}>
+            <div style={{ padding: 10, borderRadius: 8, background: "var(--bg-muted)", fontSize: 12.5, color: tokens.sub }}>
               Amount ({money(edit.amount)}) cannot be edited here - changing it would desynchronise
               bill allocation and receipts. Reverse this payment and record a corrected one instead.
             </div>
@@ -678,7 +679,7 @@ export default function PaymentsPage() {
           )}
 
           {outstanding && (
-            <Card pad={14} style={{ background: outstanding.isPaymentBlocked ? "#FEF2F2" : "#F0F9FF" }}>
+            <Card pad={14} style={{ background: outstanding.isPaymentBlocked ? "var(--danger-bg)" : "var(--primary-tint)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                 <div>
                   <div style={{ fontWeight: 700 }}>{selectedMember?.wing}-{selectedMember?.roomNo}</div>
@@ -686,12 +687,12 @@ export default function PaymentsPage() {
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={S.sub}>Total outstanding</div>
-                  <div style={{ fontWeight: 800, fontSize: 18, color: "#dc2626" }}>{money(outstanding.totalOutstanding)}</div>
+                  <div style={{ fontWeight: 800, fontSize: 18, color: "var(--danger)" }}>{money(outstanding.totalOutstanding)}</div>
                 </div>
               </div>
               <div style={S.sub}>Principal {money(outstanding.principalAmount)} · Interest {money(outstanding.interestAmount)}</div>
               {outstanding.isPaymentBlocked && (
-                <div style={{ marginTop: 8, fontSize: 12.5, color: "#991b1b", fontWeight: 600 }}>
+                <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--danger-fg)", fontWeight: 600 }}>
                   {outstanding.blockMessage || "Payment window closed for this member."}
                 </div>
               )}

@@ -8,7 +8,7 @@
 .title {
   font-size: 28px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--fg-2);
   margin-bottom: 0.5rem;
 }
 .subtitle {
@@ -92,20 +92,20 @@
   font-weight: 600;
 }
 .badgeActive {
-  background: #D1FAE5;
-  color: #065F46;
+  background: var(--success-bg);
+  color: var(--success-fg);
 }
 .badgeInactive {
-  background: #FEE2E2;
-  color: #991B1B;
+  background: var(--danger-bg);
+  color: var(--danger-fg);
 }
 .badgeSuspended {
-  background: #FEF3C7;
-  color: #92400E;
+  background: var(--warning-bg);
+  color: var(--warning-fg);
 }
 .badgeBlocked {
-  background: #DBEAFE;
-  color: #1E40AF;
+  background: var(--info-bg);
+  color: var(--info);
 }
 .memberName {
   font-size: 1.25rem;
@@ -146,7 +146,7 @@
   transition: all 0.2s;
 }
 .viewButton:hover {
-  background: #1E40AF;
+  background: var(--primary-hover);
 }
 .loader {
   display: flex;
@@ -307,8 +307,8 @@
   box-shadow: 0 0 0 3px var(--border);
 }
 .timelineItem.current .timelineDot {
-  background: #10B981;
-  box-shadow: 0 0 0 3px #D1FAE5;
+  background: var(--success);
+  box-shadow: 0 0 0 3px var(--success-bg);
 }
 .timelineItem::before {
   content: '';
@@ -335,8 +335,8 @@
   margin-bottom: 0.5rem;
 }
 .currentBadge {
-  background: #D1FAE5;
-  color: #065F46;
+  background: var(--success-bg);
+  color: var(--success-fg);
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
   font-size: 0.75rem;
@@ -348,11 +348,11 @@
   margin-bottom: 0.5rem;
 }
 .credit {
-  color: #10B981;
+  color: var(--success);
   font-weight: 600;
 }
 .debit {
-  color: #EF4444;
+  color: var(--danger);
   font-weight: 600;
 }
 .historyCard {
@@ -371,7 +371,7 @@
   border-bottom: 1px solid var(--border);
 }
 .sequenceBadge {
-  background: #3B82F6;
+  background: var(--accent);
   color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
@@ -379,7 +379,7 @@
   font-weight: 600;
 }
 .currentBadge {
-  background: #10B981;
+  background: var(--success);
   color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
@@ -388,7 +388,7 @@
   margin-left: auto;
 }
 .currentTenant {
-  border-left: 4px solid #10B981;
+  border-left: 4px solid var(--success);
 }
 .historyDetails {
   display: grid;
@@ -412,8 +412,8 @@
   }
 }
 .infoBox {
-  background: #EFF6FF;
-  border-left: 4px solid #3B82F6;
+  background: var(--info-bg);
+  border-left: 4px solid var(--info);
   padding: 0.75rem 1rem;
   border-radius: 4px;
   margin-bottom: 1rem;
@@ -438,7 +438,7 @@
   font-size: 1rem;
 }
 .sequenceBadge {
-  background: #3B82F6;
+  background: var(--accent);
   color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
@@ -446,13 +446,13 @@
   font-weight: 600;
 }
 .currentTenant {
-  border-left: 4px solid #10B981;
+  border-left: 4px solid var(--success);
   background: rgba(16, 185, 129, 0.05);
 }
 .timelineDot {
   width: 12px;
   height: 12px;
-  background: #6B7280;
+  background: var(--fg-4);
   border-radius: 50%;
   position: absolute;
   left: -6px;

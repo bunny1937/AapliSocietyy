@@ -52,7 +52,7 @@ export default function RouteLoadingBar() {
         style={{
           height: "100%",
           width: `${progress}%`,
-          background: "linear-gradient(90deg, #1e3a8a 0%, #6b8eef 60%, #a5b4fc 100%)",
+          background: "linear-gradient(90deg, var(--primary) 0%, var(--accent) 60%, var(--accent-tint) 100%)",
           borderRadius: "0 3px 3px 0",
           transition: progress === 100
             ? "width 0.2s ease-out, opacity 0.3s ease-out"

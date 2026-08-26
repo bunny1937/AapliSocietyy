@@ -45,12 +45,12 @@ export default function AdminLogin() {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        background: "#000",
+        background: "var(--bg-canvas)",
       }}
     >
       <div
         style={{
-          background: "#1a1a1a",
+          background: "var(--bg-surface)",
           padding: "40px",
           borderRadius: "8px",
           maxWidth: "400px",
@@ -58,7 +58,7 @@ export default function AdminLogin() {
         }}
       >
         <h1
-          style={{ color: "#fff", marginBottom: "30px", textAlign: "center" }}
+          style={{ color: "var(--fg-1)", marginBottom: "30px", textAlign: "center" }}
         >
           🔐 Admin Access
         </h1>
@@ -66,7 +66,7 @@ export default function AdminLogin() {
           <div
             style={{
               background: "#ff000020",
-              color: "#ff6b6b",
+              color: "var(--danger)",
               padding: "12px",
               borderRadius: "4px",
               marginBottom: "20px",
@@ -78,7 +78,7 @@ export default function AdminLogin() {
         <form onSubmit={handleLogin}>
           <div style={{ marginBottom: "20px" }}>
             <label
-              style={{ color: "#aaa", display: "block", marginBottom: "8px" }}
+              style={{ color: "var(--fg-4)", display: "block", marginBottom: "8px" }}
             >
               Email
             </label>
@@ -90,16 +90,16 @@ export default function AdminLogin() {
               style={{
                 width: "100%",
                 padding: "12px",
-                background: "#2a2a2a",
-                border: "1px solid #444",
+                background: "var(--bg-muted)",
+                border: "1px solid var(--border-strong)",
                 borderRadius: "4px",
-                color: "#fff",
+                color: "var(--fg-1)",
               }}
             />
           </div>
           <div style={{ marginBottom: "20px" }}>
             <label
-              style={{ color: "#aaa", display: "block", marginBottom: "8px" }}
+              style={{ color: "var(--fg-4)", display: "block", marginBottom: "8px" }}
             >
               Password
             </label>
@@ -111,16 +111,16 @@ export default function AdminLogin() {
               style={{
                 width: "100%",
                 padding: "12px",
-                background: "#2a2a2a",
-                border: "1px solid #444",
+                background: "var(--bg-muted)",
+                border: "1px solid var(--border-strong)",
                 borderRadius: "4px",
-                color: "#fff",
+                color: "var(--fg-1)",
               }}
             />
           </div>
           <div style={{ marginBottom: "20px" }}>
             <label
-              style={{ color: "#aaa", display: "block", marginBottom: "8px" }}
+              style={{ color: "var(--fg-4)", display: "block", marginBottom: "8px" }}
             >
               Admin Key
             </label>
@@ -133,10 +133,10 @@ export default function AdminLogin() {
               style={{
                 width: "100%",
                 padding: "12px",
-                background: "#2a2a2a",
-                border: "1px solid #444",
+                background: "var(--bg-muted)",
+                border: "1px solid var(--border-strong)",
                 borderRadius: "4px",
-                color: "#fff",
+                color: "var(--fg-1)",
               }}
             />
           </div>
@@ -146,7 +146,7 @@ export default function AdminLogin() {
             style={{
               width: "100%",
               padding: "14px",
-              background: loading ? "#555" : "#4CAF50",
+              background: loading ? "var(--border-strong)" : "var(--success)",
               color: "#fff",
               border: "none",
               borderRadius: "4px",

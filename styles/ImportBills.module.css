@@ -7,24 +7,24 @@
   margin-bottom: 0.5rem;
 }
 .pageHeader p {
-  color: #6B7280;
+  color: var(--fg-4);
   font-size: 0.95rem;
 }
 .uploadCard, .previewCard, .successCard {
-  background: white;
+  background: var(--bg-surface);
   border-radius: 12px;
   padding: 2rem;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 .instructions {
-  background: #F3F4F6;
+  background: var(--bg-muted);
   padding: 1.5rem;
   border-radius: 8px;
   margin-bottom: 2rem;
 }
 .instructions h3 {
   margin-bottom: 1rem;
-  color: #1F2937;
+  color: var(--fg-2);
 }
 .instructions ul {
   margin: 1rem 0;
@@ -32,26 +32,26 @@
 }
 .instructions li {
   margin-bottom: 0.5rem;
-  color: #4B5563;
+  color: var(--fg-3);
 }
 .uploadZone {
-  border: 3px dashed #D1D5DB;
+  border: 3px dashed var(--border-strong);
   border-radius: 12px;
   padding: 3rem;
   text-align: center;
   margin-bottom: 1.5rem;
-  background: #F9FAFB;
+  background: var(--bg-sunken);
   cursor: pointer;
   transition: all 0.3s;
 }
 .uploadZone:hover {
-  border-color: #3B82F6;
-  background: #EFF6FF;
+  border-color: var(--accent);
+  background: var(--accent-tint);
 }
 .uploadLabel {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--fg-3);
   cursor: pointer;
 }
 .statsGrid {
@@ -61,7 +61,7 @@
   margin-bottom: 2rem;
 }
 .statBox {
-  background: white;
+  background: var(--bg-surface);
   border: 3px solid;
   border-radius: 12px;
   padding: 1.5rem;
@@ -76,7 +76,7 @@
 .statLabel {
   display: block;
   font-size: 0.9rem;
-  color: #6B7280;
+  color: var(--fg-4);
   font-weight: 600;
 }
 .alertBox {
@@ -104,25 +104,25 @@
   border-collapse: collapse;
 }
 .previewTable th {
-  background: #F3F4F6;
+  background: var(--bg-muted);
   padding: 0.75rem;
   text-align: left;
   font-weight: 600;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border);
 }
 .previewTable td {
   padding: 0.75rem;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border);
 }
 .errorRow {
-  background: #FEE2E2;
+  background: var(--danger-bg);
 }
 .issueCell {
   font-size: 0.85rem;
-  color: #DC2626;
+  color: var(--danger);
 }
 .issue {
-  background: #FEF2F2;
+  background: var(--danger-bg);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   margin-bottom: 0.25rem;
@@ -143,5 +143,5 @@
 .successCard h2 {
   font-size: 2rem;
   margin-bottom: 1rem;
-  color: #10B981;
+  color: var(--success);
 }

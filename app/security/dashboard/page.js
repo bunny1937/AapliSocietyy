@@ -50,7 +50,7 @@ const S = {
     alignItems: "flex-start",
     gap: 12,
     padding: "14px 0",
-    borderBottom: "1px solid #f1f2f4",
+    borderBottom: "1px solid var(--bg-muted)",
   },
   rowMain: { flex: 1, minWidth: 0 },
   rowName: { fontWeight: 600, color: tokens.text, fontSize: 14 },
@@ -74,9 +74,9 @@ const S = {
     border: tokens.border,
     color: tokens.text,
     textDecoration: "none",
-    background: "#fff",
+    background: "var(--bg-surface)",
   },
-  warnTag: { color: "#b45309", fontWeight: 700, fontSize: 12, marginLeft: 8 },
+  warnTag: { color: "var(--warning-fg)", fontWeight: 700, fontSize: 12, marginLeft: 8 },
   expTag: { color: tokens.danger, fontWeight: 700, fontSize: 12, marginLeft: 8 },
   sosP: { color: tokens.sub, fontSize: 14, marginTop: 0, marginBottom: 14 },
 };
@@ -201,9 +201,9 @@ export default function SecurityDashboardPage() {
   const statList = stats
     ? [
         { label: "Inside now", value: stats.insideNow ?? 0, color: tokens.success, icon: "\uD83C\uDFE0" },
-        { label: "Pending approval", value: stats.pendingNow ?? 0, color: "#f59e0b", icon: "\u23F3" },
+        { label: "Pending approval", value: stats.pendingNow ?? 0, color: "var(--warning)", icon: "\u23F3" },
         { label: "Visitors today", value: stats.totalToday ?? 0, color: tokens.primary, icon: "\uD83D\uDC65" },
-        { label: "Entered today", value: stats.enteredToday ?? 0, color: "#0ea5e9", icon: "\u2705" },
+        { label: "Entered today", value: stats.enteredToday ?? 0, color: "var(--accent)", icon: "\u2705" },
         { label: "Exited today", value: stats.exitedToday ?? 0, color: tokens.sub, icon: "\uD83D\uDEAA" },
         { label: "Rejected today", value: stats.rejectedToday ?? 0, color: tokens.danger, icon: "\u26D4" },
       ]
@@ -216,9 +216,9 @@ export default function SecurityDashboardPage() {
     const rowStyle = {
       ...S.row,
       ...(isExpired
-        ? { background: "#fef2f2", borderRadius: 8, padding: "14px 10px" }
+        ? { background: "var(--danger-bg)", borderRadius: 8, padding: "14px 10px" }
         : waitedLong
-        ? { background: "#fffbeb", borderRadius: 8, padding: "14px 10px" }
+        ? { background: "var(--warning-bg)", borderRadius: 8, padding: "14px 10px" }
         : {}),
     };
     const flat =
@@ -371,7 +371,7 @@ export default function SecurityDashboardPage() {
                 pending.map((v) => renderRow(v, "pending"))
               )}
             </Card>
-            <Card style={approved.length > 0 ? { borderColor: "#10b981", borderWidth: 2 } : {}}>
+            <Card style={approved.length > 0 ? { borderColor: "var(--success)", borderWidth: 2 } : {}}>
               <h3 style={S.sectionTitle}>
                 Resident approved — let them in ({approved.length})
               </h3>

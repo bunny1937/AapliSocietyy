@@ -29,7 +29,7 @@ const S = {
   sectionTitle: { fontSize: 16, fontWeight: 700, color: tokens.text },
   barRow: { display: "flex", alignItems: "center", gap: 10, marginBottom: 8 },
   barLabel: { width: 120, fontSize: 13, color: tokens.sub },
-  barTrack: { flex: 1, height: 10, background: "#f1f5f9", borderRadius: 999, overflow: "hidden" },
+  barTrack: { flex: 1, height: 10, background: "var(--bg-muted)", borderRadius: 999, overflow: "hidden" },
   barFill: { height: "100%", background: tokens.primary, borderRadius: 999 },
   barWrap: { marginTop: 12 },
   barVal: { width: 40, textAlign: "right", fontSize: 13, fontWeight: 600, color: tokens.text },
@@ -39,7 +39,7 @@ const S = {
   hourLabel: { fontSize: 8, color: tokens.sub, textAlign: "center" },
   center: { display: "flex", justifyContent: "center", padding: 48 },
   rangeRow: { display: "flex", gap: 8 },
-  row: { display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #f3f4f6" },
+  row: { display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid var(--bg-muted)" },
   rowMain: { flex: 1, minWidth: 0 },
   rowName: { fontWeight: 600, color: tokens.text },
   rowMeta: { fontSize: 12, color: tokens.sub, marginTop: 2, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" },
@@ -48,8 +48,8 @@ function rangeBtn(active) {
   return {
     padding: "6px 12px",
     borderRadius: 8,
-    border: active ? "1px solid " + tokens.primary : "1px solid #e5e7eb",
-    background: active ? "#eef2ff" : "#fff",
+    border: active ? "1px solid " + tokens.primary : "1px solid var(--border)",
+    background: active ? "var(--accent-tint)" : "var(--bg-surface)",
     color: active ? tokens.primary : tokens.sub,
     fontWeight: 600,
     fontSize: 13,
@@ -99,13 +99,14 @@ export default function AdminVisitorsOverview() {
       <div style={grid(170)}>
         <StatCard label="Total visitors" value={total} icon="👥" />
         <StatCard label="Inside now" value={summary.Entered || 0} color={tokens.success} icon="🟢" />
-        <StatCard label="Awaiting approval" value={summary.Pending || 0} color="#f59e0b" icon="⏳" />
-        <StatCard label="Approved" value={summary.Approved || 0} color="#3b82f6" icon="✅" />
+        <StatCard label="Awaiting approval" value={summary.Pending || 0} color="var(--warning)" icon="⏳" />
+        <StatCard label="Approved" value={summary.Approved || 0} color="var(--accent)" icon="✅" />
         <StatCard label="Rejected" value={summary.Rejected || 0} color={tokens.danger} icon="⛔" />
         <StatCard
           label="Avg approval"
           value={analytics && analytics.avgApprovalMinutes != null ? analytics.avgApprovalMinutes + "m" : "—"}
-          color="#8b5cf6"
+          /* TODO: unmapped color, needs design review (no purple token in canonical palette) */
+          color="var(--accent)"
           icon="⚡"
         />
       </div>

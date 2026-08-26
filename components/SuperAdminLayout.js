@@ -4,9 +4,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   LogOut, LayoutDashboard, Building2, ClipboardList,
-  DatabaseZap, ScrollText, PackageOpen, Search, Bell, Shield,
+  DatabaseZap, ScrollText, PackageOpen, Search, Bell, Shield, Activity, SlidersHorizontal,
 } from "lucide-react";
 import RouteLoadingBar from "./RouteLoadingBar";
+import ThemeToggle from "./theme/ThemeToggle";
 import styles from "@/styles/SuperAdminLayout.module.css";
 const NAV = [
   {
@@ -23,6 +24,8 @@ const NAV = [
       { name: "Data Browser",  path: "/superadmin/data-browser",  icon: <DatabaseZap size={16} strokeWidth={1.75} /> },
       { name: "Logs",          path: "/superadmin/logs",          icon: <ScrollText size={16} strokeWidth={1.75} /> },
       { name: "Exports",       path: "/superadmin/exports",       icon: <PackageOpen size={16} strokeWidth={1.75} /> },
+      { name: "Operations",    path: "/superadmin/operations",    icon: <Activity size={16} strokeWidth={1.75} /> },
+      { name: "Settings",      path: "/superadmin/settings",      icon: <SlidersHorizontal size={16} strokeWidth={1.75} /> },
     ],
   },
 ];
@@ -109,6 +112,10 @@ export default function SuperAdminLayout({ children }) {
         <aside className={styles.sidebar}>
           {/* Logo */}
           <div className={styles.sidebarHeader}>
+            {/* Logo mark on the sidebar's fixed brand-blue background (never
+                themed, see comment above styles.sidebar in tokens.css) — stays
+                literal white in both modes, not var(--bg-surface) which would
+                flip dark and vanish against the blue. */}
             <svg width="28" height="28" viewBox="0 0 64 64" style={{ flexShrink: 0 }}>
               <g fill="#ffffff">
                 <rect x="10" y="20" width="11" height="32" rx="0.5"/>
@@ -176,6 +183,7 @@ export default function SuperAdminLayout({ children }) {
               <span className={styles.searchKbd}>⌘K</span>
             </div>
             <div className={styles.topHeaderRight}>
+              <ThemeToggle />
               <div className={styles.headerUser}>
                 <div className={styles.headerAvatar}>
                   {user.name?.charAt(0)?.toUpperCase()}

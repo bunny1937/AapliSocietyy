@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import styles from "@/styles/Amenities.module.css";
+import notify from "@/lib/notify";
 
 const STATUS_TABS = ["all", "SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
 const label = (s) => (s || "").replace(/_/g, " ").toLowerCase().replace(/^./, (c) => c.toUpperCase());
@@ -163,8 +164,8 @@ export default function MaintenancePage() {
                       )}
                       {m.status === "SCHEDULED" && (
                         <button className={`${styles.btn} ${styles.btnSm} ${styles.btnDanger}`}
-                          onClick={() => {
-                            if (!confirm("Cancel this scheduled maintenance?")) return;
+                          onClick={async () => {
+                            if (!(await notify.confirm("Cancel this scheduled maintenance?", { tone: "warning" }))) return;
                             call(`/api/amenities/maintenance/${m._id}`, null, "DELETE", "Maintenance cancelled");
                           }}>
                           Cancel

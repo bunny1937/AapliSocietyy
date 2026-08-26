@@ -33,7 +33,7 @@ import { reduceToPageAccess } from "@/lib/rbac/page-access-map";
 const EMPTY_DRAFT = {
   name: "",
   description: "",
-  color: "#6366f1",
+  color: "var(--accent)",
   pageAccess: [],
 };
 
@@ -42,12 +42,12 @@ const EMPTY_DRAFT = {
 // server-side permission-expansion logic, just enough to render checkboxes.
 // Keys must match SYSTEM_ROLE_DEFAULTS keys in that file.
 const SEED_TEMPLATES = [
-  { key: "admin", name: "Admin", description: "Full administrative control of the society.", color: "#ef4444" },
-  { key: "secretary", name: "Secretary", description: "Day-to-day operations: members, notices, complaints, visitors.", color: "#3b82f6" },
-  { key: "accountant", name: "Treasurer", description: "Finance, billing, payments, ledger and statements.", color: "#22c55e" },
+  { key: "admin", name: "Admin", description: "Full administrative control of the society.", color: "var(--danger)" },
+  { key: "secretary", name: "Secretary", description: "Day-to-day operations: members, notices, complaints, visitors.", color: "var(--accent)" },
+  { key: "accountant", name: "Treasurer", description: "Finance, billing, payments, ledger and statements.", color: "var(--success)" },
   { key: "auditor", name: "Auditor", description: "Read-only access to finance, billing and audit records.", color: "#a855f7" },
   { key: "committeeMember", name: "Committee Member", description: "Broad read access with limited management.", color: "#14b8a6" },
-  { key: "security", name: "Security", description: "Gate operations: visitor entry/exit, passes and SOS.", color: "#f97316" },
+  { key: "security", name: "Security", description: "Gate operations: visitor entry/exit, passes and SOS.", color: "var(--warning)" },
 ];
 
 export function RoleManager() {
@@ -283,7 +283,7 @@ export function RoleManager() {
                   <span className="flex items-center gap-2">
                     <span
                       className="inline-block h-3 w-3 rounded-full"
-                      style={{ backgroundColor: r.color || "#9ca3af" }}
+                      style={{ backgroundColor: r.color || "var(--fg-5)" }}
                     />
                     <span className="font-medium">{r.name}</span>
                   </span>

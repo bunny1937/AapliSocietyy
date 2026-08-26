@@ -9,7 +9,7 @@
 .title {
   font-size: 28px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--fg-2);
   margin-bottom: 0.5rem;
 }
 .subtitle {
@@ -18,7 +18,8 @@
 }
 /* Progress Card */
 .progressCard {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* TODO: unmapped color, needs design review — decorative purple/blue gradient with no matching token pair */
+  background: linear-gradient(135deg, var(--accent) 0%, var(--fg-4) 100%);
   color: white;
   padding: 2rem;
   border-radius: 12px;
@@ -40,7 +41,7 @@
   margin-bottom: 0.5rem;
 }
 .progressFill {
-  background: white;
+  background: var(--bg-surface);
   height: 100%;
   border-radius: 6px;
   transition: width 0.3s ease;
@@ -55,7 +56,7 @@
 /* Results Card */
 .resultsCard {
   background: var(--bg-primary);
-  border: 2px solid #10B981;
+  border: 2px solid var(--success);
   border-radius: 12px;
   padding: 2rem;
   margin-bottom: 2rem;
@@ -69,7 +70,7 @@
 }
 .resultsHeader h2 {
   margin: 0;
-  color: #10B981;
+  color: var(--success);
   font-size: 1.75rem;
 }
 .closeBtn {
@@ -100,20 +101,20 @@
   border: 2px solid;
 }
 .statBox.success {
-  background: #D1FAE5;
-  border-color: #10B981;
+  background: var(--success-bg);
+  border-color: var(--success);
 }
 .statBox.warning {
-  background: #FEF3C7;
-  border-color: #F59E0B;
+  background: var(--warning-bg);
+  border-color: var(--warning);
 }
 .statBox.error {
-  background: #FEE2E2;
-  border-color: #EF4444;
+  background: var(--danger-bg);
+  border-color: var(--danger);
 }
 .statBox.info {
-  background: #DBEAFE;
-  border-color: #3B82F6;
+  background: var(--info-bg);
+  border-color: var(--primary);
 }
 .statIcon {
   font-size: 2.5rem;
@@ -158,24 +159,24 @@
 }
 /* Warnings */
 .warningsList {
-  background: #FFFBEB;
+  background: var(--warning-bg);
   padding: 1.5rem;
   border-radius: 8px;
-  border: 2px solid #F59E0B;
+  border: 2px solid var(--warning);
   margin-bottom: 1.5rem;
 }
 .warningsList h3 {
   margin: 0 0 1rem 0;
-  color: #92400E;
+  color: var(--warning-fg);
 }
 .warningItem {
   display: flex;
   gap: 0.75rem;
   padding: 0.75rem;
-  background: white;
+  background: var(--bg-surface);
   border-radius: 6px;
   margin-bottom: 0.75rem;
-  border-left: 4px solid #F59E0B;
+  border-left: 4px solid var(--warning);
 }
 .warningItem:last-child {
   margin-bottom: 0;
@@ -186,24 +187,24 @@
 }
 /* Errors */
 .errorsList {
-  background: #FEF2F2;
+  background: var(--danger-bg);
   padding: 1.5rem;
   border-radius: 8px;
-  border: 2px solid #EF4444;
+  border: 2px solid var(--danger);
   margin-bottom: 1.5rem;
 }
 .errorsList h3 {
   margin: 0 0 1rem 0;
-  color: #991B1B;
+  color: var(--danger-fg);
 }
 .errorItem {
   display: flex;
   gap: 0.75rem;
   padding: 0.75rem;
-  background: white;
+  background: var(--bg-surface);
   border-radius: 6px;
   margin-bottom: 0.75rem;
-  border-left: 4px solid #EF4444;
+  border-left: 4px solid var(--danger);
 }
 .errorItem:last-child {
   margin-bottom: 0;
@@ -219,15 +220,15 @@
 }
 /* Credentials Section */
 .credentialsSection {
-  background: #EFF6FF;
+  background: var(--primary-tint);
   padding: 1.5rem;
   border-radius: 8px;
-  border: 2px solid #3B82F6;
+  border: 2px solid var(--primary);
   text-align: center;
 }
 .credentialsSection h3 {
   margin: 0 0 0.5rem 0;
-  color: #1E40AF;
+  color: var(--info);
 }
 .credentialsSection p {
   margin: 0 0 1rem 0;
@@ -235,7 +236,7 @@
 }
 .downloadBtn {
   padding: 0.75rem 2rem;
-  background: #3B82F6;
+  background: var(--primary);
   color: white;
   border: none;
   border-radius: 8px;
@@ -245,7 +246,7 @@
   transition: all 0.2s;
 }
 .downloadBtn:hover {
-  background: #2563EB;
+  background: var(--primary-hover);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
 }
@@ -277,7 +278,7 @@
 }
 .templateBtn {
   padding: 0.75rem 2rem;
-  background: #10B981;
+  background: var(--success);
   color: white;
   border: none;
   border-radius: 8px;
@@ -290,7 +291,7 @@
   gap: 0.5rem;
 }
 .templateBtn:hover {
-  background: #059669;
+  background: var(--success);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
 }
@@ -311,7 +312,7 @@
 }
 .dropzoneActive {
   border-color: var(--primary);
-  background: #EFF6FF;
+  background: var(--primary-tint);
   transform: scale(1.02);
 }
 .dropzoneIcon {
@@ -369,7 +370,7 @@
   margin: 2rem 0;
 }
 .summaryCard {
-  background: white;
+  background: var(--bg-surface);
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -400,8 +401,8 @@
 .errorBanner {
   margin-top: 1rem;
   padding: 1rem;
-  background: #FEE2E2;
-  color: #991B1B;
+  background: var(--danger-bg);
+  color: var(--danger-fg);
   border-radius: 8px;
   font-weight: 600;
   text-align: center;
@@ -409,14 +410,14 @@
 .successBanner {
   margin-top: 1rem;
   padding: 1rem;
-  background: #D1FAE5;
-  color: #065F46;
+  background: var(--success-bg);
+  color: var(--success-fg);
   border-radius: 8px;
   font-weight: 600;
   text-align: center;
 }
 .legend {
-  background: #F9FAFB;
+  background: var(--bg-sunken);
   padding: 1rem;
   border-radius: 8px;
 }
@@ -440,7 +441,7 @@
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1rem;
-  border-bottom: 2px solid #E5E7EB;
+  border-bottom: 2px solid var(--border);
 }
 .tabButton {
   padding: 0.75rem 1.5rem;
@@ -448,20 +449,20 @@
   border: none;
   cursor: pointer;
   font-weight: 600;
-  color: #6B7280;
+  color: var(--fg-4);
   transition: all 0.2s;
 }
 .tabButton:hover {
-  color: #3B82F6;
+  color: var(--primary);
 }
 .activeTab {
-  color: #3B82F6 !important;
-  border-bottom: 3px solid #3B82F6;
+  color: var(--primary) !important;
+  border-bottom: 3px solid var(--primary);
 }
 .previewTable {
   overflow: auto;
   max-height: 500px;
-  border: 2px solid #E5E7EB;
+  border: 2px solid var(--border);
   border-radius: 8px;
   margin-bottom: 2rem;
 }
@@ -472,7 +473,7 @@
 }
 .previewTable td {
   padding: 0.75rem;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border);
   min-width: 120px;
   max-width: 250px;
   overflow: hidden;
@@ -480,7 +481,7 @@
   white-space: nowrap;
 }
 .headerCell {
-  background: #F3F4F6 !important;
+  background: var(--bg-muted) !important;
   font-weight: 700 !important;
   position: sticky;
   top: 0;
@@ -493,7 +494,7 @@
 }
 .btnPrimary {
   padding: 1rem 2rem;
-  background: #3B82F6;
+  background: var(--primary);
   color: white;
   border: none;
   border-radius: 8px;
@@ -506,8 +507,8 @@
 }
 .btnSecondary {
   padding: 1rem 2rem;
-  background: #F3F4F6;
-  color: #374151;
+  background: var(--bg-muted);
+  color: var(--fg-3);
   border: none;
   border-radius: 8px;
   font-weight: 600;

@@ -150,11 +150,13 @@ function MetricCard({ stage, m }) {
 function PhaseBar({ phases }) {
   if (!phases) return <span className={styles.hint}>no browser timing entry matched (older browser or cached response)</span>;
   const segs = [
-    { key: "dns", label: "DNS", ms: phases.dns, color: "#8a63f2" },
-    { key: "tcp", label: "TCP", ms: phases.tcp, color: "#3b82f6" },
+    // TODO: unmapped color, needs design review (no purple token in canonical palette)
+    { key: "dns", label: "DNS", ms: phases.dns, color: "var(--accent)" },
+    { key: "tcp", label: "TCP", ms: phases.tcp, color: "var(--accent)" },
+    // TODO: unmapped color, needs design review (no cyan token in canonical palette)
     { key: "tls", label: "TLS", ms: phases.tls, color: "#06b6d4" },
-    { key: "ttfb", label: "Waiting (TTFB)", ms: phases.ttfb, color: "#f59e0b" },
-    { key: "download", label: "Download", ms: phases.download, color: "#2f9e5c" },
+    { key: "ttfb", label: "Waiting (TTFB)", ms: phases.ttfb, color: "var(--warning)" },
+    { key: "download", label: "Download", ms: phases.download, color: "var(--success)" },
   ];
   const total = Math.max(phases.total, 1);
   return (

@@ -4,14 +4,15 @@
   padding: 2rem 1rem;
 }
 .card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
 }
 .header {
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  color: #fff;
+  /* TODO: unmapped color, needs design review (no purple token in canonical palette) */
+  background: linear-gradient(135deg, var(--primary-hover), #7c3aed);
+  color: var(--bg-surface);
   padding: 1.75rem 2rem;
 }
 .header h1 {
@@ -37,20 +38,20 @@
 .field label {
   font-weight: 600;
   font-size: 0.9rem;
-  color: #374151;
+  color: var(--fg-3);
   display: flex;
   justify-content: space-between;
 }
 .hint {
   font-weight: 400;
-  color: #9ca3af;
+  color: var(--fg-5);
   font-size: 0.8rem;
 }
 .field select,
 .field input,
 .field textarea {
   padding: 0.65rem 0.9rem;
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid var(--border);
   border-radius: 8px;
   font-size: 0.9rem;
   outline: none;
@@ -58,30 +59,32 @@
   width: 100%;
   box-sizing: border-box;
   font-family: inherit;
+  background: var(--bg-input);
+  color: var(--fg-1);
 }
 .field select:focus,
 .field input:focus,
 .field textarea:focus {
-  border-color: #4f46e5;
+  border-color: var(--primary-hover);
 }
 .inputError {
-  border-color: #ef4444 !important;
+  border-color: var(--danger) !important;
 }
 .error {
-  color: #ef4444;
+  color: var(--danger);
   font-size: 0.8rem;
 }
 .notice {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: var(--info-bg);
+  border: 1px solid var(--info);
   border-radius: 8px;
   padding: 0.75rem 1rem;
   font-size: 0.82rem;
-  color: #1e40af;
+  color: var(--info-fg);
 }
 .submitBtn {
-  background: #4f46e5;
-  color: #fff;
+  background: var(--primary-hover);
+  color: var(--bg-surface);
   padding: 0.75rem;
   border-radius: 8px;
   border: none;
@@ -90,7 +93,7 @@
   cursor: pointer;
 }
 .submitBtn:hover {
-  background: #4338ca;
+  background: var(--primary-press);
 }
 .submitBtn:disabled {
   opacity: 0.6;
@@ -106,12 +109,12 @@
   z-index: 1000;
 }
 .success {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--success-bg);
+  color: var(--success-fg);
 }
 .error {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--danger-bg);
+  color: var(--danger-fg);
 }
 @media (max-width: 600px) {
   .form {

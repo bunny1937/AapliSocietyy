@@ -1,4 +1,4 @@
-.container {
+﻿.container {
   padding: 0;
   max-width: 1600px;
   margin: 0 auto;
@@ -12,18 +12,18 @@
 .header h1 {
   margin: 0 0 0.5rem 0;
   font-size: 28px;
-  color: #1f2937;
+  color: var(--fg-2);
 }
 .header p {
   margin: 0;
-  color: #6b7280;
+  color: var(--fg-4);
 }
 .headerActions {
   display: flex;
   gap: 1rem;
 }
 .filtersCard {
-  background: white;
+  background: var(--bg-surface);
   padding: 1.5rem;
   border-radius: 12px;
   margin-bottom: 2rem;
@@ -41,25 +41,25 @@
 .searchInput {
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   font-size: 0.95rem;
 }
 .searchInput:focus {
   outline: none;
-  border-color: #4f46e5;
+  border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 .select {
   padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   font-size: 0.95rem;
-  background: white;
+  background: var(--bg-surface);
 }
 .resultCount {
   padding: 0.75rem 1.5rem;
-  background: #4f46e5;
+  background: var(--primary);
   color: white;
   border-radius: 8px;
   font-weight: 600;
@@ -71,7 +71,7 @@
   gap: 1.5rem;
 }
 .billCard {
-  background: white;
+  background: var(--bg-surface);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -81,10 +81,11 @@
 .billCard:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-  border-color: #4f46e5;
+  border-color: var(--primary);
 }
 .billThumbnail {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* TODO: unmapped color, needs design review */
+  background: linear-gradient(135deg, var(--accent) 0%, var(--fg-4) 100%);
   color: white;
   padding: 1.5rem;
   position: relative;
@@ -159,16 +160,16 @@
   background: rgba(255, 255, 255, 0.2);
 }
 .statusBadge.paid {
-  background: #10b981;
+  background: var(--success);
 }
 .statusBadge.unpaid {
-  background: #ef4444;
+  background: var(--danger);
 }
 .statusBadge.partial {
-  background: #f59e0b;
+  background: var(--warning);
 }
 .statusBadge.overdue {
-  background: #dc2626;
+  background: var(--danger);
   animation: pulse 2s infinite;
 }
 @keyframes pulse {
@@ -203,25 +204,25 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border);
 }
 .actionBtn {
   padding: 0.75rem;
-  background: white;
+  background: var(--bg-surface);
   border: none;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--border);
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #4f46e5;
+  color: var(--primary);
   transition: all 0.2s;
 }
 .actionBtn:last-child {
   border-right: none;
 }
 .actionBtn:hover {
-  background: #f9fafb;
-  color: #4338ca;
+  background: var(--bg-sunken);
+  color: var(--primary-hover);
 }
 .loading {
   display: flex;
@@ -229,13 +230,13 @@
   align-items: center;
   justify-content: center;
   padding: 4rem;
-  color: #6b7280;
+  color: var(--fg-4);
 }
 .spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid #e5e7eb;
-  border-top-color: #4f46e5;
+  border: 4px solid var(--border);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
@@ -246,7 +247,7 @@
 .emptyState {
   text-align: center;
   padding: 4rem;
-  background: white;
+  background: var(--bg-surface);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
@@ -256,11 +257,11 @@
 }
 .emptyState h3 {
   margin: 0 0 0.5rem 0;
-  color: #1f2937;
+  color: var(--fg-2);
 }
 .emptyState p {
   margin: 0;
-  color: #6b7280;
+  color: var(--fg-4);
 }
 /* Modal Styles */
 .modal {
@@ -277,7 +278,7 @@
   padding: 2rem;
 }
 .modalContent {
-  background: white;
+  background: var(--bg-surface);
   border-radius: 12px;
   width: 100%;
   max-width: 900px;
@@ -288,7 +289,7 @@
 }
 .modalHeader {
   padding: 1.5rem 2rem;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -299,21 +300,21 @@
 }
 .modalHeader p {
   margin: 0;
-  color: #6b7280;
+  color: var(--fg-4);
   font-size: 0.95rem;
 }
 .closeBtn {
   background: none;
   border: none;
   font-size: 2rem;
-  color: #9ca3af;
+  color: var(--fg-5);
   cursor: pointer;
   padding: 0;
   line-height: 1;
   transition: color 0.2s;
 }
 .closeBtn:hover {
-  color: #ef4444;
+  color: var(--danger);
 }
 .modalBody {
   flex: 1;
@@ -329,38 +330,38 @@
   justify-content: space-between;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--border);
 }
 .billLogo h3 {
   margin: 0 0 0.5rem 0;
-  color: #1f2937;
+  color: var(--fg-2);
 }
 .billLogo p {
   margin: 0;
-  color: #6b7280;
+  color: var(--fg-4);
   font-size: 0.95rem;
 }
 .billMeta {
   text-align: right;
   font-size: 0.95rem;
-  color: #374151;
+  color: var(--fg-3);
 }
 .billMeta div {
   margin-bottom: 0.5rem;
 }
 .billTo {
-  background: #f9fafb;
+  background: var(--bg-sunken);
   padding: 1.5rem;
   border-radius: 8px;
   margin-bottom: 2rem;
 }
 .billTo h4 {
   margin: 0 0 1rem 0;
-  color: #4f46e5;
+  color: var(--primary);
 }
 .billTo p {
   margin: 0.25rem 0;
-  color: #374151;
+  color: var(--fg-3);
 }
 .billTable {
   width: 100%;
@@ -368,15 +369,15 @@
   margin-bottom: 2rem;
 }
 .billTable th {
-  background: #f9fafb;
+  background: var(--bg-sunken);
   padding: 1rem;
   text-align: left;
   font-weight: 600;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--border);
 }
 .billTable td {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--bg-muted);
   text-align: left;
 }
 .billTable td:last-child {
@@ -387,34 +388,34 @@
   font-weight: 700;
 }
 .subtotal td {
-  background: #f9fafb;
+  background: var(--bg-sunken);
   padding-top: 1rem;
 }
 .paid td {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--success-bg);
+  color: var(--success-fg);
 }
 .balance td {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--info-bg);
+  color: var(--info);
   font-size: 1.1rem;
 }
 .notes {
-  background: #eff6ff;
+  background: var(--info-bg);
   padding: 1rem;
   border-radius: 8px;
   font-size: 0.95rem;
-  color: #1e40af;
+  color: var(--info);
 }
 .modalFooter {
   padding: 1.5rem 2rem;
-  border-top: 2px solid #e5e7eb;
+  border-top: 2px solid var(--border);
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
 }
 .tableWrapper {
-  background: white;
+  background: var(--bg-surface);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   overflow-x: auto;
@@ -428,12 +429,12 @@
   padding: 12px 14px;
   text-align: left;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--fg-4);
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  background: #f9fafb;
-  border-bottom: 2px solid #e5e7eb;
+  background: var(--bg-sunken);
+  border-bottom: 2px solid var(--border);
   white-space: nowrap;
 }
 .billRow {
@@ -441,16 +442,16 @@
   transition: background 0.15s;
 }
 .billRow:hover {
-  background: #f5f3ff;
+  background: var(--accent-tint);
 }
 .billRow td {
   padding: 12px 14px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--bg-muted);
   vertical-align: middle;
 }
 .periodTag {
-  background: #ede9fe;
-  color: #5b21b6;
+  background: var(--accent-tint);
+  color: var(--primary);
   padding: 2px 8px;
   border-radius: 8px;
   font-size: 0.78rem;
@@ -458,20 +459,20 @@
 }
 .actionBtn {
   padding: 5px 12px;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--fg-3);
   transition: all 0.15s;
   white-space: nowrap;
 }
 .actionBtn:hover {
-  background: #4f46e5;
+  background: var(--primary);
   color: white;
-  border-color: #4f46e5;
+  border-color: var(--primary);
 }
 .actionBtn:disabled {
   opacity: 0.5;
@@ -484,7 +485,7 @@
 }
 .tabs {
   display: flex;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--border);
   padding: 0 2rem;
 }
 @media (max-width: 768px) {

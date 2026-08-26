@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import styles from "@/styles/Amenities.module.css";
+import notify from "@/lib/notify";
 
 const iso = (d) => d.toISOString().slice(0, 10);
 const label = (s) => (s || "").replace(/_/g, " ").toLowerCase().replace(/^./, (c) => c.toUpperCase());
@@ -170,7 +171,7 @@ export default function EventsPage() {
                         {["DRAFT", "PUBLISHED"].includes(e.status) && (
                           <button className={`${styles.btn} ${styles.btnSm} ${styles.btnDanger}`}
                             onClick={async () => {
-                              const reason = prompt("Why is this event being cancelled? Registrants will be told.");
+                              const reason = await notify.prompt("Why is this event being cancelled? Registrants will be told.");
                               if (reason === null) return;
                               const res = await fetch(`/api/amenities/events/${e._id}`, {
                                 method: "DELETE", credentials: "include",

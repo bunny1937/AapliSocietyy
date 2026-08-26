@@ -109,8 +109,8 @@ const Row = ({ children }) => (
 const Note = ({ tone = "info", children }) => {
   const c =
     tone === "warn"
-      ? { bg: "var(--cx-warn-bg,#fff7ed)", bd: "var(--cx-warn,#f59e0b)" }
-      : { bg: "var(--cx-info-bg,#eff6ff)", bd: "var(--cx-info,#3b82f6)" };
+      ? { bg: "var(--cx-warn-bg,var(--bg-muted))", bd: "var(--cx-warn,var(--warning))" }
+      : { bg: "var(--cx-info-bg,var(--primary-tint))", bd: "var(--cx-info,var(--accent))" };
   return (
     <div
       style={{
@@ -241,7 +241,7 @@ export default function SettingsPanel() {
     const m = issueFor(field);
     if (!m) return null;
     return (
-      <div style={{ fontSize: 12, color: "var(--cx-danger,#dc2626)", marginTop: 4 }}>{m}</div>
+      <div style={{ fontSize: 12, color: "var(--cx-danger,var(--danger))", marginTop: 4 }}>{m}</div>
     );
   };
 
@@ -258,8 +258,8 @@ export default function SettingsPanel() {
             borderRadius: 8,
             fontSize: 13,
             lineHeight: 1.6,
-            background: toast.tone === "ok" ? "var(--cx-ok-bg,#ecfdf5)" : "var(--cx-danger-bg,#fef2f2)",
-            border: `1px solid ${toast.tone === "ok" ? "var(--cx-ok,#10b981)" : "var(--cx-danger,#dc2626)"}`,
+            background: toast.tone === "ok" ? "var(--cx-ok-bg,var(--success-bg))" : "var(--cx-danger-bg,var(--danger-bg))",
+            border: `1px solid ${toast.tone === "ok" ? "var(--cx-ok,var(--success))" : "var(--cx-danger,var(--danger))"}`,
             color: "var(--cx-fg-1)",
           }}
         >

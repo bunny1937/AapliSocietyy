@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Btn, Card, Pill, Segmented, StatTile, Table, Icon } from "@/app/admin/commercial/_ui";
+import notify from "@/lib/notify";
 
 // Admin custody of resident amenity cards: find a card, confirm who holds it,
 // revoke it when it is lost or the resident has moved out.
@@ -128,7 +129,7 @@ export default function PageClient() {
   // card has nothing left to revoke, so the service just issues the
   // replacement straight away.
   const reissue = async (card) => {
-    if (!confirm(`Issue a new card for ${card.holderName}? ${card.status === "ACTIVE" ? "The current one stops working immediately." : ""}`)) return;
+    if (!(await notify.confirm(`Issue a new card for ${card.holderName}? ${card.status === "ACTIVE" ? "The current one stops working immediately." : ""}`, { tone: "warning" }))) return;
     setReissuingId(card._id);
     try {
       const res = await fetch(`/api/amenities/member-cards/${card._id}/reissue`, {

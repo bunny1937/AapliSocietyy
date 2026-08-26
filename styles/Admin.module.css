@@ -12,12 +12,12 @@
 .pageTitle {
   font-size: 28px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--fg-2);
   margin: 0;
 }
 .pageSubtitle {
   font-size: 0.95rem;
-  color: #6B7280;
+  color: var(--fg-4);
   margin-top: 0.25rem;
 }
 /* Stats Grid */
@@ -28,7 +28,7 @@
   margin-bottom: 2rem;
 }
 .statCard {
-  background: white;
+  background: var(--bg-surface);
   border: 3px solid;
   border-radius: 12px;
   padding: 1.5rem;
@@ -43,12 +43,12 @@
 }
 .statLabel {
   font-size: 0.9rem;
-  color: #6B7280;
+  color: var(--fg-4);
   font-weight: 600;
 }
 /* Filters */
 .filtersBar {
-  background: white;
+  background: var(--bg-surface);
   padding: 1.5rem;
   border-radius: 12px;
   margin-bottom: 1.5rem;
@@ -59,25 +59,25 @@
 .searchInput {
   flex: 1;
   padding: 0.75rem 1rem;
-  border: 2px solid #E5E7EB;
+  border: 2px solid var(--border);
   border-radius: 8px;
   font-size: 0.95rem;
 }
 .searchInput:focus {
   outline: none;
-  border-color: #3B82F6;
+  border-color: var(--accent);
 }
 .filterSelect {
   padding: 0.75rem 1rem;
-  border: 2px solid #E5E7EB;
+  border: 2px solid var(--border);
   border-radius: 8px;
   font-size: 0.95rem;
-  background: white;
+  background: var(--bg-surface);
   min-width: 200px;
 }
 /* Table */
 .tableCard {
-  background: white;
+  background: var(--bg-surface);
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -89,7 +89,7 @@
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #E5E7EB;
+  border-bottom: 2px solid var(--border);
 }
 .adminTable {
   width: 100%;
@@ -97,40 +97,40 @@
   font-size: 0.9rem;
 }
 .adminTable th {
-  background: #F9FAFB;
+  background: var(--bg-sunken);
   padding: 0.75rem;
   text-align: left;
   font-weight: 600;
-  color: #374151;
-  border-bottom: 2px solid #E5E7EB;
+  color: var(--fg-3);
+  border-bottom: 2px solid var(--border);
 }
 .adminTable td {
   padding: 0.75rem;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
 .adminTable tbody tr:hover {
-  background: #F9FAFB;
+  background: var(--bg-sunken);
 }
 .selectedRow {
-  background: #DBEAFE !important;
+  background: var(--primary-tint) !important;
 }
 /* Society Info */
 .societyName {
   font-weight: 600;
-  color: #1F2937;
+  color: var(--fg-2);
 }
 .societyId {
   font-size: 0.75rem;
-  color: #9CA3AF;
+  color: var(--fg-5);
   font-family: monospace;
 }
 /* Badges */
 .planBadge {
   display: inline-block;
   padding: 0.25rem 0.75rem;
-  background: #E0E7FF;
-  color: #3730A3;
+  background: var(--accent-tint);
+  color: var(--primary);
   border-radius: 6px;
   font-size: 0.85rem;
   font-weight: 600;
@@ -143,28 +143,28 @@
   font-weight: 600;
 }
 .statusBadge.active {
-  background: #D1FAE5;
-  color: #065F46;
+  background: var(--success-bg);
+  color: var(--success-fg);
 }
 .statusBadge.trial {
-  background: #FEF3C7;
-  color: #92400E;
+  background: var(--warning-bg);
+  color: var(--warning-fg);
 }
 .statusBadge.suspended {
-  background: #FEE2E2;
-  color: #991B1B;
+  background: var(--danger-bg);
+  color: var(--danger-fg);
 }
 .statusBadge.expired {
-  background: #E5E7EB;
-  color: #374151;
+  background: var(--border);
+  color: var(--fg-3);
 }
 .statusBadge.paid {
-  background: #D1FAE5;
-  color: #065F46;
+  background: var(--success-bg);
+  color: var(--success-fg);
 }
 .statusBadge.unpaid {
-  background: #FEE2E2;
-  color: #991B1B;
+  background: var(--danger-bg);
+  color: var(--danger-fg);
 }
 /* Action Buttons */
 .actionButtons {
@@ -191,7 +191,7 @@
 }
 .deleteButton {
   padding: 0.75rem 1.5rem;
-  background: #EF4444;
+  background: var(--danger);
   color: white;
   border: none;
   border-radius: 8px;
@@ -199,7 +199,7 @@
   cursor: pointer;
 }
 .deleteButton:disabled {
-  background: #D1D5DB;
+  background: var(--border-strong);
   cursor: not-allowed;
 }
 /* Browser Controls */
@@ -207,7 +207,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr auto;
   gap: 1.5rem;
-  background: white;
+  background: var(--bg-surface);
   padding: 1.5rem;
   border-radius: 12px;
   margin-bottom: 1.5rem;
@@ -216,26 +216,26 @@
   display: block;
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: #374151;
+  color: var(--fg-3);
 }
 .controlSelect {
   width: 100%;
   padding: 0.75rem;
-  border: 2px solid #E5E7EB;
+  border: 2px solid var(--border);
   border-radius: 8px;
   font-size: 0.95rem;
 }
 /* Info Box */
 .infoBox {
-  background: #DBEAFE;
-  border: 2px solid #3B82F6;
+  background: var(--primary-tint);
+  border: 2px solid var(--accent);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
 }
 .infoBox h4 {
   margin: 0 0 1rem 0;
-  color: #1E40AF;
+  color: var(--info);
 }
 .infoBox ul {
   margin: 0;
@@ -243,26 +243,26 @@
 }
 .infoBox li {
   margin-bottom: 0.5rem;
-  color: #1E3A8A;
+  color: var(--primary);
 }
 /* Empty State */
 .emptyState {
   text-align: center;
   padding: 4rem 2rem;
-  color: #6B7280;
+  color: var(--fg-4);
 }
 .loading {
   text-align: center;
   padding: 3rem;
   font-size: 1.1rem;
-  color: #6B7280;
+  color: var(--fg-4);
 }
 .idCell {
   font-family: monospace;
   font-size: 0.75rem;
-  color: #6B7280;
+  color: var(--fg-4);
 }
 .amountCell {
   font-weight: 600;
-  color: #059669;
+  color: var(--success);
 }

@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import ExcelJS from "exceljs";
+import notify from "@/lib/notify";
 
 // Builds a workbook from our own trusted data and triggers a browser
 // download — no `xlsx`/SheetJS involved (unfixed prototype-pollution + ReDoS
@@ -88,7 +89,7 @@ export default function SuperAdminExportsPage() {
       }
       setPreview(allRows);
     } catch (e) {
-      alert("Preview failed: " + e.message);
+      notify.error("Preview failed: " + e.message);
     } finally {
       setPreviewLoading(false);
     }
@@ -97,7 +98,7 @@ export default function SuperAdminExportsPage() {
     setExporting(true);
     try {
       const rows = preview;
-      if (!rows?.length) { alert("Load preview first"); return; }
+      if (!rows?.length) { notify.info("Load preview first"); return; }
       const headers = ["Society", ...COL_LABELS[selectedCollection]];
       const dataRows = rows.map((r) => [r._societyName, ...rowForCollection(r, selectedCollection)]);
       if (format === "csv") {
@@ -118,44 +119,44 @@ export default function SuperAdminExportsPage() {
     }
   };
   const card = (label, value, color) => (
-    <div style={{ background: "#ffffff", border: `1px solid #e5e7eb`, borderRadius: 12, padding: "18px 20px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
-      <div style={{ color: "#6b7280", fontSize: "13px", fontWeight: 500, marginBottom: 8 }}>{label}</div>
+    <div style={{ background: "var(--bg-surface)", border: `1px solid var(--border)`, borderRadius: 12, padding: "18px 20px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+      <div style={{ color: "var(--fg-4)", fontSize: "13px", fontWeight: 500, marginBottom: 8 }}>{label}</div>
       <div style={{ color, fontSize: "26px", fontWeight: 700, lineHeight: 1.1 }}>{value}</div>
     </div>
   );
   return (
-    <div style={{ padding: 0, maxWidth: 1300, margin: "0 auto", color: "#1f2937" }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: "0.25rem", color: "#1f2937" }}>📦 Data Exports</h1>
-      <p style={{ color: "#6b7280", fontSize: "0.85rem", marginBottom: "1.75rem" }}>
+    <div style={{ padding: 0, maxWidth: 1300, margin: "0 auto", color: "var(--fg-2)" }}>
+      <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: "0.25rem", color: "var(--fg-2)" }}>📦 Data Exports</h1>
+      <p style={{ color: "var(--fg-4)", fontSize: "0.85rem", marginBottom: "1.75rem" }}>
         Export any collection for any society as Excel or CSV.
       </p>
       {/* Summary cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem", marginBottom: "1.75rem" }}>
-        {card("Total Societies", societies.length, "#60a5fa")}
-        {card("Active", societies.filter((s) => s.subscription?.status === "Active").length, "#34d399")}
+        {card("Total Societies", societies.length, "var(--accent)")}
+        {card("Active", societies.filter((s) => s.subscription?.status === "Active").length, "var(--success)")}
         {card("Trial", societies.filter((s) => s.subscription?.status === "Trial").length, "#a78bfa")}
-        {card("Preview Rows", preview?.length ?? "—", "#fbbf24")}
+        {card("Preview Rows", preview?.length ?? "—", "var(--warning)")}
       </div>
       {/* Controls */}
-      <div style={{ background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "20px", marginBottom: "1.5rem", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+      <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px", marginBottom: "1.5rem", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto auto auto", gap: "1rem", alignItems: "flex-end" }}>
           <div>
-            <label style={{ display: "block", color: "#6b7280", fontSize: "12px", fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>SOCIETY</label>
+            <label style={{ display: "block", color: "var(--fg-4)", fontSize: "12px", fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>SOCIETY</label>
             <select
               value={selectedSociety}
               onChange={(e) => { setSelectedSociety(e.target.value); setPreview(null); }}
-              style={{ width: "100%", padding: "0.6rem 0.75rem", borderRadius: 6, border: "1px solid #d1d5db", background: "#ffffff", color: "#1f2937", fontSize: "0.9rem" }}
+              style={{ width: "100%", padding: "0.6rem 0.75rem", borderRadius: 6, border: "1px solid var(--border-strong)", background: "var(--bg-surface)", color: "var(--fg-2)", fontSize: "0.9rem" }}
             >
               <option value="all">All Societies ({societies.length})</option>
               {societies.map((s) => <option key={s._id} value={s._id}>{s.name}</option>)}
             </select>
           </div>
           <div>
-            <label style={{ display: "block", color: "#6b7280", fontSize: "12px", fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>COLLECTION</label>
+            <label style={{ display: "block", color: "var(--fg-4)", fontSize: "12px", fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>COLLECTION</label>
             <select
               value={selectedCollection}
               onChange={(e) => { setSelectedCollection(e.target.value); setPreview(null); }}
-              style={{ width: "100%", padding: "0.6rem 0.75rem", borderRadius: 6, border: "1px solid #d1d5db", background: "#ffffff", color: "#1f2937", fontSize: "0.9rem" }}
+              style={{ width: "100%", padding: "0.6rem 0.75rem", borderRadius: 6, border: "1px solid var(--border-strong)", background: "var(--bg-surface)", color: "var(--fg-2)", fontSize: "0.9rem" }}
             >
               {COLLECTIONS.map((c) => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
             </select>
@@ -163,21 +164,21 @@ export default function SuperAdminExportsPage() {
           <button
             onClick={loadPreview}
             disabled={previewLoading}
-            style={{ padding: "0.6rem 1.25rem", borderRadius: 6, border: "none", background: "#3b82f6", color: "#fff", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", fontSize: "0.9rem" }}
+            style={{ padding: "0.6rem 1.25rem", borderRadius: 6, border: "none", background: "var(--accent)", color: "#fff", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", fontSize: "0.9rem" }}
           >
             {previewLoading ? "Loading..." : "👁 Preview"}
           </button>
           <button
             onClick={() => handleExport("xlsx")}
             disabled={!preview?.length || exporting}
-            style={{ padding: "0.6rem 1.25rem", borderRadius: 6, border: "none", background: preview?.length ? "#059669" : "#374151", color: "#fff", fontWeight: 700, cursor: preview?.length ? "pointer" : "not-allowed", whiteSpace: "nowrap", fontSize: "0.9rem" }}
+            style={{ padding: "0.6rem 1.25rem", borderRadius: 6, border: "none", background: preview?.length ? "var(--success)" : "var(--fg-3)", color: "#fff", fontWeight: 700, cursor: preview?.length ? "pointer" : "not-allowed", whiteSpace: "nowrap", fontSize: "0.9rem" }}
           >
             ⬇ Excel
           </button>
           <button
             onClick={() => handleExport("csv")}
             disabled={!preview?.length || exporting}
-            style={{ padding: "0.6rem 1.25rem", borderRadius: 6, border: "none", background: preview?.length ? "#7c3aed" : "#374151", color: "#fff", fontWeight: 700, cursor: preview?.length ? "pointer" : "not-allowed", whiteSpace: "nowrap", fontSize: "0.9rem" }}
+            style={{ padding: "0.6rem 1.25rem", borderRadius: 6, border: "none", background: preview?.length ? "#7c3aed" : "var(--fg-3)", color: "#fff", fontWeight: 700, cursor: preview?.length ? "pointer" : "not-allowed", whiteSpace: "nowrap", fontSize: "0.9rem" }}
           >
             ⬇ CSV
           </button>
@@ -185,35 +186,35 @@ export default function SuperAdminExportsPage() {
       </div>
       {/* Preview table */}
       {previewLoading && (
-        <div style={{ padding: "3rem", textAlign: "center", color: "#6b7280" }}>Fetching data...</div>
+        <div style={{ padding: "3rem", textAlign: "center", color: "var(--fg-4)" }}>Fetching data...</div>
       )}
       {preview !== null && !previewLoading && (
         preview.length === 0 ? (
-          <div style={{ padding: "3rem", textAlign: "center", color: "#6b7280" }}>No records found for this selection.</div>
+          <div style={{ padding: "3rem", textAlign: "center", color: "var(--fg-4)" }}>No records found for this selection.</div>
         ) : (
-          <div style={{ background: "#ffffff", borderRadius: 12, border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
-            <div style={{ padding: "12px 16px", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f9fafb" }}>
-              <span style={{ color: "#6b7280", fontSize: "13px" }}>
-                Showing <strong style={{ color: "#1f2937" }}>{Math.min(preview.length, 200)}</strong> of <strong style={{ color: "#1f2937" }}>{preview.length}</strong> rows
+          <div style={{ background: "var(--bg-surface)", borderRadius: 12, border: "1px solid var(--border)", overflow: "hidden", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--bg-sunken)" }}>
+              <span style={{ color: "var(--fg-4)", fontSize: "13px" }}>
+                Showing <strong style={{ color: "var(--fg-2)" }}>{Math.min(preview.length, 200)}</strong> of <strong style={{ color: "var(--fg-2)" }}>{preview.length}</strong> rows
               </span>
-              <span style={{ color: "#9ca3af", fontSize: "12px" }}>Download buttons above export ALL rows</span>
+              <span style={{ color: "var(--fg-5)", fontSize: "12px" }}>Download buttons above export ALL rows</span>
             </div>
             <div style={{ overflowX: "auto", maxHeight: 520, overflowY: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-                <thead style={{ position: "sticky", top: 0, background: "#f9fafb", zIndex: 1 }}>
+                <thead style={{ position: "sticky", top: 0, background: "var(--bg-sunken)", zIndex: 1 }}>
                   <tr>
-                    <th style={{ padding: "10px 12px", textAlign: "left", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb", whiteSpace: "nowrap", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Society</th>
+                    <th style={{ padding: "10px 12px", textAlign: "left", color: "var(--fg-4)", fontWeight: 600, borderBottom: "1px solid var(--border)", whiteSpace: "nowrap", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Society</th>
                     {COL_LABELS[selectedCollection].map((h) => (
-                      <th key={h} style={{ padding: "10px 12px", textAlign: "left", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb", whiteSpace: "nowrap", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{h}</th>
+                      <th key={h} style={{ padding: "10px 12px", textAlign: "left", color: "var(--fg-4)", fontWeight: 600, borderBottom: "1px solid var(--border)", whiteSpace: "nowrap", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {preview.slice(0, 200).map((item, i) => (
-                    <tr key={item._id || i} style={{ background: "#ffffff", borderBottom: "1px solid #f3f4f6" }}>
-                      <td style={{ padding: "10px 12px", color: "#1e3a8a", fontWeight: 600, whiteSpace: "nowrap" }}>{item._societyName}</td>
+                    <tr key={item._id || i} style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--bg-muted)" }}>
+                      <td style={{ padding: "10px 12px", color: "var(--primary)", fontWeight: 600, whiteSpace: "nowrap" }}>{item._societyName}</td>
                       {rowForCollection(item, selectedCollection).map((v, ci) => (
-                        <td key={ci} style={{ padding: "10px 12px", color: "#374151", whiteSpace: "nowrap", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}>
+                        <td key={ci} style={{ padding: "10px 12px", color: "var(--fg-3)", whiteSpace: "nowrap", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}>
                           {v === undefined || v === null ? "—" : String(v)}
                         </td>
                       ))}
@@ -226,8 +227,8 @@ export default function SuperAdminExportsPage() {
         )
       )}
       {preview === null && !previewLoading && (
-        <div style={{ padding: "4rem", textAlign: "center", color: "#374151", border: "2px dashed #1f2937", borderRadius: 10, fontSize: "0.9rem" }}>
-          Select a society + collection, then click <strong style={{ color: "#3b82f6" }}>Preview</strong> to see data before exporting.
+        <div style={{ padding: "4rem", textAlign: "center", color: "var(--fg-3)", border: "2px dashed var(--fg-2)", borderRadius: 10, fontSize: "0.9rem" }}>
+          Select a society + collection, then click <strong style={{ color: "var(--accent)" }}>Preview</strong> to see data before exporting.
         </div>
       )}
     </div>

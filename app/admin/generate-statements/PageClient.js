@@ -31,11 +31,11 @@ const STEPS = [
 ];
 
 const TOTALS_META = {
-  income: { label: "Total Income", accent: "#059669", icon: "trending-up", title: "Income" },
-  expenditure: { label: "Total Expenditure", accent: "#dc2626", icon: "trending-down", title: "Expenditure" },
-  assets: { label: "Total Assets", accent: "#6b8eef", icon: "bar-chart-3", title: "Assets" },
-  liabilities: { label: "Total Liabilities & Funds", accent: "#1e3a8a", icon: "wallet", title: "Liabilities & Funds" },
-  other: { label: null, accent: "#1e3a8a", icon: "clipboard-list", title: "Trial Balance & Validation" },
+  income: { label: "Total Income", accent: "var(--success)", icon: "trending-up", title: "Income" },
+  expenditure: { label: "Total Expenditure", accent: "var(--danger)", icon: "trending-down", title: "Expenditure" },
+  assets: { label: "Total Assets", accent: "var(--accent)", icon: "bar-chart-3", title: "Assets" },
+  liabilities: { label: "Total Liabilities & Funds", accent: "var(--primary)", icon: "wallet", title: "Liabilities & Funds" },
+  other: { label: null, accent: "var(--primary)", icon: "clipboard-list", title: "Trial Balance & Validation" },
 };
 
 function scheduleRows(groups) {
@@ -110,11 +110,11 @@ function StepDots({ activeKey, reachedKeys }) {
         const reached = reachedKeys.has(s.key);
         const active = s.key === activeKey;
         return (
-          <div key={s.key} style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 10, background: reached ? "#eff6ff" : "#f9fafb", border: `1px solid ${reached ? "#93c5fd" : "#e5e7eb"}` }}>
-            <span style={{ width: 24, height: 24, borderRadius: "50%", background: reached ? "#1e3a8a" : "#e5e7eb", color: reached ? "#fff" : "#9ca3af", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, animation: active ? "acctPulse 1.4s ease infinite" : "none" }}>
+          <div key={s.key} style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 10, background: reached ? "var(--primary-tint)" : "var(--bg-sunken)", border: `1px solid ${reached ? "var(--accent)" : "var(--border)"}` }}>
+            <span style={{ width: 24, height: 24, borderRadius: "50%", background: reached ? "var(--primary)" : "var(--border)", color: reached ? "#fff" : "var(--fg-5)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, animation: active ? "acctPulse 1.4s ease infinite" : "none" }}>
               <Icon name={s.icon} size={12} />
             </span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: reached ? "#1e3a8a" : "#9ca3af", whiteSpace: "nowrap" }}>{s.label}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: reached ? "var(--primary)" : "var(--fg-5)", whiteSpace: "nowrap" }}>{s.label}</span>
           </div>
         );
       })}
@@ -204,8 +204,8 @@ export default function GenerateStatementsScreen() {
             ))}
           </SectionCard>
           {bannerUnit && (
-            <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", padding: 24, textAlign: "center", animation: "acctFadeUp 0.4s ease" }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 14 }}>Accounting Health Score</div>
+            <div style={{ background: "var(--bg-surface)", borderRadius: 12, border: "1px solid var(--border)", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", padding: 24, textAlign: "center", animation: "acctFadeUp 0.4s ease" }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--fg-4)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 14 }}>Accounting Health Score</div>
               <HealthGauge score={data.health.healthScore} />
             </div>
           )}
@@ -269,9 +269,9 @@ export default function GenerateStatementsScreen() {
           {status !== "idle" && <StepDots activeKey={activeKey} reachedKeys={reachedKeys} />}
 
           {status === "idle" ? (
-            <div style={{ border: "2px dashed #d1d5db", borderRadius: 14, padding: "64px 24px", textAlign: "center", color: "#9ca3af" }}>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 14, color: "#cbd5e1" }}><Icon name="zap" size={40} /></div>
-              <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "#6b7280" }}>Nothing generated yet</p>
+            <div style={{ border: "2px dashed var(--border-strong)", borderRadius: 14, padding: "64px 24px", textAlign: "center", color: "var(--fg-5)" }}>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 14, color: "var(--border-strong)" }}><Icon name="zap" size={40} /></div>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "var(--fg-4)" }}>Nothing generated yet</p>
               <p style={{ margin: "6px 0 0", fontSize: 13 }}>Click Generate Final Statements to build the full statutory package for {data.ie.financialYearLabel}, live.</p>
             </div>
           ) : (
@@ -295,8 +295,8 @@ export default function GenerateStatementsScreen() {
               </div>
 
               <div style={{ marginTop: 24 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#1f2937", marginBottom: 10 }}>Final statutory statements</div>
-                <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--fg-2)", marginBottom: 10 }}>Final statutory statements</div>
+                <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 12, padding: 20 }}>
                   <PrintArea>
                     <StatutoryStatements
                       balanceSheet={data.bs}

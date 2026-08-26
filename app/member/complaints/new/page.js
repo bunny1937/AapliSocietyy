@@ -139,7 +139,7 @@ export default function CreateComplaintPage() {
             🔒 Your complaint is submitted anonymously as a random pseudonym.
             Max 2 per day, 15 min cooldown.
           </div>
-          <div style={{ background: "#FEF3C7", border: "1px solid #F59E0B", borderRadius: "8px", padding: "12px 16px", fontSize: "0.85rem", color: "#92400E", marginBottom: "1rem" }}>
+          <div style={{ background: "var(--warning-bg)", border: "1px solid var(--warning)", borderRadius: "8px", padding: "12px 16px", fontSize: "0.85rem", color: "var(--warning-fg)", marginBottom: "1rem" }}>
             🔒 Complaint submission is currently disabled. Contact your society admin directly.
           </div>
           <button type="submit" className={styles.submitBtn} disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>

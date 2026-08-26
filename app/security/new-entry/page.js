@@ -46,7 +46,7 @@ const S = {
   flatNo: { fontWeight: 700, color: tokens.text, fontSize: 14 },
   flatSub: { fontSize: 12, color: tokens.sub },
   banner: {
-    background: "#eef2ff",
+    background: "var(--accent-tint)",
     color: tokens.text,
     padding: "10px 12px",
     borderRadius: 10,
@@ -63,8 +63,8 @@ const S = {
     marginTop: 18,
     padding: 16,
     borderRadius: 12,
-    border: "1px solid #e5e7eb",
-    background: "#fafafa",
+    border: "1px solid var(--border)",
+    background: "var(--bg-sunken)",
   },
   resultHead: { display: "flex", alignItems: "center", justifyContent: "space-between" },
   resultName: { fontSize: 15, color: tokens.text },
@@ -81,7 +81,7 @@ function flatRow(active) {
     borderRadius: 10,
     cursor: "pointer",
     border: active ? "1px solid " + tokens.primary : "1px solid transparent",
-    background: active ? "#eef2ff" : "transparent",
+    background: active ? "var(--accent-tint)" : "transparent",
   };
 }
 export default function NewEntryPage() {

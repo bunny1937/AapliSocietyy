@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useEffect } from "react";
 import ExcelJS from "exceljs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,6 +6,8 @@ import { apiClient } from "@/lib/api-client";
 import styles from "@/styles/Admin.module.css";
 import DropZone from "../../../components/DropZone";
 import BulkImportWizard from "./BulkImportWizard";
+import DeleteWizard from "./DeleteWizard";
+import notify from "@/lib/notify";
 
 // exceljs for all reading and writing — not `xlsx`/SheetJS, which has an
 // unfixed prototype-pollution + ReDoS CVE in its parser (GHSA-4r6h-8v6p-xvw6,
@@ -499,16 +501,16 @@ function BillHistoryStep({ societyId, societyName, joinPeriodId, interestRate, o
   const totalWarnings = sheetResults.reduce((s, r) => s + r.warnings.length, 0);
   return (
     <div style={{ padding: "0.5rem 0" }}>
-      <h3 style={{ margin: "0 0 0.4rem", color: "#a5b4fc", fontSize: "1rem" }}>
+      <h3 style={{ margin: "0 0 0.4rem", color: "var(--accent)", fontSize: "1rem" }}>
         Step 4: Bill History Import
       </h3>
-      <p style={{ color: "#9ca3af", fontSize: "0.82rem", margin: "0 0 1.25rem" }}>
+      <p style={{ color: "var(--fg-5)", fontSize: "0.82rem", margin: "0 0 1.25rem" }}>
         Import all historical bills from prev April to the month before they joined. Required for accurate opening balance and audit trail.
       </p>
       {/* Template download */}
       {bhStep !== "done" && (
-        <div style={{ background: "#1e1b4b", borderRadius: 8, padding: "1rem", marginBottom: "1.25rem" }}>
-          <div style={{ fontSize: "0.82rem", color: "#c7d2fe", marginBottom: "0.5rem" }}>
+        <div style={{ background: "var(--fg-2)" /* TODO: unmapped color, needs design review */, borderRadius: 8, padding: "1rem", marginBottom: "1.25rem" }}>
+          <div style={{ fontSize: "0.82rem", color: "var(--accent-tint)", marginBottom: "0.5rem" }}>
             First, download the pre-filled template for <strong>{societyName}</strong> (all members, all months from prev April to {joinPeriodId}):
           </div>
           <button
@@ -517,7 +519,7 @@ function BillHistoryStep({ societyId, societyName, joinPeriodId, interestRate, o
                 `/api/superadmin/bill-history-template?societyId=${societyId}&joinPeriod=${joinPeriodId}`,
                 { credentials: "include" }
               );
-              if (!res.ok) { alert("Template download failed"); return; }
+              if (!res.ok) { notify.error("Template download failed"); return; }
               const blob = await res.blob();
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
@@ -526,23 +528,23 @@ function BillHistoryStep({ societyId, societyName, joinPeriodId, interestRate, o
               a.click();
               URL.revokeObjectURL(url);
             }}
-            style={{ background: "#4f46e5", color: "#fff", border: "none", padding: "0.5rem 1.2rem", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
+            style={{ background: "var(--accent)", color: "#fff", border: "none", padding: "0.5rem 1.2rem", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
           >
             ⬇️ Download Bill History Template
           </button>
         </div>
       )}
       {bhStep === "done" && saveResult ? (
-        <div style={{ background: "#064e3b", borderRadius: 8, padding: "1.25rem" }}>
-          <div style={{ color: "#4ade80", fontWeight: 700, fontSize: "1rem", marginBottom: "0.5rem" }}>✅ Bill History Saved</div>
-          <div style={{ fontSize: "0.85rem", color: "#a7f3d0", lineHeight: 1.8 }}>
+        <div style={{ background: "var(--success-fg)", borderRadius: 8, padding: "1.25rem" }}>
+          <div style={{ color: "var(--success)", fontWeight: 700, fontSize: "1rem", marginBottom: "0.5rem" }}>✅ Bill History Saved</div>
+          <div style={{ fontSize: "0.85rem", color: "var(--success-bg)", lineHeight: 1.8 }}>
             <div><strong>Bills created:</strong> {saveResult.created}</div>
             <div><strong>Periods covered:</strong> {saveResult.periods?.join(", ")}</div>
-            {saveResult.errors > 0 && <div style={{ color: "#fbbf24" }}><strong>Errors:</strong> {saveResult.errors} rows failed — check data</div>}
+            {saveResult.errors > 0 && <div style={{ color: "var(--warning)" }}><strong>Errors:</strong> {saveResult.errors} rows failed — check data</div>}
           </div>
           <button
             onClick={() => onComplete && onComplete(saveResult)}
-            style={{ marginTop: "1rem", background: "#059669", color: "#fff", border: "none", padding: "0.6rem 1.5rem", borderRadius: 6, cursor: "pointer", fontWeight: 700 }}
+            style={{ marginTop: "1rem", background: "var(--success)", color: "#fff", border: "none", padding: "0.6rem 1.5rem", borderRadius: 6, cursor: "pointer", fontWeight: 700 }}
           >
             Continue →
           </button>
@@ -562,35 +564,35 @@ function BillHistoryStep({ societyId, societyName, joinPeriodId, interestRate, o
             />
           )}
           {bhStep === "validating" && (
-            <div style={{ padding: "1rem", textAlign: "center", color: "#a5b4fc" }}>Validating all sheets...</div>
+            <div style={{ padding: "1rem", textAlign: "center", color: "var(--accent)" }}>Validating all sheets...</div>
           )}
           {bhStep === "saving" && (
-            <div style={{ padding: "1rem", textAlign: "center", color: "#a5b4fc" }}>Saving to database...</div>
+            <div style={{ padding: "1rem", textAlign: "center", color: "var(--accent)" }}>Saving to database...</div>
           )}
           {bhStep === "error" && saveError && (
-            <div style={{ background: "#450a0a", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
-              <div style={{ color: "#fca5a5", fontWeight: 600 }}>Save Failed</div>
-              <div style={{ color: "#fca5a5", fontSize: "0.82rem", marginTop: 4 }}>{saveError}</div>
+            <div style={{ background: "var(--danger-bg)", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
+              <div style={{ color: "var(--danger-bg)", fontWeight: 600 }}>Save Failed</div>
+              <div style={{ color: "var(--danger-bg)", fontSize: "0.82rem", marginTop: 4 }}>{saveError}</div>
             </div>
           )}
           {/* Sheet results */}
           {validationDone && sheetResults.length > 0 && (
             <div style={{ marginBottom: "1.25rem" }}>
-              <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.6rem" }}>
+              <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--fg-5)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.6rem" }}>
                 Validation Results — {sheetResults.length} months
               </div>
               {/* Summary bar */}
               <div style={{ display: "flex", gap: "1rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
-                <span style={{ background: "#064e3b", border: "1px solid #10b981", borderRadius: 6, padding: "3px 10px", fontSize: "0.75rem", color: "#4ade80", fontWeight: 700 }}>
+                <span style={{ background: "var(--success-fg)", border: "1px solid var(--success)", borderRadius: 6, padding: "3px 10px", fontSize: "0.75rem", color: "var(--success)", fontWeight: 700 }}>
                   ✓ {sheetResults.filter(r => r.ok).length} passed
                 </span>
                 {totalErrors > 0 && (
-                  <span style={{ background: "#450a0a", border: "1px solid #dc2626", borderRadius: 6, padding: "3px 10px", fontSize: "0.75rem", color: "#f87171", fontWeight: 700 }}>
+                  <span style={{ background: "var(--danger-bg)", border: "1px solid var(--danger)", borderRadius: 6, padding: "3px 10px", fontSize: "0.75rem", color: "var(--danger)", fontWeight: 700 }}>
                     ✕ {sheetResults.filter(r => !r.ok).length} failed · {totalErrors} errors
                   </span>
                 )}
                 {totalWarnings > 0 && (
-                  <span style={{ background: "#451a03", border: "1px solid #d97706", borderRadius: 6, padding: "3px 10px", fontSize: "0.75rem", color: "#fbbf24", fontWeight: 700 }}>
+                  <span style={{ background: "var(--warning-bg)", border: "1px solid var(--warning)", borderRadius: 6, padding: "3px 10px", fontSize: "0.75rem", color: "var(--warning)", fontWeight: 700 }}>
                     ⚠ {totalWarnings} warnings
                   </span>
                 )}
@@ -605,33 +607,33 @@ function BillHistoryStep({ societyId, societyName, joinPeriodId, interestRate, o
                         display: "flex", alignItems: "center", gap: "0.75rem",
                         padding: "0.5rem 0.75rem", borderRadius: 6, cursor: "pointer",
                         background: r.ok ? "#064e3b22" : "#450a0a22",
-                        border: `1px solid ${r.ok ? "#10b981" : "#dc2626"}`,
+                        border: `1px solid ${r.ok ? "var(--success)" : "var(--danger)"}`,
                         transition: "all 0.2s",
                       }}
                     >
                       <div style={{ fontSize: "1.1rem" }}>{r.ok ? "✓" : "✕"}</div>
                       <div style={{ flex: 1 }}>
-                        <span style={{ color: r.ok ? "#4ade80" : "#f87171", fontWeight: 700, fontSize: "0.85rem" }}>{r.periodId}</span>
-                        <span style={{ color: "#6b7280", fontSize: "0.72rem", marginLeft: 8 }}>{r.rowCount} rows</span>
+                        <span style={{ color: r.ok ? "var(--success)" : "var(--danger)", fontWeight: 700, fontSize: "0.85rem" }}>{r.periodId}</span>
+                        <span style={{ color: "var(--fg-4)", fontSize: "0.72rem", marginLeft: 8 }}>{r.rowCount} rows</span>
                       </div>
                       {r.errors.length > 0 && (
-                        <span style={{ color: "#f87171", fontSize: "0.72rem" }}>{r.errors.length} error{r.errors.length > 1 ? "s" : ""}</span>
+                        <span style={{ color: "var(--danger)", fontSize: "0.72rem" }}>{r.errors.length} error{r.errors.length > 1 ? "s" : ""}</span>
                       )}
                       {r.warnings.length > 0 && (
-                        <span style={{ color: "#fbbf24", fontSize: "0.72rem" }}>{r.warnings.length} warning{r.warnings.length > 1 ? "s" : ""}</span>
+                        <span style={{ color: "var(--warning)", fontSize: "0.72rem" }}>{r.warnings.length} warning{r.warnings.length > 1 ? "s" : ""}</span>
                       )}
-                      <span style={{ color: "#4b5563", fontSize: "0.7rem" }}>{activeSheetIdx === i ? "▲" : "▼"}</span>
+                      <span style={{ color: "var(--fg-3)", fontSize: "0.7rem" }}>{activeSheetIdx === i ? "▲" : "▼"}</span>
                     </div>
                     {/* Expanded error detail */}
                     {activeSheetIdx === i && (r.errors.length > 0 || r.warnings.length > 0) && (
-                      <div style={{ background: "#111827", borderRadius: "0 0 6px 6px", padding: "0.75rem", marginTop: -1, border: "1px solid #374151", borderTop: "none" }}>
+                      <div style={{ background: "var(--fg-1)", borderRadius: "0 0 6px 6px", padding: "0.75rem", marginTop: -1, border: "1px solid var(--fg-3)", borderTop: "none" }}>
                         {r.errors.map((e, ei) => (
-                          <div key={ei} style={{ fontSize: "0.75rem", color: "#f87171", marginBottom: 4, display: "flex", gap: "0.4rem" }}>
+                          <div key={ei} style={{ fontSize: "0.75rem", color: "var(--danger)", marginBottom: 4, display: "flex", gap: "0.4rem" }}>
                             <span>✕</span><span>{e}</span>
                           </div>
                         ))}
                         {r.warnings.map((w, wi) => (
-                          <div key={wi} style={{ fontSize: "0.75rem", color: "#fbbf24", marginBottom: 4, display: "flex", gap: "0.4rem" }}>
+                          <div key={wi} style={{ fontSize: "0.75rem", color: "var(--warning)", marginBottom: 4, display: "flex", gap: "0.4rem" }}>
                             <span>⚠</span><span>{w}</span>
                           </div>
                         ))}
@@ -647,14 +649,14 @@ function BillHistoryStep({ societyId, societyName, joinPeriodId, interestRate, o
             {allValid && validatedBills && bhStep !== "saving" && (
               <button
                 onClick={handleSave}
-                style={{ flex: 1, background: "#059669", color: "#fff", border: "none", padding: "0.75rem", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: "0.9rem" }}
+                style={{ flex: 1, background: "var(--success)", color: "#fff", border: "none", padding: "0.75rem", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: "0.9rem" }}
               >
                 ✅ All Valid — Save {validatedBills.length} Bill Records
               </button>
             )}
             <button
               onClick={onSkip}
-              style={{ background: "#374151", color: "#9ca3af", border: "none", padding: "0.75rem 1.25rem", borderRadius: 8, cursor: "pointer", fontSize: "0.85rem" }}
+              style={{ background: "var(--fg-3)", color: "var(--fg-5)", border: "none", padding: "0.75rem 1.25rem", borderRadius: 8, cursor: "pointer", fontSize: "0.85rem" }}
             >
               Skip (do later)
             </button>
@@ -697,32 +699,32 @@ function BhModal({ society, onClose }) {
       onClick={onClose}
     >
       <div
-        style={{ background: "#111827", border: "1px solid #374151", borderRadius: 12, padding: "2rem", width: 640, maxHeight: "90vh", overflowY: "auto", color: "#f0f0f0" }}
+        style={{ background: "var(--bg-surface)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "2rem", width: 640, maxHeight: "90vh", overflowY: "auto", color: "var(--fg-1)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
           <div>
-            <h2 style={{ margin: 0, color: "#a5b4fc", fontSize: "1.1rem" }}>📜 Bill History Import</h2>
-            <div style={{ color: "#6b7280", fontSize: "0.82rem", marginTop: 2 }}>{society.name}</div>
+            <h2 style={{ margin: 0, color: "var(--accent)", fontSize: "1.1rem" }}>📜 Bill History Import</h2>
+            <div style={{ color: "var(--fg-4)", fontSize: "0.82rem", marginTop: 2 }}>{society.name}</div>
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "#9ca3af", fontSize: "1.3rem", cursor: "pointer" }}>✕</button>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--fg-5)", fontSize: "1.3rem", cursor: "pointer" }}>✕</button>
         </div>
         {loading && (
-          <div style={{ padding: "2rem", textAlign: "center", color: "#6b7280", fontSize: "0.85rem" }}>
+          <div style={{ padding: "2rem", textAlign: "center", color: "var(--fg-4)", fontSize: "0.85rem" }}>
             Detecting join period from bills...
           </div>
         )}
         {!loading && noBills && (
-          <div style={{ background: "#1c1400", border: "1px solid #92400e", borderRadius: 8, padding: "1rem" }}>
-            <div style={{ color: "#fbbf24", fontWeight: 600, marginBottom: "0.4rem" }}>No bills found</div>
-            <div style={{ color: "#fde68a", fontSize: "0.82rem" }}>
+          <div style={{ background: "var(--warning-bg)", border: "1px solid var(--warning-fg)", borderRadius: 8, padding: "1rem" }}>
+            <div style={{ color: "var(--warning)", fontWeight: 600, marginBottom: "0.4rem" }}>No bills found</div>
+            <div style={{ color: "var(--warning-bg)", fontSize: "0.82rem" }}>
               This society has no bills generated yet. Generate at least one bill first — the system uses the first bill's period as the join month.
             </div>
           </div>
         )}
         {!loading && joinPeriodId && (
           <>
-            <div style={{ background: "#0a1628", border: "1px solid #1e3a5f", borderRadius: 6, padding: "0.6rem 1rem", marginBottom: "1.25rem", fontSize: "0.8rem", color: "#60a5fa" }}>
+            <div style={{ background: "var(--primary-tint)", border: "1px solid var(--primary)", borderRadius: 6, padding: "0.6rem 1rem", marginBottom: "1.25rem", fontSize: "0.8rem", color: "var(--accent)" }}>
               Join period auto-detected: <strong>{joinPeriodId}</strong> (first bill month)
             </div>
             <BillHistoryStep
@@ -790,15 +792,15 @@ export default function AdminSocietiesPage() {
     mutationFn: ({ societyId, updates }) =>
       apiClient.put("/api/admin/societies", { societyId, updates }),
     onSuccess: () => {
-      alert("✅ Subscription updated");
+      notify.success("Subscription updated");
       queryClient.invalidateQueries(["admin-societies"]);
     },
   });
-  const handlePaymentRecord = (society) => {
-    const amount = parseFloat(prompt(`Enter payment amount for "${society.name}":`));
+  const handlePaymentRecord = async (society) => {
+    const amount = parseFloat(await notify.prompt(`Enter payment amount for "${society.name}":`));
     if (!amount || isNaN(amount)) return;
-    const method = prompt("Payment method (UPI/Bank/Cash):") || "UPI";
-    const nextDateStr = prompt("Next payment due date (YYYY-MM-DD), leave blank to skip:");
+    const method = (await notify.prompt("Payment method (UPI/Bank/Cash):")) || "UPI";
+    const nextDateStr = await notify.prompt("Next payment due date (YYYY-MM-DD), leave blank to skip:");
     const nextDate = nextDateStr?.trim() ? new Date(nextDateStr.trim()) : null;
     const currentTotal = society.subscription?.amountPaid || 0;
     const updates = {
@@ -819,8 +821,8 @@ export default function AdminSocietiesPage() {
     }
     updateSubscriptionMutation.mutate({ societyId: society._id, updates });
   };
-  const suspendSociety = (societyId) => {
-    if (!confirm("Suspend this society? They will lose access.")) return;
+  const suspendSociety = async (societyId) => {
+    if (!(await notify.confirm("Suspend this society? They will lose access.", { tone: "warning" }))) return;
     updateSubscriptionMutation.mutate({
       societyId,
       updates: { "subscription.status": "Suspended" },
@@ -1026,7 +1028,7 @@ export default function AdminSocietiesPage() {
                 setCreationResults(null);
               }}
               style={{
-                background: "#10B981",
+                background: "var(--success)",
                 color: "#fff",
                 border: "none",
                 padding: "0.6rem 1.4rem",
@@ -1040,7 +1042,7 @@ export default function AdminSocietiesPage() {
             <button
               onClick={() => setShowBulkModal(true)}
               style={{
-                background: "#6366f1",
+                background: "var(--accent)",
                 color: "#fff",
                 border: "none",
                 padding: "0.6rem 1.4rem",
@@ -1077,7 +1079,7 @@ export default function AdminSocietiesPage() {
       </div>
       {/* Stats */}
       <div className={styles.statsGrid}>
-        <div className={styles.statCard} style={{ borderColor: "#10B981" }}>
+        <div className={styles.statCard} style={{ borderColor: "var(--success)" }}>
           <div className={styles.statNumber}>
             {
               societies.filter((s) => s.subscription?.status === "Active")
@@ -1086,13 +1088,13 @@ export default function AdminSocietiesPage() {
           </div>
           <div className={styles.statLabel}>Active</div>
         </div>
-        <div className={styles.statCard} style={{ borderColor: "#F59E0B" }}>
+        <div className={styles.statCard} style={{ borderColor: "var(--warning)" }}>
           <div className={styles.statNumber}>
             {societies.filter((s) => s.subscription?.status === "Trial").length}
           </div>
           <div className={styles.statLabel}>Trial</div>
         </div>
-        <div className={styles.statCard} style={{ borderColor: "#EF4444" }}>
+        <div className={styles.statCard} style={{ borderColor: "var(--danger)" }}>
           <div className={styles.statNumber}>
             {
               societies.filter((s) => s.subscription?.status === "Suspended")
@@ -1101,7 +1103,7 @@ export default function AdminSocietiesPage() {
           </div>
           <div className={styles.statLabel}>Suspended</div>
         </div>
-        <div className={styles.statCard} style={{ borderColor: "#3B82F6" }}>
+        <div className={styles.statCard} style={{ borderColor: "var(--accent)" }}>
           <div className={styles.statNumber}>
             ₹
             {societies
@@ -1135,17 +1137,17 @@ export default function AdminSocietiesPage() {
           <div style={{ marginBottom: "1.5rem" }}>
             {/* Alert rows */}
             {overdue.length > 0 && (
-              <div style={{ background: "#1c0a0a", border: "1px solid #991b1b", borderRadius: 8, padding: "1rem 1.25rem", marginBottom: "0.75rem" }}>
+              <div style={{ background: "var(--danger-bg)", border: "1px solid var(--danger-fg)", borderRadius: 8, padding: "1rem 1.25rem", marginBottom: "0.75rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                  <span style={{ color: "#f87171", fontWeight: 700, fontSize: "0.9rem" }}>🔴 {overdue.length} Overdue Payment{overdue.length > 1 ? "s" : ""}</span>
-                  <span style={{ color: "#dc2626", fontSize: "0.8rem", fontWeight: 600 }}>Action required</span>
+                  <span style={{ color: "var(--danger)", fontWeight: 700, fontSize: "0.9rem" }}>🔴 {overdue.length} Overdue Payment{overdue.length > 1 ? "s" : ""}</span>
+                  <span style={{ color: "var(--danger)", fontSize: "0.8rem", fontWeight: 600 }}>Action required</span>
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
                   {overdue.map((s) => (
-                    <span key={s._id} style={{ background: "#450a0a", border: "1px solid #7f1d1d", borderRadius: 4, padding: "3px 8px", fontSize: "0.75rem", color: "#fca5a5" }}>
+                    <span key={s._id} style={{ background: "var(--danger-bg)", border: "1px solid var(--danger-fg)", borderRadius: 4, padding: "3px 8px", fontSize: "0.75rem", color: "var(--danger-bg)" }}>
                       {s.name}
                       {s.subscription?.nextPaymentDate && (
-                        <span style={{ color: "#f87171", marginLeft: 4 }}>
+                        <span style={{ color: "var(--danger)", marginLeft: 4 }}>
                           (due {new Date(s.subscription.nextPaymentDate).toLocaleDateString("en-IN")})
                         </span>
                       )}
@@ -1155,13 +1157,13 @@ export default function AdminSocietiesPage() {
               </div>
             )}
             {dueSoon.length > 0 && (
-              <div style={{ background: "#1c1400", border: "1px solid #92400e", borderRadius: 8, padding: "1rem 1.25rem", marginBottom: "0.75rem" }}>
+              <div style={{ background: "var(--warning-bg)", border: "1px solid var(--warning-fg)", borderRadius: 8, padding: "1rem 1.25rem", marginBottom: "0.75rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                  <span style={{ color: "#fbbf24", fontWeight: 700, fontSize: "0.9rem" }}>🟡 {dueSoon.length} Due within 7 days</span>
+                  <span style={{ color: "var(--warning)", fontWeight: 700, fontSize: "0.9rem" }}>🟡 {dueSoon.length} Due within 7 days</span>
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
                   {dueSoon.map((s) => (
-                    <span key={s._id} style={{ background: "#292100", border: "1px solid #78350f", borderRadius: 4, padding: "3px 8px", fontSize: "0.75rem", color: "#fde68a" }}>
+                    <span key={s._id} style={{ background: "var(--warning-bg)", border: "1px solid var(--warning-fg)", borderRadius: 4, padding: "3px 8px", fontSize: "0.75rem", color: "var(--warning-bg)" }}>
                       {s.name} ({new Date(s.subscription.nextPaymentDate).toLocaleDateString("en-IN")})
                     </span>
                   ))}
@@ -1170,27 +1172,27 @@ export default function AdminSocietiesPage() {
             )}
             {/* Summary row */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem" }}>
-              <div style={{ background: "#0a1628", border: "1px solid #1e3a5f", borderRadius: 8, padding: "0.9rem 1rem" }}>
-                <div style={{ color: "#60a5fa", fontSize: "0.75rem", fontWeight: 600, marginBottom: 4 }}>Due in 30 days</div>
+              <div style={{ background: "var(--primary-tint)", border: "1px solid var(--primary)", borderRadius: 8, padding: "0.9rem 1rem" }}>
+                <div style={{ color: "var(--accent)", fontSize: "0.75rem", fontWeight: 600, marginBottom: 4 }}>Due in 30 days</div>
                 <div style={{ color: "#fff", fontSize: "1.3rem", fontWeight: 700 }}>{dueIn30.length}</div>
-                <div style={{ color: "#475569", fontSize: "0.72rem", marginTop: 2 }}>societies</div>
+                <div style={{ color: "var(--fg-3)", fontSize: "0.72rem", marginTop: 2 }}>societies</div>
               </div>
-              <div style={{ background: "#0a1a10", border: "1px solid #065f46", borderRadius: 8, padding: "0.9rem 1rem" }}>
-                <div style={{ color: "#34d399", fontSize: "0.75rem", fontWeight: 600, marginBottom: 4 }}>Total Revenue</div>
+              <div style={{ background: "var(--success-bg)", border: "1px solid var(--success-fg)", borderRadius: 8, padding: "0.9rem 1rem" }}>
+                <div style={{ color: "var(--success)", fontSize: "0.75rem", fontWeight: 600, marginBottom: 4 }}>Total Revenue</div>
                 <div style={{ color: "#fff", fontSize: "1.3rem", fontWeight: 700 }}>₹{totalRevenue.toLocaleString("en-IN")}</div>
-                <div style={{ color: "#475569", fontSize: "0.72rem", marginTop: 2 }}>all time</div>
+                <div style={{ color: "var(--fg-3)", fontSize: "0.72rem", marginTop: 2 }}>all time</div>
               </div>
-              <div style={{ background: "#1a0a1a", border: "1px solid #6b21a8", borderRadius: 8, padding: "0.9rem 1rem" }}>
-                <div style={{ color: "#c084fc", fontSize: "0.75rem", fontWeight: 600, marginBottom: 4 }}>Trial Societies</div>
+              <div style={{ background: "var(--fg-1)" /* TODO: unmapped color, needs design review */, border: "1px solid #6b21a8" /* TODO: unmapped color, needs design review */, borderRadius: 8, padding: "0.9rem 1rem" }}>
+                <div style={{ color: "#c084fc" /* TODO: unmapped color, needs design review */, fontSize: "0.75rem", fontWeight: 600, marginBottom: 4 }}>Trial Societies</div>
                 <div style={{ color: "#fff", fontSize: "1.3rem", fontWeight: 700 }}>
                   {societies.filter((s) => s.subscription?.status === "Trial").length}
                 </div>
-                <div style={{ color: "#475569", fontSize: "0.72rem", marginTop: 2 }}>not converted</div>
+                <div style={{ color: "var(--fg-3)", fontSize: "0.72rem", marginTop: 2 }}>not converted</div>
               </div>
-              <div style={{ background: "#1a1a0a", border: "1px solid #92400e", borderRadius: 8, padding: "0.9rem 1rem" }}>
-                <div style={{ color: "#fb923c", fontSize: "0.75rem", fontWeight: 600, marginBottom: 4 }}>No Pay Date Set</div>
+              <div style={{ background: "var(--fg-1)" /* TODO: unmapped color, needs design review */, border: "1px solid var(--warning-fg)", borderRadius: 8, padding: "0.9rem 1rem" }}>
+                <div style={{ color: "var(--warning)", fontSize: "0.75rem", fontWeight: 600, marginBottom: 4 }}>No Pay Date Set</div>
                 <div style={{ color: "#fff", fontSize: "1.3rem", fontWeight: 700 }}>{noPayment.length}</div>
-                <div style={{ color: "#475569", fontSize: "0.72rem", marginTop: 2 }}>societies</div>
+                <div style={{ color: "var(--fg-3)", fontSize: "0.72rem", marginTop: 2 }}>societies</div>
               </div>
             </div>
           </div>
@@ -1220,19 +1222,46 @@ export default function AdminSocietiesPage() {
               {filteredSocieties.map((society) => (
                 <tr key={society._id}>
                   <td>
-                    <div className={styles.societyName}>{society.name}</div>
+                    <div className={styles.societyName}>
+                      {society.name}
+                      {society.isTestSociety && (
+                        <span style={{ color: "var(--warning)", fontWeight: 700, marginLeft: 6 }}> (test)</span>
+                      )}
+                      {society.lifecycleStatus === "Paused" && (
+                        <span style={{ color: "var(--danger)", fontWeight: 700, marginLeft: 6 }}>
+                          {society.isDeleted ? " (pending delete)" : " (paused)"}
+                          {!society.isDeleted && (
+                            <button
+                              style={{ marginLeft: 6, background: "var(--success-fg)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.68rem", padding: "1px 6px", cursor: "pointer", fontWeight: 600 }}
+                              onClick={async () => {
+                                const res = await fetch(`/api/superadmin/societies/${society._id}/lifecycle`, {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  credentials: "include",
+                                  body: JSON.stringify({ action: "resume" }),
+                                });
+                                if (!res.ok) { notify.error("Resume failed"); return; }
+                                queryClient.invalidateQueries(["admin-societies"]);
+                              }}
+                            >
+                              ▶ resume
+                            </button>
+                          )}
+                        </span>
+                      )}
+                    </div>
                     <div className={styles.societyId}>{society._id}</div>
                   </td>
                   <td style={{ fontSize: "0.8rem" }}>
                     {society.credentials?.adminEmail ? (
                       <div>
-                        <div style={{ color: "#999" }}>
+                        <div style={{ color: "var(--fg-4)" }}>
                           {society.credentials.adminEmail}
                         </div>
                         <div
                           style={{
                             fontFamily: "monospace",
-                            color: "#4CAF50",
+                            color: "var(--success)",
                             fontWeight: 700,
                           }}
                         >
@@ -1278,21 +1307,21 @@ export default function AdminSocietiesPage() {
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
                       <button
                         onClick={() => handlePaymentRecord(society)}
-                        style={{ background: "#10B981", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                        style={{ background: "var(--success)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
                       >
                         💰 Payment
                       </button>
                       {society.subscription?.status === "Active" ? (
                         <button
                           onClick={() => suspendSociety(society._id)}
-                          style={{ background: "#EF4444", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                          style={{ background: "var(--danger)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
                         >
                           🚫 Suspend
                         </button>
                       ) : (
                         <button
                           onClick={() => activateSociety(society._id)}
-                          style={{ background: "#10B981", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                          style={{ background: "var(--success)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
                         >
                           ✅ Activate
                         </button>
@@ -1304,14 +1333,14 @@ export default function AdminSocietiesPage() {
                             "_blank",
                           )
                         }
-                        style={{ background: "#3B82F6", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                        style={{ background: "var(--accent)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
                       >
                         📊 Details
                       </button>
                       <button
-                        style={{ background: "#7c3aed", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                        style={{ background: "#7c3aed" /* TODO: unmapped color, needs design review */, color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
                         onClick={async () => {
-                          if (!window.confirm(`Reset passwords for ALL members of "${society.name}"? They will need new credentials to login.`)) return;
+                          if (!(await notify.confirm(`Reset passwords for ALL members of "${society.name}"? They will need new credentials to login.`, { tone: "danger" }))) return;
                           const res = await fetch("/api/superadmin/reset-member-passwords", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -1319,15 +1348,15 @@ export default function AdminSocietiesPage() {
                             body: JSON.stringify({ societyId: society._id }),
                           });
                           const data = await res.json();
-                          if (!res.ok) { alert(data.error || "Failed"); return; }
-                          if (!data.credentials?.length) { alert("No member accounts found."); return; }
+                          if (!res.ok) { notify.error(data.error || "Failed"); return; }
+                          if (!data.credentials?.length) { notify.info("No member accounts found."); return; }
                           const dlRes = await fetch("/api/members/download-credentials", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             credentials: "include",
                             body: JSON.stringify({ credentials: data.credentials }),
                           });
-                          if (!dlRes.ok) { alert("Reset done but download failed"); return; }
+                          if (!dlRes.ok) { notify.error("Reset done but download failed"); return; }
                           const blob = await dlRes.blob();
                           const url = URL.createObjectURL(blob);
                           const a = document.createElement("a");
@@ -1340,9 +1369,9 @@ export default function AdminSocietiesPage() {
                         🔑 Reset Creds
                       </button>
                       <button
-                        style={{ background: "#b45309", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                        style={{ background: "var(--warning-fg)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
                         onClick={async () => {
-                          const custom = window.prompt(
+                          const custom = await notify.prompt(
                             `Reset admin password for "${society.name}".\n\nEnter new password (min 8 chars), or leave blank to auto-generate:`
                           );
                           if (custom === null) return; // cancelled
@@ -1353,15 +1382,15 @@ export default function AdminSocietiesPage() {
                             body: JSON.stringify({ societyId: society._id, newPassword: custom || undefined }),
                           });
                           const data = await res.json();
-                          if (!res.ok) { alert(data.error || "Failed"); return; }
-                          alert(`✅ Admin password reset!\n\nEmail: ${data.adminEmail}\nNew Password: ${data.newPassword}\n\nSave this — it won't be shown again.`);
+                          if (!res.ok) { notify.error(data.error || "Failed"); return; }
+                          notify.success(`Admin password reset!\n\nEmail: ${data.adminEmail}\nNew Password: ${data.newPassword}\n\nSave this — it won't be shown again.`);
                           queryClient.invalidateQueries(["admin-societies"]);
                         }}
                       >
                         🔐 Reset Admin Pass
                       </button>
                       <button
-                        style={{ background: "#0e7490", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                        style={{ background: "var(--info)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
                         onClick={async () => {
                           setViewCredsTarget({ societyId: society._id, name: society.name });
                           setViewCreds(null);
@@ -1374,7 +1403,7 @@ export default function AdminSocietiesPage() {
                             if (!res.ok) throw new Error(data.error || "Failed");
                             setViewCreds(data.credentials || []);
                           } catch (e) {
-                            alert("Failed to load credentials: " + e.message);
+                            notify.error("Failed to load credentials: " + e.message);
                             setViewCredsTarget(null);
                           } finally {
                             setViewCredsLoading(false);
@@ -1385,27 +1414,27 @@ export default function AdminSocietiesPage() {
                       </button>
                       {!society.onboarding?.billHistoryImported ? (
                         <button
-                          style={{ background: "#7c3aed", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                          style={{ background: "#7c3aed" /* TODO: unmapped color, needs design review */, color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
                           onClick={() => setBhModalSociety(society)}
                         >
                           📜 Bill History
                         </button>
                       ) : (
                         <button
-                          style={{ background: "#064e3b", color: "#4ade80", border: "1px solid #10b981", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "default" }}
+                          style={{ background: "var(--success-fg)", color: "var(--success)", border: "1px solid var(--success)", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "default" }}
                           disabled
                         >
                           ✓ History Done
                         </button>
                       )}
                       <button
-                        style={{ background: "#92400e", color: "#fef3c7", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                        style={{ background: "var(--warning-fg)", color: "var(--warning-bg)", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
                         onClick={async () => {
                           const joinPeriod = society.onboarding?.joinPeriodId;
                           const confirmMsg = joinPeriod
                             ? `Fix historical bill balances for "${society.name}"?\n\nWill zero out all bills before join period ${joinPeriod} AND all BulkImport bills.\n\nSafe to run multiple times.`
                             : `Fix historical bill balances for "${society.name}"?\n\nNo join period detected — will only fix bills with importedFrom=BulkImport.\n\nTo fix by period too, set joinPeriodId first via Bill History Import.`;
-                          if (!confirm(confirmMsg)) return;
+                          if (!(await notify.confirm(confirmMsg, { tone: "warning" }))) return;
                           const body = { societyId: society._id };
                           if (joinPeriod) body.beforePeriodId = joinPeriod;
                           const res = await fetch("/api/superadmin/fix-history-bills", {
@@ -1415,18 +1444,54 @@ export default function AdminSocietiesPage() {
                             body: JSON.stringify(body),
                           });
                           const data = await res.json();
-                          if (!res.ok) { alert(data.error || "Failed"); return; }
-                          alert(`✅ ${data.message}`);
+                          if (!res.ok) { notify.error(data.error || "Failed"); return; }
+                          notify.success(data.message);
                         }}
                       >
                         🔧 Fix History Bills
                       </button>
                       <button
-                        style={{ background: "#7f1d1d", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
-                        onClick={() => setDeleteTarget(society)}
+                        style={{ background: "var(--fg-3)", color: "var(--border-strong)", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                        title={society.isTestSociety ? "Unmark as test society" : "Mark as test society (enables quick delete)"}
+                        onClick={async () => {
+                          const res = await fetch(`/api/superadmin/societies/${society._id}/mark-test`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            credentials: "include",
+                            body: JSON.stringify({ isTestSociety: !society.isTestSociety }),
+                          });
+                          if (!res.ok) { notify.error("Failed to update test flag"); return; }
+                          queryClient.invalidateQueries(["admin-societies"]);
+                        }}
                       >
-                        🗑 Delete
+                        {society.isTestSociety ? "★ (test)" : "☆ mark test"}
                       </button>
+                      {society.isTestSociety ? (
+                        <button
+                          style={{ background: "var(--danger-fg)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer", fontWeight: 700 }}
+                          title="Quick-delete this test society (no export/verify wizard)"
+                          onClick={async () => {
+                            if (!(await notify.confirm(`Quick-delete TEST society "${society.name}"? Skips the export/verify wizard. Only works because it's marked (test).`, { tone: "danger" }))) return;
+                            const res = await fetch(`/api/superadmin/societies/${society._id}/quick-delete-test`, {
+                              method: "POST",
+                              credentials: "include",
+                            });
+                            const data = await res.json();
+                            if (!res.ok) { notify.error(data.error || "Failed"); return; }
+                            notify.success(`Test society "${data.societyName}" deleted.`);
+                            queryClient.invalidateQueries(["admin-societies"]);
+                          }}
+                        >
+                          🗑 Delete (test)
+                        </button>
+                      ) : (
+                        <button
+                          style={{ background: "var(--danger-fg)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                          onClick={() => setDeleteTarget(society)}
+                        >
+                          🗑 Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1456,7 +1521,7 @@ export default function AdminSocietiesPage() {
         >
           <div
             style={{
-              background: "#f4f4f4",
+              background: "var(--bg-muted)",
               borderRadius: 12,
               padding: "2rem",
               width: 700,
@@ -1468,13 +1533,13 @@ export default function AdminSocietiesPage() {
             {/* ── CREDENTIALS RESULT SCREEN ── */}
             {creationResults ? (
               <>
-                <h2 style={{ color: "#10B981", marginBottom: "0.5rem" }}>
+                <h2 style={{ color: "var(--success)", marginBottom: "0.5rem" }}>
                   ✅ {creationResults.filter((r) => !r.error).length} of{" "}
                   {creationResults.length} Societies Created
                 </h2>
                 <p
                   style={{
-                    color: "#dc2626",
+                    color: "var(--danger)",
                     fontSize: "0.82rem",
                     marginBottom: "1rem",
                   }}
@@ -1491,13 +1556,13 @@ export default function AdminSocietiesPage() {
                     }}
                   >
                     <thead>
-                      <tr style={{ background: "#111" }}>
+                      <tr style={{ background: "var(--fg-1)" }}>
                         <th
                           style={{
                             padding: "8px 10px",
                             textAlign: "left",
-                            color: "#888",
-                            borderBottom: "1px solid #333",
+                            color: "var(--fg-4)",
+                            borderBottom: "1px solid var(--fg-2)",
                           }}
                         >
                           Society
@@ -1506,8 +1571,8 @@ export default function AdminSocietiesPage() {
                           style={{
                             padding: "8px 10px",
                             textAlign: "left",
-                            color: "#888",
-                            borderBottom: "1px solid #333",
+                            color: "var(--fg-4)",
+                            borderBottom: "1px solid var(--fg-2)",
                           }}
                         >
                           Admin Email
@@ -1516,8 +1581,8 @@ export default function AdminSocietiesPage() {
                           style={{
                             padding: "8px 10px",
                             textAlign: "left",
-                            color: "#888",
-                            borderBottom: "1px solid #333",
+                            color: "var(--fg-4)",
+                            borderBottom: "1px solid var(--fg-2)",
                           }}
                         >
                           Password
@@ -1526,8 +1591,8 @@ export default function AdminSocietiesPage() {
                           style={{
                             padding: "8px 10px",
                             textAlign: "left",
-                            color: "#888",
-                            borderBottom: "1px solid #333",
+                            color: "var(--fg-4)",
+                            borderBottom: "1px solid var(--fg-2)",
                           }}
                         >
                           Status
@@ -1539,14 +1604,14 @@ export default function AdminSocietiesPage() {
                         <tr
                           key={i}
                           style={{
-                            background: i % 2 === 0 ? "#1e1e1e" : "#222",
+                            background: i % 2 === 0 ? "var(--fg-1)" : "var(--fg-2)",
                           }}
                         >
                           <td
                             style={{
                               padding: "8px 10px",
                               color: "#fff",
-                              borderBottom: "1px solid #2a2a2a",
+                              borderBottom: "1px solid var(--fg-2)",
                             }}
                           >
                             {r.societyName}
@@ -1554,8 +1619,8 @@ export default function AdminSocietiesPage() {
                           <td
                             style={{
                               padding: "8px 10px",
-                              color: "#ccc",
-                              borderBottom: "1px solid #2a2a2a",
+                              color: "var(--border-strong)",
+                              borderBottom: "1px solid var(--fg-2)",
                             }}
                           >
                             {r.email}
@@ -1564,9 +1629,9 @@ export default function AdminSocietiesPage() {
                             style={{
                               padding: "8px 10px",
                               fontFamily: "monospace",
-                              color: r.password ? "#fbbf24" : "#555",
+                              color: r.password ? "var(--warning)" : "var(--fg-3)",
                               fontWeight: 700,
-                              borderBottom: "1px solid #2a2a2a",
+                              borderBottom: "1px solid var(--fg-2)",
                             }}
                           >
                             {r.password || "—"}
@@ -1574,20 +1639,20 @@ export default function AdminSocietiesPage() {
                           <td
                             style={{
                               padding: "8px 10px",
-                              borderBottom: "1px solid #2a2a2a",
+                              borderBottom: "1px solid var(--fg-2)",
                             }}
                           >
                             {r.error ? (
                               <span
                                 style={{
-                                  color: "#f87171",
+                                  color: "var(--danger)",
                                   fontSize: "0.78rem",
                                 }}
                               >
                                 ❌ {r.error}
                               </span>
                             ) : (
-                              <span style={{ color: "#34d399" }}>
+                              <span style={{ color: "var(--success)" }}>
                                 ✅ Created
                               </span>
                             )}
@@ -1626,7 +1691,7 @@ export default function AdminSocietiesPage() {
                       a.click();
                     }}
                     style={{
-                      background: "#2563eb",
+                      background: "var(--primary-hover)",
                       color: "#fff",
                       border: "none",
                       borderRadius: 6,
@@ -1640,7 +1705,7 @@ export default function AdminSocietiesPage() {
                   <button
                     onClick={resetModal}
                     style={{
-                      background: "#374151",
+                      background: "var(--fg-3)",
                       color: "#fff",
                       border: "none",
                       borderRadius: 6,
@@ -1656,7 +1721,7 @@ export default function AdminSocietiesPage() {
               <>
                 <h2
                   style={{
-                    color: "#000000",
+                    color: "var(--fg-1)",
                     marginBottom: "0.25rem",
                     fontSize: "1.1rem",
                   }}
@@ -1665,7 +1730,7 @@ export default function AdminSocietiesPage() {
                 </h2>
                 <p
                   style={{
-                    color: "#666",
+                    color: "var(--fg-3)",
                     fontSize: "0.82rem",
                     marginBottom: "1.5rem",
                   }}
@@ -1676,8 +1741,8 @@ export default function AdminSocietiesPage() {
                 {/* Step 1 — Download Template */}
                 <div
                   style={{
-                    background: "#f1f1f1",
-                    border: "1px solid #454545",
+                    background: "var(--bg-muted)",
+                    border: "1px solid var(--fg-3)",
                     borderRadius: 8,
                     padding: "1rem 1.2rem",
                     marginBottom: "1rem",
@@ -1693,7 +1758,7 @@ export default function AdminSocietiesPage() {
                     <div>
                       <div
                         style={{
-                          color: "#111",
+                          color: "var(--fg-1)",
                           fontWeight: 600,
                           fontSize: "0.9rem",
                           marginBottom: 3,
@@ -1701,7 +1766,7 @@ export default function AdminSocietiesPage() {
                       >
                         1. Download Template
                       </div>
-                      <div style={{ color: "#666", fontSize: "0.78rem" }}>
+                      <div style={{ color: "var(--fg-3)", fontSize: "0.78rem" }}>
                         25 columns — society info, admin credentials, billing
                         config, charge rates
                       </div>
@@ -1709,7 +1774,7 @@ export default function AdminSocietiesPage() {
                     <button
                       onClick={downloadTemplate}
                       style={{
-                        background: "#2563eb",
+                        background: "var(--primary-hover)",
                         color: "#fff",
                         border: "none",
                         padding: "8px 16px",
@@ -1727,8 +1792,8 @@ export default function AdminSocietiesPage() {
                 {/* Step 2 — Upload */}
                 <div
                   style={{
-                    background: "#f1f1f1",
-                    border: "1px solid #454545",
+                    background: "var(--bg-muted)",
+                    border: "1px solid var(--fg-3)",
                     borderRadius: 8,
                     padding: "1rem 1.2rem",
                     marginBottom: "1rem",
@@ -1736,7 +1801,7 @@ export default function AdminSocietiesPage() {
                 >
                   <div
                     style={{
-                      color: "#111",
+                      color: "var(--fg-1)",
                       fontWeight: 600,
                       fontSize: "0.9rem",
                       marginBottom: 8,
@@ -1762,7 +1827,7 @@ export default function AdminSocietiesPage() {
                       style={{
                         marginTop: 8,
                         fontSize: "0.78rem",
-                        color: "#888",
+                        color: "var(--fg-4)",
                       }}
                     >
                       Parsed{" "}
@@ -1779,15 +1844,15 @@ export default function AdminSocietiesPage() {
                     {hasErrors ? (
                       <div
                         style={{
-                          background: "#1a0a0a",
-                          border: "1px solid #7f1d1d",
+                          background: "var(--danger-bg)",
+                          border: "1px solid var(--danger-fg)",
                           borderRadius: 8,
                           padding: "1rem",
                         }}
                       >
                         <div
                           style={{
-                            color: "#f87171",
+                            color: "var(--danger)",
                             fontWeight: 700,
                             marginBottom: 8,
                             fontSize: "0.9rem",
@@ -1811,8 +1876,8 @@ export default function AdminSocietiesPage() {
                                   style={{
                                     padding: "4px 8px",
                                     textAlign: "left",
-                                    color: "#888",
-                                    borderBottom: "1px solid #3a1a1a",
+                                    color: "var(--fg-4)",
+                                    borderBottom: "1px solid var(--danger-fg)",
                                     width: 60,
                                   }}
                                 >
@@ -1822,8 +1887,8 @@ export default function AdminSocietiesPage() {
                                   style={{
                                     padding: "4px 8px",
                                     textAlign: "left",
-                                    color: "#888",
-                                    borderBottom: "1px solid #3a1a1a",
+                                    color: "var(--fg-4)",
+                                    borderBottom: "1px solid var(--danger-fg)",
                                   }}
                                 >
                                   Issue
@@ -1836,8 +1901,8 @@ export default function AdminSocietiesPage() {
                                   <td
                                     style={{
                                       padding: "4px 8px",
-                                      color: "#f87171",
-                                      borderBottom: "1px solid #2a0a0a",
+                                      color: "var(--danger)",
+                                      borderBottom: "1px solid var(--danger-bg)",
                                       fontWeight: 700,
                                     }}
                                   >
@@ -1846,8 +1911,8 @@ export default function AdminSocietiesPage() {
                                   <td
                                     style={{
                                       padding: "4px 8px",
-                                      color: "#fca5a5",
-                                      borderBottom: "1px solid #2a0a0a",
+                                      color: "var(--danger-bg)",
+                                      borderBottom: "1px solid var(--danger-bg)",
                                     }}
                                   >
                                     {err.field}
@@ -1861,15 +1926,15 @@ export default function AdminSocietiesPage() {
                     ) : (
                       <div
                         style={{
-                          background: "#0a1a0f",
-                          border: "1px solid #065f46",
+                          background: "var(--success-bg)",
+                          border: "1px solid var(--success-fg)",
                           borderRadius: 8,
                           padding: "1rem",
                         }}
                       >
                         <div
                           style={{
-                            color: "#34d399",
+                            color: "var(--success)",
                             fontWeight: 700,
                             marginBottom: 6,
                             fontSize: "0.9rem",
@@ -1884,7 +1949,7 @@ export default function AdminSocietiesPage() {
                             display: "flex",
                             gap: "1.5rem",
                             fontSize: "0.78rem",
-                            color: "#6ee7b7",
+                            color: "var(--success-bg)",
                           }}
                         >
                           <span>✔ Required fields present</span>
@@ -1903,7 +1968,7 @@ export default function AdminSocietiesPage() {
                       marginBottom: "1rem",
                       maxHeight: 180,
                       overflowY: "auto",
-                      border: "1px solid #2a2a2a",
+                      border: "1px solid var(--fg-2)",
                       borderRadius: 8,
                     }}
                   >
@@ -1918,7 +1983,7 @@ export default function AdminSocietiesPage() {
                         style={{
                           position: "sticky",
                           top: 0,
-                          background: "#111",
+                          background: "var(--fg-1)",
                         }}
                       >
                         <tr>
@@ -1926,8 +1991,8 @@ export default function AdminSocietiesPage() {
                             style={{
                               padding: "6px 10px",
                               textAlign: "left",
-                              color: "#888",
-                              borderBottom: "1px solid #333",
+                              color: "var(--fg-4)",
+                              borderBottom: "1px solid var(--fg-2)",
                             }}
                           >
                             #
@@ -1936,8 +2001,8 @@ export default function AdminSocietiesPage() {
                             style={{
                               padding: "6px 10px",
                               textAlign: "left",
-                              color: "#888",
-                              borderBottom: "1px solid #333",
+                              color: "var(--fg-4)",
+                              borderBottom: "1px solid var(--fg-2)",
                             }}
                           >
                             Society
@@ -1946,8 +2011,8 @@ export default function AdminSocietiesPage() {
                             style={{
                               padding: "6px 10px",
                               textAlign: "left",
-                              color: "#888",
-                              borderBottom: "1px solid #333",
+                              color: "var(--fg-4)",
+                              borderBottom: "1px solid var(--fg-2)",
                             }}
                           >
                             Admin Email
@@ -1956,8 +2021,8 @@ export default function AdminSocietiesPage() {
                             style={{
                               padding: "6px 10px",
                               textAlign: "left",
-                              color: "#888",
-                              borderBottom: "1px solid #333",
+                              color: "var(--fg-4)",
+                              borderBottom: "1px solid var(--fg-2)",
                             }}
                           >
                             Interest
@@ -1966,8 +2031,8 @@ export default function AdminSocietiesPage() {
                             style={{
                               padding: "6px 10px",
                               textAlign: "left",
-                              color: "#888",
-                              borderBottom: "1px solid #333",
+                              color: "var(--fg-4)",
+                              borderBottom: "1px solid var(--fg-2)",
                             }}
                           >
                             Charges
@@ -1988,14 +2053,14 @@ export default function AdminSocietiesPage() {
                             <tr
                               key={i}
                               style={{
-                                background: i % 2 === 0 ? "#1e1e1e" : "#222",
+                                background: i % 2 === 0 ? "var(--fg-1)" : "var(--fg-2)",
                               }}
                             >
                               <td
                                 style={{
                                   padding: "5px 10px",
-                                  color: "#666",
-                                  borderBottom: "1px solid #2a2a2a",
+                                  color: "var(--fg-3)",
+                                  borderBottom: "1px solid var(--fg-2)",
                                 }}
                               >
                                 {i + 1}
@@ -2004,7 +2069,7 @@ export default function AdminSocietiesPage() {
                                 style={{
                                   padding: "5px 10px",
                                   color: "#fff",
-                                  borderBottom: "1px solid #2a2a2a",
+                                  borderBottom: "1px solid var(--fg-2)",
                                   fontWeight: 600,
                                 }}
                               >
@@ -2013,8 +2078,8 @@ export default function AdminSocietiesPage() {
                               <td
                                 style={{
                                   padding: "5px 10px",
-                                  color: "#ccc",
-                                  borderBottom: "1px solid #2a2a2a",
+                                  color: "var(--border-strong)",
+                                  borderBottom: "1px solid var(--fg-2)",
                                 }}
                               >
                                 {row["Admin Email"]}
@@ -2022,8 +2087,8 @@ export default function AdminSocietiesPage() {
                               <td
                                 style={{
                                   padding: "5px 10px",
-                                  color: "#a78bfa",
-                                  borderBottom: "1px solid #2a2a2a",
+                                  color: "#a78bfa" /* TODO: unmapped color, needs design review */,
+                                  borderBottom: "1px solid var(--fg-2)",
                                 }}
                               >
                                 21%
@@ -2031,8 +2096,8 @@ export default function AdminSocietiesPage() {
                               <td
                                 style={{
                                   padding: "5px 10px",
-                                  color: "#6ee7b7",
-                                  borderBottom: "1px solid #2a2a2a",
+                                  color: "var(--success-bg)",
+                                  borderBottom: "1px solid var(--fg-2)",
                                 }}
                               >
                                 {chargeCount} heads set
@@ -2049,7 +2114,7 @@ export default function AdminSocietiesPage() {
                   <div style={{ marginBottom: "1rem" }}>
                     <div
                       style={{
-                        color: "#aaa",
+                        color: "var(--fg-5)",
                         fontSize: "0.82rem",
                         marginBottom: 6,
                       }}
@@ -2058,13 +2123,13 @@ export default function AdminSocietiesPage() {
                       {creationProgress.total}
                     </div>
                     <div
-                      style={{ height: 6, background: "#333", borderRadius: 4 }}
+                      style={{ height: 6, background: "var(--fg-2)", borderRadius: 4 }}
                     >
                       <div
                         style={{
                           height: "100%",
                           borderRadius: 4,
-                          background: "#10B981",
+                          background: "var(--success)",
                           width: `${creationProgress.total ? (creationProgress.current / creationProgress.total) * 100 : 0}%`,
                           transition: "width 0.3s ease",
                         }}
@@ -2083,7 +2148,7 @@ export default function AdminSocietiesPage() {
                   <button
                     onClick={resetModal}
                     style={{
-                      background: "#374151",
+                      background: "var(--fg-3)",
                       color: "#fff",
                       border: "none",
                       borderRadius: 6,
@@ -2098,8 +2163,8 @@ export default function AdminSocietiesPage() {
                     disabled={!isReady || uploadLoading}
                     style={{
                       background:
-                        isReady && !uploadLoading ? "#10B981" : "#040404",
-                      color: isReady && !uploadLoading ? "#fff" : "#f2f2f2",
+                        isReady && !uploadLoading ? "var(--success)" : "var(--fg-1)",
+                      color: isReady && !uploadLoading ? "var(--bg-surface)" : "var(--bg-muted)",
                       border: "none",
                       borderRadius: 6,
                       padding: "0.5rem 1.6rem",
@@ -2135,47 +2200,47 @@ export default function AdminSocietiesPage() {
           onClick={() => { setViewCredsTarget(null); setViewCreds(null); }}
         >
           <div
-            style={{ background: "#0f172a", border: "1px solid #1e40af", borderRadius: 12, padding: "2rem", width: 680, maxHeight: "85vh", display: "flex", flexDirection: "column", color: "#f0f0f0" }}
+            style={{ background: "var(--bg-surface)", border: "1px solid var(--info)", borderRadius: 12, padding: "2rem", width: 680, maxHeight: "85vh", display: "flex", flexDirection: "column", color: "var(--fg-1)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
               <div>
-                <h2 style={{ margin: 0, color: "#60a5fa", fontSize: "1.1rem" }}>👁 Member Credentials</h2>
-                <div style={{ color: "#6b7280", fontSize: "0.82rem", marginTop: 2 }}>{viewCredsTarget.name}</div>
+                <h2 style={{ margin: 0, color: "var(--accent)", fontSize: "1.1rem" }}>👁 Member Credentials</h2>
+                <div style={{ color: "var(--fg-4)", fontSize: "0.82rem", marginTop: 2 }}>{viewCredsTarget.name}</div>
               </div>
-              <button onClick={() => { setViewCredsTarget(null); setViewCreds(null); }} style={{ background: "none", border: "none", color: "#9ca3af", fontSize: "1.3rem", cursor: "pointer" }}>✕</button>
+              <button onClick={() => { setViewCredsTarget(null); setViewCreds(null); }} style={{ background: "none", border: "none", color: "var(--fg-5)", fontSize: "1.3rem", cursor: "pointer" }}>✕</button>
             </div>
             {viewCredsLoading ? (
-              <div style={{ textAlign: "center", padding: "2rem", color: "#6b7280" }}>Loading credentials...</div>
+              <div style={{ textAlign: "center", padding: "2rem", color: "var(--fg-4)" }}>Loading credentials...</div>
             ) : viewCreds?.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "2rem", color: "#6b7280" }}>No member accounts found for this society.</div>
+              <div style={{ textAlign: "center", padding: "2rem", color: "var(--fg-4)" }}>No member accounts found for this society.</div>
             ) : (
               <div style={{ overflowY: "auto", flex: 1 }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8rem" }}>
-                  <thead style={{ position: "sticky", top: 0, background: "#0f172a" }}>
+                  <thead style={{ position: "sticky", top: 0, background: "var(--fg-1)" }}>
                     <tr>
                       {["Flat", "Wing", "Owner", "Username", "Email", "Status"].map((h) => (
-                        <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: "#475569", borderBottom: "1px solid #1e293b", fontWeight: 600 }}>{h}</th>
+                        <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: "var(--fg-3)", borderBottom: "1px solid var(--fg-2)", fontWeight: 600 }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {(viewCreds || []).map((c, i) => (
-                      <tr key={i} style={{ background: i % 2 === 0 ? "#111827" : "#0f172a" }}>
-                        <td style={{ padding: "7px 10px", color: "#f1f5f9", borderBottom: "1px solid #1e293b", fontWeight: 600 }}>{c.flatNo}</td>
-                        <td style={{ padding: "7px 10px", color: "#cbd5e1", borderBottom: "1px solid #1e293b" }}>{c.wing || "—"}</td>
-                        <td style={{ padding: "7px 10px", color: "#e2e8f0", borderBottom: "1px solid #1e293b" }}>{c.ownerName}</td>
-                        <td style={{ padding: "7px 10px", fontFamily: "monospace", color: c.username ? "#a78bfa" : "#4b5563", borderBottom: "1px solid #1e293b" }}>
+                      <tr key={i} style={{ background: i % 2 === 0 ? "var(--fg-1)" : "var(--fg-1)" }}>
+                        <td style={{ padding: "7px 10px", color: "var(--bg-muted)", borderBottom: "1px solid var(--fg-2)", fontWeight: 600 }}>{c.flatNo}</td>
+                        <td style={{ padding: "7px 10px", color: "var(--border-strong)", borderBottom: "1px solid var(--fg-2)" }}>{c.wing || "—"}</td>
+                        <td style={{ padding: "7px 10px", color: "var(--border)", borderBottom: "1px solid var(--fg-2)" }}>{c.ownerName}</td>
+                        <td style={{ padding: "7px 10px", fontFamily: "monospace", color: c.username ? "#a78bfa" /* TODO: unmapped color, needs design review */ : "var(--fg-3)", borderBottom: "1px solid var(--fg-2)" }}>
                           {c.username ? c.username.toUpperCase() : "—"}
                         </td>
-                        <td style={{ padding: "7px 10px", color: "#94a3b8", borderBottom: "1px solid #1e293b" }}>{c.email}</td>
-                        <td style={{ padding: "7px 10px", borderBottom: "1px solid #1e293b" }}>
+                        <td style={{ padding: "7px 10px", color: "var(--fg-5)", borderBottom: "1px solid var(--fg-2)" }}>{c.email}</td>
+                        <td style={{ padding: "7px 10px", borderBottom: "1px solid var(--fg-2)" }}>
                           {!c.hasAccount ? (
-                            <span style={{ color: "#6b7280", fontSize: "0.75rem" }}>No account</span>
+                            <span style={{ color: "var(--fg-4)", fontSize: "0.75rem" }}>No account</span>
                           ) : c.isActive ? (
-                            <span style={{ color: "#34d399", fontSize: "0.75rem" }}>● Active</span>
+                            <span style={{ color: "var(--success)", fontSize: "0.75rem" }}>● Active</span>
                           ) : (
-                            <span style={{ color: "#f59e0b", fontSize: "0.75rem" }}>○ Inactive</span>
+                            <span style={{ color: "var(--warning)", fontSize: "0.75rem" }}>○ Inactive</span>
                           )}
                         </td>
                       </tr>
@@ -2194,7 +2259,7 @@ export default function AdminSocietiesPage() {
                       credentials: "include",
                       body: JSON.stringify({ credentials: viewCreds.map((c) => ({ ...c, password: "(not reset)", isNewUser: false })) }),
                     });
-                    if (!dlRes.ok) { alert("Download failed"); return; }
+                    if (!dlRes.ok) { notify.error("Download failed"); return; }
                     const blob = await dlRes.blob();
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement("a");
@@ -2203,14 +2268,14 @@ export default function AdminSocietiesPage() {
                     a.click();
                     URL.revokeObjectURL(url);
                   }}
-                  style={{ background: "#1d4ed8", color: "#fff", border: "none", padding: "0.5rem 1.2rem", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
+                  style={{ background: "var(--primary-hover)", color: "#fff", border: "none", padding: "0.5rem 1.2rem", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
                 >
                   ⬇️ Export as Excel
                 </button>
               )}
               <button
                 onClick={() => { setViewCredsTarget(null); setViewCreds(null); }}
-                style={{ background: "#374151", color: "#fff", border: "none", padding: "0.5rem 1.2rem", borderRadius: 6, cursor: "pointer" }}
+                style={{ background: "var(--fg-3)", color: "#fff", border: "none", padding: "0.5rem 1.2rem", borderRadius: 6, cursor: "pointer" }}
               >
                 Close
               </button>
@@ -2218,53 +2283,23 @@ export default function AdminSocietiesPage() {
           </div>
         </div>
       )}
-      {/* ── DELETE SOCIETY DIALOG ── */}
+      {/* ── DELETE / MANAGE SOCIETY WIZARD (LOOP-05) ── */}
       {deleteTarget && (
-        <div
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center" }}
-          onClick={() => setDeleteTarget(null)}
-        >
-          <div
-            style={{ background: "#1c0a0a", border: "2px solid #991b1b", borderRadius: 12, padding: "2rem", width: 480, color: "#f0f0f0" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>⚠️</div>
-            <h2 style={{ margin: "0 0 0.5rem", color: "#f87171", fontSize: "1.1rem" }}>Delete Society — Irreversible</h2>
-            <p style={{ color: "#fca5a5", fontSize: "0.87rem", marginBottom: "1rem", lineHeight: 1.6 }}>
-              This will permanently delete <strong style={{ color: "#fff" }}>{deleteTarget.name}</strong> and ALL associated data:
-              members, bills, receipts, transactions, billing heads, and user accounts.
-            </p>
-            <div style={{ background: "#450a0a", borderRadius: 6, padding: "0.75rem 1rem", marginBottom: "1.25rem", fontSize: "0.82rem", color: "#fca5a5" }}>
-              This action cannot be undone. The society and all its data will be gone forever.
-            </div>
-            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
-              <button
-                onClick={() => setDeleteTarget(null)}
-                style={{ background: "#374151", color: "#fff", border: "none", padding: "0.6rem 1.4rem", borderRadius: 6, cursor: "pointer", fontWeight: 600 }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={async () => {
-                  const res = await fetch("/api/superadmin/delete-society", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({ societyId: deleteTarget._id }),
-                  });
-                  const data = await res.json();
-                  if (!res.ok) { alert(data.error || "Delete failed"); return; }
-                  alert(`✅ "${data.societyName}" deleted.\nMembers: ${data.deleted.members}, Bills: ${data.deleted.bills}, Receipts: ${data.deleted.receipts}`);
-                  setDeleteTarget(null);
-                  queryClient.invalidateQueries(["admin-societies"]);
-                }}
-                style={{ background: "#dc2626", color: "#fff", border: "none", padding: "0.6rem 1.4rem", borderRadius: 6, cursor: "pointer", fontWeight: 700 }}
-              >
-                🗑 Delete Permanently
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteWizard
+          society={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onDone={(action, data) => {
+            const messages = {
+              pause: "Society paused.",
+              "pause-until": `Society paused until ${data.pausedUntil}.`,
+              "delete-until": `Society soft-deleted; scheduled to purge on ${data.purgeScheduledFor}. Restorable until then.`,
+              "delete-permanently": `"${data.societyName}" permanently deleted.\nMembers: ${data.deleted?.members}, Bills: ${data.deleted?.bills}, Receipts: ${data.deleted?.receipts}`,
+            };
+            notify.success(messages[action] || "Done.");
+            setDeleteTarget(null);
+            queryClient.invalidateQueries(["admin-societies"]);
+          }}
+        />
       )}
       {/* ── STANDALONE BILL HISTORY MODAL (from table button) ── */}
       {bhModalSociety && (

@@ -107,10 +107,10 @@
   background-color: var(--bg-secondary);
 }
 .gridRow.modified {
-  background-color: #fef3c7;
+  background-color: var(--warning-bg);
 }
 .gridRow.error {
-  background-color: #fee2e2;
+  background-color: var(--danger-bg);
 }
 .gridCell {
   padding: 8px 16px;
@@ -142,10 +142,10 @@
   background-color: var(--bg-secondary);
 }
 .gridRow.modified .gridCell {
-  background-color: #fef3c7;
+  background-color: var(--warning-bg);
 }
 .gridRow.error .gridCell {
-  background-color: #fee2e2;
+  background-color: var(--danger-bg);
 }
 .cellInput {
   width: 100%;
@@ -160,7 +160,7 @@
 .cellInput:focus {
   outline: none;
   border-color: var(--primary);
-  background-color: white;
+  background-color: var(--bg-surface);
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
 }
 .cellInput:disabled {
@@ -179,7 +179,7 @@
   color: var(--text-primary);
 }
 .cellCalculated {
-  background-color: #dbeafe;
+  background-color: var(--info-bg);
   font-weight: 600;
   color: var(--primary-dark);
   text-align: right;
@@ -237,8 +237,8 @@
   }
 }
 .errorList {
-  background-color: #fee2e2;
-  border: 1px solid #fca5a5;
+  background-color: var(--danger-bg);
+  border: 1px solid var(--danger);
   border-radius: var(--radius-md);
   padding: var(--spacing-md);
   margin-bottom: var(--spacing-lg);
@@ -246,7 +246,7 @@
 .errorListTitle {
   font-size: var(--font-sm);
   font-weight: 600;
-  color: #991b1b;
+  color: var(--danger-fg);
   margin-bottom: var(--spacing-sm);
 }
 .errorListItems {
@@ -256,7 +256,7 @@
 }
 .errorListItem {
   font-size: var(--font-sm);
-  color: #991b1b;
+  color: var(--danger-fg);
   padding: 4px 0;
   display: flex;
   align-items: flex-start;
@@ -277,11 +277,11 @@
 }
 .uploadZone:hover {
   border-color: var(--primary);
-  background-color: #eff6ff;
+  background-color: var(--accent-tint);
 }
 .uploadZone.dragActive {
   border-color: var(--primary);
-  background-color: #dbeafe;
+  background-color: var(--info-bg);
   transform: scale(1.02);
 }
 .uploadIcon {

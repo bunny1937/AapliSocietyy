@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import styles from "@/styles/AdminNotices.module.css";
+import notify from "@/lib/notify";
 const NOTICE_TYPES = [
   "maintenance",
   "meeting",
@@ -33,10 +34,10 @@ const TYPE_ICONS = {
   custom: "📋",
 };
 const PRIORITY_COLORS = {
-  low: { bg: "#f3f4f6", color: "#374151", border: "#e5e7eb" },
-  medium: { bg: "#dbeafe", color: "#1e40af", border: "#93c5fd" },
-  high: { bg: "#fef3c7", color: "#92400e", border: "#fcd34d" },
-  urgent: { bg: "#fee2e2", color: "#991b1b", border: "#fca5a5" },
+  low: { bg: "var(--bg-muted)", color: "var(--fg-3)", border: "var(--border)" },
+  medium: { bg: "var(--info-bg)", color: "var(--info)", border: "var(--primary)" },
+  high: { bg: "var(--warning-bg)", color: "var(--warning-fg)", border: "var(--warning)" },
+  urgent: { bg: "var(--danger-bg)", color: "var(--danger-fg)", border: "var(--danger)" },
 };
 const EMPTY_FORM = {
   type: "maintenance",
@@ -124,7 +125,7 @@ export default function AdminNoticesPage() {
     }
   };
   const handleDelete = async (id) => {
-    if (!confirm("Delete this notice? This cannot be undone.")) return;
+    if (!(await notify.confirm("Delete this notice? This cannot be undone.", { tone: "danger" }))) return;
     setActionLoading({ ...actionLoading, [id]: "delete" });
     try {
       const res = await fetch(`/api/notices/${id}`, {

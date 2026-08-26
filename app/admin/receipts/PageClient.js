@@ -62,7 +62,7 @@ function BillReceiptPrint({ receipt, society, member, bill, customDate }) {
         maxWidth: 520,
         margin: "0 auto",
         padding: "2rem",
-        border: "1px solid #ccc",
+        border: "1px solid var(--border-strong)",
         borderRadius: 8,
       }}
     >
@@ -70,15 +70,15 @@ function BillReceiptPrint({ receipt, society, member, bill, customDate }) {
       <div
         style={{
           textAlign: "center",
-          borderBottom: "2px solid #1e293b",
+          borderBottom: "2px solid var(--fg-2)",
           paddingBottom: "1rem",
           marginBottom: "1rem",
         }}
       >
-        <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1e293b" }}>
+        <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "var(--fg-2)" }}>
           {society?.name || "Society"}
         </div>
-        <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: 4 }}>
+        <div style={{ fontSize: "0.8rem", color: "var(--fg-4)", marginTop: 4 }}>
           {society?.address}
         </div>
         <div
@@ -112,8 +112,8 @@ function BillReceiptPrint({ receipt, society, member, bill, customDate }) {
       {/* Member details */}
       <div
         style={{
-          background: "#f8fafc",
-          border: "1px solid #e2e8f0",
+          background: "var(--bg-canvas)",
+          border: "1px solid var(--border)",
           borderRadius: 6,
           padding: "0.75rem 1rem",
           marginBottom: "1rem",
@@ -141,8 +141,8 @@ function BillReceiptPrint({ receipt, society, member, bill, customDate }) {
         }}
       >
         <tbody>
-          <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-            <td style={{ padding: "0.5rem 0", color: "#64748b" }}>
+          <tr style={{ borderBottom: "1px solid var(--border)" }}>
+            <td style={{ padding: "0.5rem 0", color: "var(--fg-4)" }}>
               Bill Amount
             </td>
             <td
@@ -156,22 +156,22 @@ function BillReceiptPrint({ receipt, society, member, bill, customDate }) {
             </td>
           </tr>
           {(receipt?.previousBalanceSnapshot || 0) > 0 && (
-            <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-              <td style={{ padding: "0.5rem 0", color: "#64748b" }}>
+            <tr style={{ borderBottom: "1px solid var(--border)" }}>
+              <td style={{ padding: "0.5rem 0", color: "var(--fg-4)" }}>
                 Previous Balance
               </td>
               <td
                 style={{
                   padding: "0.5rem 0",
                   textAlign: "right",
-                  color: "#dc2626",
+                  color: "var(--danger)",
                 }}
               >
                 {fmt(receipt?.previousBalanceSnapshot)}
               </td>
             </tr>
           )}
-          <tr style={{ borderTop: "2px solid #1e293b" }}>
+          <tr style={{ borderTop: "2px solid var(--fg-2)" }}>
             <td
               style={{
                 padding: "0.6rem 0",
@@ -187,7 +187,7 @@ function BillReceiptPrint({ receipt, society, member, bill, customDate }) {
                 textAlign: "right",
                 fontWeight: 800,
                 fontSize: "0.95rem",
-                color: "#16a34a",
+                color: "var(--success)",
               }}
             >
               {fmt(receipt?.amount)}
@@ -198,7 +198,7 @@ function BillReceiptPrint({ receipt, society, member, bill, customDate }) {
       <div
         style={{
           fontSize: "0.78rem",
-          color: "#64748b",
+          color: "var(--fg-4)",
           marginBottom: "0.5rem",
         }}
       >
@@ -208,7 +208,7 @@ function BillReceiptPrint({ receipt, society, member, bill, customDate }) {
         <div
           style={{
             fontSize: "0.78rem",
-            color: "#64748b",
+            color: "var(--fg-4)",
             marginBottom: "0.5rem",
           }}
         >
@@ -217,13 +217,13 @@ function BillReceiptPrint({ receipt, society, member, bill, customDate }) {
       )}
       <div
         style={{
-          borderTop: "1px dashed #94a3b8",
+          borderTop: "1px dashed var(--fg-5)",
           marginTop: "1.5rem",
           paddingTop: "1rem",
           display: "flex",
           justifyContent: "space-between",
           fontSize: "0.75rem",
-          color: "#94a3b8",
+          color: "var(--fg-5)",
         }}
       >
         <span>Generated: {fmtDateTime(new Date())}</span>
@@ -243,7 +243,7 @@ function TransactionalReceiptPrint({ entry, society, customDate }) {
         maxWidth: 520,
         margin: "0 auto",
         padding: "2rem",
-        border: "1px solid #ccc",
+        border: "1px solid var(--border-strong)",
         borderRadius: 8,
       }}
     >
@@ -251,15 +251,15 @@ function TransactionalReceiptPrint({ entry, society, customDate }) {
       <div
         style={{
           textAlign: "center",
-          borderBottom: "2px solid #1e293b",
+          borderBottom: "2px solid var(--fg-2)",
           paddingBottom: "1rem",
           marginBottom: "1rem",
         }}
       >
-        <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1e293b" }}>
+        <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "var(--fg-2)" }}>
           {society?.name || "Society"}
         </div>
-        <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: 4 }}>
+        <div style={{ fontSize: "0.8rem", color: "var(--fg-4)", marginTop: 4 }}>
           {society?.address}
         </div>
         <div
@@ -293,8 +293,8 @@ function TransactionalReceiptPrint({ entry, society, customDate }) {
       {/* Details */}
       <div
         style={{
-          background: "#f8fafc",
-          border: "1px solid #e2e8f0",
+          background: "var(--bg-canvas)",
+          border: "1px solid var(--border)",
           borderRadius: 6,
           padding: "0.75rem 1rem",
           marginBottom: "1rem",
@@ -310,7 +310,7 @@ function TransactionalReceiptPrint({ entry, society, customDate }) {
         <div style={{ marginTop: 4 }}>
           <strong>Kind:</strong>{" "}
           <span
-            style={{ color: isIncome ? "#16a34a" : "#dc2626", fontWeight: 700 }}
+            style={{ color: isIncome ? "var(--success)" : "var(--danger)", fontWeight: 700 }}
           >
             {isIncome ? "Income" : "Expenditure"}
           </span>
@@ -331,7 +331,7 @@ function TransactionalReceiptPrint({ entry, society, customDate }) {
         }}
       >
         <tbody>
-          <tr style={{ borderTop: "2px solid #1e293b" }}>
+          <tr style={{ borderTop: "2px solid var(--fg-2)" }}>
             <td
               style={{
                 padding: "0.6rem 0",
@@ -347,7 +347,7 @@ function TransactionalReceiptPrint({ entry, society, customDate }) {
                 textAlign: "right",
                 fontWeight: 800,
                 fontSize: "0.95rem",
-                color: isIncome ? "#16a34a" : "#dc2626",
+                color: isIncome ? "var(--success)" : "var(--danger)",
               }}
             >
               {fmt(entry?.amount)}
@@ -357,13 +357,13 @@ function TransactionalReceiptPrint({ entry, society, customDate }) {
       </table>
       <div
         style={{
-          borderTop: "1px dashed #94a3b8",
+          borderTop: "1px dashed var(--fg-5)",
           marginTop: "1.5rem",
           paddingTop: "1rem",
           display: "flex",
           justifyContent: "space-between",
           fontSize: "0.75rem",
-          color: "#94a3b8",
+          color: "var(--fg-5)",
         }}
       >
         <span>Generated: {fmtDateTime(new Date())}</span>
@@ -380,9 +380,9 @@ function ReceiptActions({ onPrint }) {
       style={{
         padding: "4px 14px",
         borderRadius: 5,
-        border: "1px solid #3b82f6",
-        background: "#eff6ff",
-        color: "#1d4ed8",
+        border: "1px solid var(--accent)",
+        background: "var(--accent-tint)",
+        color: "var(--primary-hover)",
         fontSize: "0.75rem",
         fontWeight: 700,
         cursor: "pointer",
@@ -527,26 +527,26 @@ export default function ReceiptsPage() {
     return new Date();
   };
   const cardStyle = {
-    background: "#fff",
+    background: "var(--bg-surface)",
     borderRadius: 10,
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     overflow: "hidden",
   };
   const thStyle = {
     padding: "8px 12px",
     textAlign: "left",
     fontSize: "11px",
-    color: "#64748b",
+    color: "var(--fg-4)",
     fontWeight: 700,
     textTransform: "uppercase",
     letterSpacing: "0.04em",
-    background: "#f8fafc",
-    borderBottom: "1px solid #e2e8f0",
+    background: "var(--bg-canvas)",
+    borderBottom: "1px solid var(--border)",
   };
   const tdStyle = {
     padding: "10px 12px",
     fontSize: "13px",
-    borderBottom: "1px solid #f1f5f9",
+    borderBottom: "1px solid var(--bg-muted)",
     verticalAlign: "middle",
   };
   // FY options: simple range
@@ -571,13 +571,13 @@ export default function ReceiptsPage() {
               margin: 0,
               fontSize: "1.25rem",
               fontWeight: 800,
-              color: "#0f172a",
+              color: "var(--fg-1)",
             }}
           >
             Receipts
           </h1>
           <p
-            style={{ margin: "4px 0 0", fontSize: "0.82rem", color: "#64748b" }}
+            style={{ margin: "4px 0 0", fontSize: "0.82rem", color: "var(--fg-4)" }}
           >
             Generate &amp; print payment receipts and expenditure/income
             vouchers
@@ -590,7 +590,7 @@ export default function ReceiptsPage() {
           display: "flex",
           gap: 0,
           marginBottom: "1.5rem",
-          background: "#f1f5f9",
+          background: "var(--bg-muted)",
           borderRadius: 8,
           padding: 4,
           width: "fit-content",
@@ -610,8 +610,8 @@ export default function ReceiptsPage() {
               cursor: "pointer",
               fontWeight: 700,
               fontSize: "0.85rem",
-              background: tab === t.key ? "#fff" : "transparent",
-              color: tab === t.key ? "#1e293b" : "#64748b",
+              background: tab === t.key ? "var(--bg-surface)" : "transparent",
+              color: tab === t.key ? "var(--fg-2)" : "var(--fg-4)",
               boxShadow: tab === t.key ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
             }}
           >
@@ -644,7 +644,7 @@ export default function ReceiptsPage() {
                 width: "100%",
                 padding: "0.5rem 0.75rem",
                 borderRadius: 7,
-                border: "1px solid #cbd5e1",
+                border: "1px solid var(--border-strong)",
                 fontSize: "0.85rem",
                 boxSizing: "border-box",
               }}
@@ -663,7 +663,7 @@ export default function ReceiptsPage() {
                   transform: "translateY(-50%)",
                   background: "none",
                   border: "none",
-                  color: "#94a3b8",
+                  color: "var(--fg-5)",
                   cursor: "pointer",
                   fontSize: "1rem",
                 }}
@@ -678,8 +678,8 @@ export default function ReceiptsPage() {
                   top: "100%",
                   left: 0,
                   right: 0,
-                  background: "#fff",
-                  border: "1px solid #e2e8f0",
+                  background: "var(--bg-surface)",
+                  border: "1px solid var(--border)",
                   borderRadius: 7,
                   boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                   zIndex: 100,
@@ -691,7 +691,7 @@ export default function ReceiptsPage() {
                   <div
                     style={{
                       padding: "0.75rem",
-                      color: "#94a3b8",
+                      color: "var(--fg-5)",
                       fontSize: "0.82rem",
                     }}
                   >
@@ -713,10 +713,10 @@ export default function ReceiptsPage() {
                       padding: "0.5rem 0.75rem",
                       cursor: "pointer",
                       fontSize: "0.82rem",
-                      borderBottom: "1px solid #f1f5f9",
+                      borderBottom: "1px solid var(--bg-muted)",
                     }}
                     onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = "#f8fafc")
+                      (e.currentTarget.style.background = "var(--bg-canvas)")
                     }
                     onMouseLeave={(e) =>
                       (e.currentTarget.style.background = "")
@@ -738,7 +738,7 @@ export default function ReceiptsPage() {
                 style={{
                   padding: "2rem",
                   textAlign: "center",
-                  color: "#94a3b8",
+                  color: "var(--fg-5)",
                 }}
               >
                 Loading...
@@ -748,7 +748,7 @@ export default function ReceiptsPage() {
                 style={{
                   padding: "2rem",
                   textAlign: "center",
-                  color: "#94a3b8",
+                  color: "var(--fg-5)",
                 }}
               >
                 {billMemberId
@@ -787,7 +787,7 @@ export default function ReceiptsPage() {
                               ...tdStyle,
                               fontFamily: "monospace",
                               fontSize: "11px",
-                              color: "#64748b",
+                              color: "var(--fg-4)",
                             }}
                           >
                             {r.receiptNo}
@@ -796,21 +796,21 @@ export default function ReceiptsPage() {
                             <div style={{ fontWeight: 600 }}>
                               {member?.wing}-{member?.flatNo}
                             </div>
-                            <div style={{ fontSize: "11px", color: "#94a3b8" }}>
+                            <div style={{ fontSize: "11px", color: "var(--fg-5)" }}>
                               {member?.ownerName}
                             </div>
                           </td>
-                          <td style={{ ...tdStyle, color: "#64748b" }}>
+                          <td style={{ ...tdStyle, color: "var(--fg-4)" }}>
                             {r.unitClass || "—"}
                           </td>
-                          <td style={{ ...tdStyle, color: "#64748b" }}>
+                          <td style={{ ...tdStyle, color: "var(--fg-4)" }}>
                             {r.billPeriodId || "—"}
                           </td>
                           <td
                             style={{
                               ...tdStyle,
                               fontWeight: 700,
-                              color: "#059669",
+                              color: "var(--success)",
                             }}
                           >
                             {fmt(r.amount)}
@@ -818,8 +818,8 @@ export default function ReceiptsPage() {
                           <td style={tdStyle}>
                             <span
                               style={{
-                                background: "#dbeafe",
-                                color: "#1e40af",
+                                background: "var(--info-bg)",
+                                color: "var(--info-fg)",
                                 padding: "2px 8px",
                                 borderRadius: 10,
                                 fontSize: "11px",
@@ -832,7 +832,7 @@ export default function ReceiptsPage() {
                           <td
                             style={{
                               ...tdStyle,
-                              color: "#64748b",
+                              color: "var(--fg-4)",
                               whiteSpace: "nowrap",
                             }}
                           >
@@ -868,7 +868,7 @@ export default function ReceiptsPage() {
             }}
           >
             <span
-              style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: 600 }}
+              style={{ fontSize: "0.82rem", color: "var(--fg-4)", fontWeight: 600 }}
             >
               Financial Year:
             </span>
@@ -878,7 +878,7 @@ export default function ReceiptsPage() {
               style={{
                 padding: "0.4rem 0.75rem",
                 borderRadius: 6,
-                border: "1px solid #cbd5e1",
+                border: "1px solid var(--border-strong)",
                 fontSize: "0.85rem",
               }}
             >
@@ -888,7 +888,7 @@ export default function ReceiptsPage() {
                 </option>
               ))}
             </select>
-            <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>
+            <span style={{ fontSize: "0.78rem", color: "var(--fg-5)" }}>
               Showing custom income/expenditure entries from Balance Sheet
             </span>
           </div>
@@ -898,7 +898,7 @@ export default function ReceiptsPage() {
                 style={{
                   padding: "2rem",
                   textAlign: "center",
-                  color: "#94a3b8",
+                  color: "var(--fg-5)",
                 }}
               >
                 Loading...
@@ -908,11 +908,11 @@ export default function ReceiptsPage() {
                 style={{
                   padding: "2rem",
                   textAlign: "center",
-                  color: "#94a3b8",
+                  color: "var(--fg-5)",
                 }}
               >
                 No entries for FY {selectedFY}–{selectedFY + 1}.{" "}
-                <a href="/admin/balance-sheet" style={{ color: "#3b82f6" }}>
+                <a href="/admin/balance-sheet" style={{ color: "var(--accent)" }}>
                   Add entries in Balance Sheet →
                 </a>
               </div>
@@ -945,19 +945,19 @@ export default function ReceiptsPage() {
                             style={{
                               ...tdStyle,
                               fontWeight: 600,
-                              color: "#1e293b",
+                              color: "var(--fg-2)",
                             }}
                           >
                             {e.name}
                           </td>
-                          <td style={{ ...tdStyle, color: "#64748b" }}>
+                          <td style={{ ...tdStyle, color: "var(--fg-4)" }}>
                             {e.type}
                           </td>
                           <td style={tdStyle}>
                             <span
                               style={{
-                                background: isIncome ? "#dcfce7" : "#fee2e2",
-                                color: isIncome ? "#15803d" : "#b91c1c",
+                                background: isIncome ? "var(--success-bg)" : "var(--danger-bg)",
+                                color: isIncome ? "var(--success-fg)" : "var(--danger-fg)",
                                 padding: "2px 8px",
                                 borderRadius: 10,
                                 fontSize: "11px",
@@ -971,7 +971,7 @@ export default function ReceiptsPage() {
                             style={{
                               ...tdStyle,
                               fontWeight: 700,
-                              color: isIncome ? "#059669" : "#dc2626",
+                              color: isIncome ? "var(--success)" : "var(--danger)",
                             }}
                           >
                             {fmt(e.amount)}
@@ -979,13 +979,13 @@ export default function ReceiptsPage() {
                           <td
                             style={{
                               ...tdStyle,
-                              color: "#64748b",
+                              color: "var(--fg-4)",
                               whiteSpace: "nowrap",
                             }}
                           >
                             {fmtDate(e.date)}
                           </td>
-                          <td style={{ ...tdStyle, color: "#64748b" }}>
+                          <td style={{ ...tdStyle, color: "var(--fg-4)" }}>
                             FY {e.fy}–{e.fy + 1}
                           </td>
                           <td style={tdStyle}>
@@ -1018,7 +1018,7 @@ export default function ReceiptsPage() {
         >
           <div
             style={{
-              background: "#fff",
+              background: "var(--bg-surface)",
               borderRadius: 12,
               padding: "1.5rem",
               maxWidth: 640,
@@ -1032,16 +1032,16 @@ export default function ReceiptsPage() {
               style={{
                 marginBottom: "1rem",
                 padding: "0.75rem",
-                background: "#f8fafc",
+                background: "var(--bg-canvas)",
                 borderRadius: 8,
-                border: "1px solid #e2e8f0",
+                border: "1px solid var(--border)",
               }}
             >
               <div
                 style={{
                   fontSize: "0.78rem",
                   fontWeight: 700,
-                  color: "#64748b",
+                  color: "var(--fg-4)",
                   marginBottom: "0.5rem",
                 }}
               >
@@ -1085,7 +1085,7 @@ export default function ReceiptsPage() {
                     marginTop: "0.5rem",
                     padding: "0.4rem 0.6rem",
                     borderRadius: 5,
-                    border: "1px solid #cbd5e1",
+                    border: "1px solid var(--border-strong)",
                     fontSize: "0.82rem",
                   }}
                 />
@@ -1124,11 +1124,11 @@ export default function ReceiptsPage() {
                 style={{
                   padding: "0.5rem 1.25rem",
                   borderRadius: 6,
-                  border: "1px solid #e2e8f0",
-                  background: "#fff",
+                  border: "1px solid var(--border)",
+                  background: "var(--bg-surface)",
                   cursor: "pointer",
                   fontWeight: 600,
-                  color: "#64748b",
+                  color: "var(--fg-4)",
                 }}
               >
                 Cancel
@@ -1139,7 +1139,7 @@ export default function ReceiptsPage() {
                   padding: "0.5rem 1.5rem",
                   borderRadius: 6,
                   border: "none",
-                  background: "#1e293b",
+                  background: "var(--fg-2)",
                   color: "#fff",
                   fontWeight: 700,
                   cursor: "pointer",

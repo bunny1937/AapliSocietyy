@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import DropZone from "../../../components/DropZone";
+import notify from "@/lib/notify";
 // Helper: compute required audit window for display
 function getAuditWindow(joinMonth, joinYear) {
   if (!joinMonth || !joinYear) return null;
@@ -63,7 +64,7 @@ export default function AuditPage() {
   });
   const report = reportData?.report;
   const handleSubmit = async () => {
-    if (!file) return alert("Please select the audit Excel file");
+    if (!file) return notify.info("Please select the audit Excel file");
     setUploading(true);
     setResult(null);
     try {
@@ -86,16 +87,16 @@ export default function AuditPage() {
     }
   };
   const statusColor = {
-    Pending: "#f59e0b",
-    Approved: "#10b981",
-    Rejected: "#ef4444",
+    Pending: "var(--warning)",
+    Approved: "var(--success)",
+    Rejected: "var(--danger)",
   };
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: 0 }}>
-      <h1 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: "#0f172a", letterSpacing: "-0.01em" }}>
+      <h1 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: "var(--fg-1)", letterSpacing: "-0.01em" }}>
         Audit Report Submission
       </h1>
-      <p style={{ color: "#64748b", fontSize: 13, marginBottom: "1.25rem" }}>
+      <p style={{ color: "var(--fg-4)", fontSize: 13, marginBottom: "1.25rem" }}>
         Submit previous bills for audit as per Indian Financial Year
         requirement. Bills must cover from April of the previous FY up to the
         month before your society joined.
@@ -104,8 +105,8 @@ export default function AuditPage() {
       {report && (
         <div
           style={{
-            background: "#f9fafb",
-            border: "1px solid #e5e7eb",
+            background: "var(--bg-sunken)",
+            border: "1px solid var(--border)",
             borderRadius: 8,
             padding: "1.25rem",
             marginBottom: "2rem",
@@ -121,7 +122,7 @@ export default function AuditPage() {
             <div>
               <strong>Previously Submitted Report</strong>
               <div
-                style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: 4 }}
+                style={{ fontSize: "0.85rem", color: "var(--fg-4)", marginTop: 4 }}
               >
                 Submitted:{" "}
                 {new Date(report.submittedAt).toLocaleString("en-IN")}{" "}
@@ -137,7 +138,7 @@ export default function AuditPage() {
                 borderRadius: 20,
                 fontWeight: 700,
                 fontSize: "0.85rem",
-                background: statusColor[report.status] + "22",
+                background: `color-mix(in srgb, ${statusColor[report.status]} 13%, transparent)`,
                 color: statusColor[report.status],
               }}
             >
@@ -149,7 +150,7 @@ export default function AuditPage() {
               style={{
                 marginTop: "0.75rem",
                 padding: "0.75rem",
-                background: "#fef9c3",
+                background: "var(--warning-bg)",
                 borderRadius: 6,
               }}
             >
@@ -161,8 +162,8 @@ export default function AuditPage() {
       {/* Step 1: Set join date */}
       <div
         style={{
-          background: "#fff",
-          border: "1px solid #e5e7eb",
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border)",
           borderRadius: 8,
           padding: "1.5rem",
           marginBottom: "1.5rem",
@@ -185,7 +186,7 @@ export default function AuditPage() {
             style={{
               padding: "0.5rem 1rem",
               borderRadius: 6,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border)",
             }}
           >
             {MONTH_NAMES.slice(1).map((m, i) => (
@@ -203,7 +204,7 @@ export default function AuditPage() {
             style={{
               padding: "0.5rem",
               borderRadius: 6,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border)",
               width: 90,
             }}
           />
@@ -213,7 +214,7 @@ export default function AuditPage() {
             style={{
               marginTop: "1rem",
               padding: "0.75rem 1rem",
-              background: "#dbeafe",
+              background: "var(--primary-tint)",
               borderRadius: 6,
               fontSize: "0.9rem",
             }}
@@ -221,13 +222,13 @@ export default function AuditPage() {
             <strong>Required audit window:</strong>{" "}
             {MONTH_NAMES[window.fromMonth]} {window.fromYear} →{" "}
             {MONTH_NAMES[window.toMonth]} {window.toYear}{" "}
-            <span style={{ color: "#1e40af", fontWeight: 600 }}>
+            <span style={{ color: "var(--info)", fontWeight: 600 }}>
               ({window.totalMonths} months)
             </span>
             <div
               style={{
                 marginTop: "0.5rem",
-                color: "#3b82f6",
+                color: "var(--accent)",
                 fontSize: "0.8rem",
               }}
             >
@@ -239,8 +240,8 @@ export default function AuditPage() {
       {/* Step 2: Upload */}
       <div
         style={{
-          background: "#fff",
-          border: "1px solid #e5e7eb",
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border)",
           borderRadius: 8,
           padding: "1.5rem",
           marginBottom: "1.5rem",
@@ -251,7 +252,7 @@ export default function AuditPage() {
         </h2>
         <p
           style={{
-            color: "#6b7280",
+            color: "var(--fg-4)",
             fontSize: "0.875rem",
             marginBottom: "1rem",
           }}
@@ -273,7 +274,7 @@ export default function AuditPage() {
         {file && (
           <div
             style={{
-              color: "#059669",
+              color: "var(--success)",
               fontSize: "0.875rem",
               marginBottom: "0.75rem",
             }}
@@ -285,7 +286,7 @@ export default function AuditPage() {
           onClick={handleSubmit}
           disabled={uploading || !file}
           style={{
-            background: uploading ? "#9ca3af" : "#1e40af",
+            background: uploading ? "var(--fg-5)" : "var(--primary-hover)",
             color: "#fff",
             padding: "0.6rem 1.5rem",
             borderRadius: 6,
@@ -301,15 +302,15 @@ export default function AuditPage() {
       {result && (
         <div
           style={{
-            background: result.passed ? "#f0fdf4" : "#fef2f2",
-            border: `1px solid ${result.passed ? "#86efac" : "#fca5a5"}`,
+            background: result.passed ? "var(--success-bg)" : "var(--danger-bg)",
+            border: `1px solid ${result.passed ? "var(--success-bg)" : "var(--danger-bg)"}`,
             borderRadius: 8,
             padding: "1.5rem",
           }}
         >
           <h3
             style={{
-              color: result.passed ? "#065f46" : "#991b1b",
+              color: result.passed ? "var(--success-fg)" : "var(--danger-fg)",
               fontWeight: 700,
               marginBottom: "0.75rem",
             }}
@@ -320,14 +321,14 @@ export default function AuditPage() {
           </h3>
           {result.errors?.length > 0 && (
             <div>
-              <strong style={{ color: "#991b1b" }}>
+              <strong style={{ color: "var(--danger-fg)" }}>
                 Errors ({result.errors.length}):
               </strong>
               <ul
                 style={{
                   margin: "0.5rem 0",
                   paddingLeft: "1.25rem",
-                  color: "#7f1d1d",
+                  color: "var(--danger-fg)",
                   fontSize: "0.875rem",
                 }}
               >
@@ -342,14 +343,14 @@ export default function AuditPage() {
           )}
           {result.warnings?.length > 0 && (
             <div style={{ marginTop: "0.75rem" }}>
-              <strong style={{ color: "#92400e" }}>
+              <strong style={{ color: "var(--warning-fg)" }}>
                 Warnings ({result.warnings.length}):
               </strong>
               <ul
                 style={{
                   margin: "0.5rem 0",
                   paddingLeft: "1.25rem",
-                  color: "#78350f",
+                  color: "var(--warning-fg)",
                   fontSize: "0.875rem",
                 }}
               >
@@ -360,7 +361,7 @@ export default function AuditPage() {
             </div>
           )}
           {result.passed && result.warnings?.length === 0 && (
-            <p style={{ color: "#065f46" }}>
+            <p style={{ color: "var(--success-fg)" }}>
               All checks passed. Your audit report is pending SuperAdmin review.
             </p>
           )}

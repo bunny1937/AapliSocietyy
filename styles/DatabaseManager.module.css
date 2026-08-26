@@ -8,7 +8,7 @@
 .title {
   font-size: 28px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 .subtitle {
@@ -62,7 +62,7 @@
   color: white;
 }
 .btnSuccess {
-  background: #10b981;
+  background: var(--success);
   color: white;
 }
 .btnSecondary {
@@ -71,7 +71,7 @@
   border: 1px solid var(--border);
 }
 .btnDanger {
-  background: #ef4444;
+  background: var(--danger);
   color: white;
 }
 .btn:hover:not(:disabled) {
@@ -184,8 +184,8 @@
 }
 .jsonView {
   padding: 1.5rem;
-  background: #1e1e1e;
-  color: #d4d4d4;
+  background: var(--bg-sunken);
+  color: var(--text-primary);
   font-family: 'Courier New', monospace;
   font-size: 0.85rem;
   overflow-x: auto;
@@ -220,16 +220,16 @@
 }
 .dangerZone {
   padding: 1.5rem;
-  background: #fee2e2;
-  border: 2px solid #ef4444;
+  background: var(--danger-bg);
+  border: 2px solid var(--danger);
   border-radius: 8px;
 }
 .dangerZone h3 {
-  color: #991b1b;
+  color: var(--danger-fg);
   margin-bottom: 0.5rem;
 }
 .dangerZone p {
-  color: #991b1b;
+  color: var(--danger-fg);
   margin-bottom: 1rem;
   font-size: 0.9rem;
 }

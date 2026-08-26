@@ -46,15 +46,15 @@ const S = {
   },
   // Big, unmissable card for a visitor waiting at the gate.
   pendingCard: {
-    border: "2px solid #f59e0b",
-    background: "#fffbeb",
+    border: "2px solid var(--warning)",
+    background: "var(--warning-bg)",
     borderRadius: tokens.radius,
     padding: 18,
     marginBottom: 14,
   },
   enteredCard: {
-    border: "2px solid #ef4444",
-    background: "#fef2f2",
+    border: "2px solid var(--danger)",
+    background: "var(--danger-bg)",
     borderRadius: tokens.radius,
     padding: 18,
     marginBottom: 14,
@@ -74,7 +74,7 @@ const S = {
     alignItems: "center",
     gap: 12,
     padding: "12px 0",
-    borderBottom: "1px solid #f1f2f4",
+    borderBottom: "1px solid var(--border)",
   },
   pendingWrap: { marginBottom: 20 },
   logMain: { flex: 1, minWidth: 0 },

@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import ExcelPreviewGrid from "../../components/ExcelPreviewGrid";
+import notify from "@/lib/notify";
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n) => (Number(n) || 0).toFixed(2);
 const periodOf = (m, y) => `${y}-${String(m + 1).padStart(2, "0")}`;
@@ -75,92 +76,92 @@ function ExpectedPanel({ members, heads, parkingRates, interestRate, serviceTaxR
   const prevData = (prevBalances && member) ? (prevBalances[member._id] || {}) : {};
   const calc = member && prevBalances ? calcExpected({ member, prevData, heads, parkingRates, interestRate, serviceTaxRate }) : null;
   return (
-    <div style={{ background: "#0f172a", borderRadius: 12, padding: "1.25rem", height: "100%", minHeight: 400 }}>
+    <div style={{ background: "var(--fg-1)", borderRadius: 12, padding: "1.25rem", height: "100%", minHeight: 400 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-        <span style={{ color: "#38bdf8", fontSize: "0.75rem", fontWeight: 700, letterSpacing: 1 }}>
+        <span style={{ color: "var(--accent)", fontSize: "0.75rem", fontWeight: 700, letterSpacing: 1 }}>
           EXPECTED — {label || periodOf(billMonth, billYear)}
         </span>
-        <button onClick={fetch_} disabled={loading} style={{ background: "#1e3a5f", color: "#94a3b8", border: "none", borderRadius: 5, padding: "3px 10px", cursor: "pointer", fontSize: "0.7rem" }}>
+        <button onClick={fetch_} disabled={loading} style={{ background: "var(--primary)", color: "var(--fg-5)", border: "none", borderRadius: 5, padding: "3px 10px", cursor: "pointer", fontSize: "0.7rem" }}>
           {loading ? "..." : "Refresh"}
         </button>
       </div>
-      <select value={selectedId} onChange={e => setSelectedId(e.target.value)} style={{ width: "100%", padding: "5px 8px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: "0.8rem", marginBottom: "0.75rem" }}>
+      <select value={selectedId} onChange={e => setSelectedId(e.target.value)} style={{ width: "100%", padding: "5px 8px", borderRadius: 6, border: "1px solid var(--fg-3)", background: "var(--fg-2)", color: "var(--border)", fontSize: "0.8rem", marginBottom: "0.75rem" }}>
         {members.map(m => <option key={m._id} value={m._id}>{m.wing}-{m.flatNo} {m.ownerName}</option>)}
       </select>
-      {!calc && <div style={{ color: "#475569", fontSize: "0.75rem" }}>{loading ? "Loading..." : "No data"}</div>}
+      {!calc && <div style={{ color: "var(--fg-3)", fontSize: "0.75rem" }}>{loading ? "Loading..." : "No data"}</div>}
       {calc && (
         <div style={{ fontSize: "0.75rem" }}>
           {/* Previous balance */}
-          <div style={{ background: "#1e293b", borderRadius: 8, padding: "0.6rem 0.75rem", marginBottom: "0.5rem" }}>
-            <div style={{ color: "#64748b", marginBottom: 4, fontSize: "0.65rem", fontWeight: 700 }}>CARRY-FORWARD</div>
+          <div style={{ background: "var(--fg-2)", borderRadius: 8, padding: "0.6rem 0.75rem", marginBottom: "0.5rem" }}>
+            <div style={{ color: "var(--fg-4)", marginBottom: 4, fontSize: "0.65rem", fontWeight: 700 }}>CARRY-FORWARD</div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: "#94a3b8" }}>Opening principal</span>
-              <span style={{ color: "#f59e0b", fontWeight: 700 }}>₹{fmt(calc.principalBase)}</span>
+              <span style={{ color: "var(--fg-5)" }}>Opening principal</span>
+              <span style={{ color: "var(--warning)", fontWeight: 700 }}>₹{fmt(calc.principalBase)}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: "#94a3b8" }}>Carried interest</span>
-              <span style={{ color: "#ef4444" }}>₹{fmt(calc.remInt)}</span>
+              <span style={{ color: "var(--fg-5)" }}>Carried interest</span>
+              <span style={{ color: "var(--danger)" }}>₹{fmt(calc.remInt)}</span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, borderTop: "1px solid #334155", paddingTop: 4 }}>
-              <span style={{ color: "#cbd5e1" }}>Prev balance (total owed)</span>
-              <span style={{ color: calc.prevBalance > 0 ? "#ef4444" : "#22c55e", fontWeight: 700 }}>₹{fmt(calc.prevBalance)}</span>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, borderTop: "1px solid var(--fg-3)", paddingTop: 4 }}>
+              <span style={{ color: "var(--border-strong)" }}>Prev balance (total owed)</span>
+              <span style={{ color: calc.prevBalance > 0 ? "var(--danger)" : "var(--success)", fontWeight: 700 }}>₹{fmt(calc.prevBalance)}</span>
             </div>
           </div>
           {/* Interest this month */}
-          <div style={{ background: "#1e293b", borderRadius: 8, padding: "0.6rem 0.75rem", marginBottom: "0.5rem" }}>
-            <div style={{ color: "#64748b", marginBottom: 4, fontSize: "0.65rem", fontWeight: 700 }}>INTEREST THIS MONTH</div>
+          <div style={{ background: "var(--fg-2)", borderRadius: 8, padding: "0.6rem 0.75rem", marginBottom: "0.5rem" }}>
+            <div style={{ color: "var(--fg-4)", marginBottom: 4, fontSize: "0.65rem", fontWeight: 700 }}>INTEREST THIS MONTH</div>
             {calc.currInt > 0 ? (
-              <div style={{ color: "#fbbf24", fontFamily: "monospace" }}>
+              <div style={{ color: "var(--warning)", fontFamily: "monospace" }}>
                 ₹{fmt(calc.principalBase)} × {interestRate}% ÷ 12 = ₹{fmt(calc.currInt)}
               </div>
             ) : (
-              <div style={{ color: "#475569" }}>₹0 (no outstanding principal)</div>
+              <div style={{ color: "var(--fg-3)" }}>₹0 (no outstanding principal)</div>
             )}
             {calc.remInt > 0 && (
-              <div style={{ color: "#94a3b8", marginTop: 2 }}>+ carried ₹{fmt(calc.remInt)} = total ₹{fmt(calc.interestAmount)}</div>
+              <div style={{ color: "var(--fg-5)", marginTop: 2 }}>+ carried ₹{fmt(calc.remInt)} = total ₹{fmt(calc.interestAmount)}</div>
             )}
           </div>
           {/* Current charges */}
-          <div style={{ background: "#1e293b", borderRadius: 8, padding: "0.6rem 0.75rem", marginBottom: "0.5rem" }}>
-            <div style={{ color: "#64748b", marginBottom: 4, fontSize: "0.65rem", fontWeight: 700 }}>CURRENT CHARGES ({calc.area} sqft)</div>
+          <div style={{ background: "var(--fg-2)", borderRadius: 8, padding: "0.6rem 0.75rem", marginBottom: "0.5rem" }}>
+            <div style={{ color: "var(--fg-4)", marginBottom: 4, fontSize: "0.65rem", fontWeight: 700 }}>CURRENT CHARGES ({calc.area} sqft)</div>
             {calc.charges.map((c, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
-                <span style={{ color: "#94a3b8", maxWidth: "65%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={c.formula}>{c.name}</span>
-                <span style={{ color: "#e2e8f0" }}>₹{fmt(c.amount)}</span>
+                <span style={{ color: "var(--fg-5)", maxWidth: "65%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={c.formula}>{c.name}</span>
+                <span style={{ color: "var(--border)" }}>₹{fmt(c.amount)}</span>
               </div>
             ))}
             {calc.serviceTax > 0 && (
-              <div style={{ display: "flex", justifyContent: "space-between", color: "#94a3b8" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--fg-5)" }}>
                 <span>Service tax ({serviceTaxRate}%)</span>
                 <span>₹{fmt(calc.serviceTax)}</span>
               </div>
             )}
-            <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #334155", marginTop: 4, paddingTop: 4 }}>
-              <span style={{ color: "#cbd5e1" }}>Current bill total</span>
-              <span style={{ color: "#818cf8", fontWeight: 700 }}>₹{fmt(calc.currentBillTotal)}</span>
+            <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--fg-3)", marginTop: 4, paddingTop: 4 }}>
+              <span style={{ color: "var(--border-strong)" }}>Current bill total</span>
+              <span style={{ color: "var(--accent)", fontWeight: 700 }}>₹{fmt(calc.currentBillTotal)}</span>
             </div>
           </div>
           {/* Grand total formula */}
-          <div style={{ background: "#172554", borderRadius: 8, padding: "0.75rem", border: "1px solid #1d4ed8" }}>
-            <div style={{ color: "#93c5fd", fontSize: "0.65rem", fontWeight: 700, marginBottom: 6 }}>GRAND TOTAL FORMULA</div>
-            <div style={{ color: "#bfdbfe", fontFamily: "monospace", lineHeight: 1.8 }}>
+          <div style={{ background: "var(--primary-press)", borderRadius: 8, padding: "0.75rem", border: "1px solid var(--primary-hover)" }}>
+            <div style={{ color: "var(--accent-tint)", fontSize: "0.65rem", fontWeight: 700, marginBottom: 6 }}>GRAND TOTAL FORMULA</div>
+            <div style={{ color: "var(--primary-tint)", fontFamily: "monospace", lineHeight: 1.8 }}>
               {calc.prevBalance > 0 && <div>prev ₹{fmt(calc.prevBalance)}</div>}
               {calc.currInt > 0 && <div>+ interest ₹{fmt(calc.currInt)}</div>}
               <div>+ current ₹{fmt(calc.currentBillTotal)}</div>
-              {calc.advanceCredit > 0 && <div style={{ color: "#22c55e" }}>− advance ₹{fmt(calc.advanceCredit)}</div>}
-              <div style={{ borderTop: "1px solid #1d4ed8", marginTop: 4, paddingTop: 4, color: "#60a5fa", fontWeight: 700, fontSize: "0.9rem" }}>
+              {calc.advanceCredit > 0 && <div style={{ color: "var(--success)" }}>− advance ₹{fmt(calc.advanceCredit)}</div>}
+              <div style={{ borderTop: "1px solid var(--primary-hover)", marginTop: 4, paddingTop: 4, color: "var(--accent)", fontWeight: 700, fontSize: "0.9rem" }}>
                 = ₹{fmt(calc.grandTotal)}
               </div>
             </div>
           </div>
           {/* Unpaid bills list */}
           {calc.unpaidBills.length > 0 && (
-            <div style={{ marginTop: "0.5rem", background: "#1e293b", borderRadius: 8, padding: "0.6rem 0.75rem" }}>
-              <div style={{ color: "#64748b", fontSize: "0.65rem", fontWeight: 700, marginBottom: 4 }}>UNPAID BILLS</div>
+            <div style={{ marginTop: "0.5rem", background: "var(--fg-2)", borderRadius: 8, padding: "0.6rem 0.75rem" }}>
+              <div style={{ color: "var(--fg-4)", fontSize: "0.65rem", fontWeight: 700, marginBottom: 4 }}>UNPAID BILLS</div>
               {calc.unpaidBills.map((b, i) => (
                 <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
-                  <span style={{ color: "#94a3b8" }}>{b.billPeriodId} ({b.status})</span>
-                  <span style={{ color: "#ef4444" }}>₹{fmt(b.balanceAmount)}</span>
+                  <span style={{ color: "var(--fg-5)" }}>{b.billPeriodId} ({b.status})</span>
+                  <span style={{ color: "var(--danger)" }}>₹{fmt(b.balanceAmount)}</span>
                 </div>
               ))}
             </div>
@@ -245,17 +246,17 @@ function ParkingConfigPanel({ members, heads, parkingRates, interestRate, servic
   const typeOptions = ["Open", "Covered", "Stilt"];
   const vehicleOptions = ["Two-Wheeler", "Four-Wheeler"];
   return (
-    <div style={{ background: "#fff", border: "2px solid #fce7f3", borderRadius: 12, padding: "1.25rem" }}>
+    <div style={{ background: "var(--bg-surface)", border: "2px solid var(--bg-muted)" /* TODO: unmapped color, needs design review */, borderRadius: 12, padding: "1.25rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-        <h3 style={{ margin: 0, fontSize: "0.9rem", color: "#9d174d" }}>Parking & Area Config</h3>
+        <h3 style={{ margin: 0, fontSize: "0.9rem", color: "var(--danger-fg)" /* TODO: unmapped color, needs design review */ }}>Parking & Area Config</h3>
         {msg && (
-          <span style={{ fontSize: "0.75rem", padding: "3px 10px", borderRadius: 5, background: msg.type === "ok" ? "#d1fae5" : "#fee2e2", color: msg.type === "ok" ? "#065f46" : "#991b1b" }}>
+          <span style={{ fontSize: "0.75rem", padding: "3px 10px", borderRadius: 5, background: msg.type === "ok" ? "var(--success-bg)" : "var(--danger-bg)", color: msg.type === "ok" ? "var(--success-fg)" : "var(--danger-fg)" }}>
             {msg.text}
           </span>
         )}
       </div>
       {/* Member select */}
-      <select value={selectedId} onChange={e => { setSelectedId(e.target.value); setMsg(null); }} style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: "1px solid #d1d5db", marginBottom: "0.75rem", fontSize: "0.85rem" }}>
+      <select value={selectedId} onChange={e => { setSelectedId(e.target.value); setMsg(null); }} style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border-strong)", marginBottom: "0.75rem", fontSize: "0.85rem" }}>
         <option value="">-- select member --</option>
         {members.filter(m => !m.isDeleted).map(m => (
           <option key={m._id} value={m._id}>{m.wing}-{m.flatNo} {m.ownerName}</option>
@@ -265,11 +266,11 @@ function ParkingConfigPanel({ members, heads, parkingRates, interestRate, servic
         <>
           {/* Carpet area */}
           <div style={{ marginBottom: "0.75rem" }}>
-            <label style={{ fontSize: "0.75rem", color: "#6b7280", display: "block", marginBottom: 3 }}>Carpet Area (sqft)</label>
+            <label style={{ fontSize: "0.75rem", color: "var(--fg-4)", display: "block", marginBottom: 3 }}>Carpet Area (sqft)</label>
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-              <input type="number" value={carpetArea} onChange={e => setCarpetArea(e.target.value)} style={{ flex: 1, padding: "5px 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: "0.85rem" }} />
+              <input type="number" value={carpetArea} onChange={e => setCarpetArea(e.target.value)} style={{ flex: 1, padding: "5px 8px", border: "1px solid var(--border-strong)", borderRadius: 6, fontSize: "0.85rem" }} />
               {origCalc && Number(carpetArea) !== member.carpetAreaSqft && (
-                <span style={{ fontSize: "0.7rem", color: "#d97706" }}>
+                <span style={{ fontSize: "0.7rem", color: "var(--warning)" }}>
                   was {member.carpetAreaSqft} sqft
                 </span>
               )}
@@ -278,38 +279,38 @@ function ParkingConfigPanel({ members, heads, parkingRates, interestRate, servic
           {/* Parking slots editor */}
           <div style={{ marginBottom: "0.75rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-              <label style={{ fontSize: "0.75rem", color: "#6b7280", fontWeight: 600 }}>Parking Slots ({editSlots.length})</label>
-              <button onClick={addSlot} style={{ fontSize: "0.7rem", padding: "3px 10px", background: "#ec4899", color: "white", border: "none", borderRadius: 5, cursor: "pointer" }}>
+              <label style={{ fontSize: "0.75rem", color: "var(--fg-4)", fontWeight: 600 }}>Parking Slots ({editSlots.length})</label>
+              <button onClick={addSlot} style={{ fontSize: "0.7rem", padding: "3px 10px", background: "#ec4899" /* TODO: unmapped color, needs design review */, color: "white", border: "none", borderRadius: 5, cursor: "pointer" }}>
                 + Add Slot
               </button>
             </div>
             {editSlots.length === 0 && (
-              <div style={{ fontSize: "0.75rem", color: "#9ca3af", padding: "0.5rem", background: "#f9fafb", borderRadius: 6, textAlign: "center" }}>No parking slots</div>
+              <div style={{ fontSize: "0.75rem", color: "var(--fg-5)", padding: "0.5rem", background: "var(--bg-sunken)", borderRadius: 6, textAlign: "center" }}>No parking slots</div>
             )}
             {editSlots.map((slot, idx) => (
-              <div key={idx} style={{ background: slot._new ? "#fdf2f8" : "#f9fafb", border: `1px solid ${slot._new ? "#fbcfe8" : "#e5e7eb"}`, borderRadius: 8, padding: "0.6rem 0.75rem", marginBottom: "0.4rem" }}>
+              <div key={idx} style={{ background: slot._new ? "var(--bg-sunken)" /* TODO: unmapped color, needs design review */ : "var(--bg-sunken)", border: `1px solid ${slot._new ? "var(--danger-bg)" /* TODO: unmapped color, needs design review */ : "var(--border)"}`, borderRadius: 8, padding: "0.6rem 0.75rem", marginBottom: "0.4rem" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto auto", gap: "0.4rem", alignItems: "center" }}>
                   <input
                     value={slot.slotNumber}
                     onChange={e => updateSlot(idx, "slotNumber", e.target.value)}
                     placeholder="P-A-101"
-                    style={{ padding: "4px 6px", border: "1px solid #d1d5db", borderRadius: 4, fontSize: "0.75rem" }}
+                    style={{ padding: "4px 6px", border: "1px solid var(--border-strong)", borderRadius: 4, fontSize: "0.75rem" }}
                   />
-                  <select value={slot.type} onChange={e => updateSlot(idx, "type", e.target.value)} style={{ padding: "4px 6px", border: "1px solid #d1d5db", borderRadius: 4, fontSize: "0.75rem" }}>
+                  <select value={slot.type} onChange={e => updateSlot(idx, "type", e.target.value)} style={{ padding: "4px 6px", border: "1px solid var(--border-strong)", borderRadius: 4, fontSize: "0.75rem" }}>
                     {typeOptions.map(t => <option key={t}>{t}</option>)}
                   </select>
-                  <select value={slot.vehicleType} onChange={e => updateSlot(idx, "vehicleType", e.target.value)} style={{ padding: "4px 6px", border: "1px solid #d1d5db", borderRadius: 4, fontSize: "0.75rem" }}>
+                  <select value={slot.vehicleType} onChange={e => updateSlot(idx, "vehicleType", e.target.value)} style={{ padding: "4px 6px", border: "1px solid var(--border-strong)", borderRadius: 4, fontSize: "0.75rem" }}>
                     {vehicleOptions.map(t => <option key={t}>{t}</option>)}
                   </select>
                   <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: "0.7rem", cursor: "pointer", whiteSpace: "nowrap" }}>
                     <input type="checkbox" checked={slot.monthlyBilling !== false} onChange={e => updateSlot(idx, "monthlyBilling", e.target.checked)} />
                     Billed
                   </label>
-                  <button onClick={() => removeSlot(idx)} style={{ background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 4, padding: "3px 7px", cursor: "pointer", fontSize: "0.75rem" }}>✕</button>
+                  <button onClick={() => removeSlot(idx)} style={{ background: "var(--danger-bg)", color: "var(--danger)", border: "none", borderRadius: 4, padding: "3px 7px", cursor: "pointer", fontSize: "0.75rem" }}>✕</button>
                 </div>
                 {/* Rate preview for this slot */}
                 {slot.type !== "Stilt" && slot.monthlyBilling !== false && (
-                  <div style={{ marginTop: 3, fontSize: "0.65rem", color: "#6b7280" }}>
+                  <div style={{ marginTop: 3, fontSize: "0.65rem", color: "var(--fg-4)" }}>
                     Rate: ₹{parkingRates[`${slot.type}-${slot.vehicleType}`] ?? 0}/month
                   </div>
                 )}
@@ -318,16 +319,16 @@ function ParkingConfigPanel({ members, heads, parkingRates, interestRate, servic
           </div>
           {/* Live diff preview */}
           {previewCalc && origCalc && (
-            <div style={{ background: "#f5f3ff", border: "1px solid #c4b5fd", borderRadius: 8, padding: "0.75rem", marginBottom: "0.75rem", fontSize: "0.78rem" }}>
-              <div style={{ fontWeight: 700, color: "#6d28d9", marginBottom: 6, fontSize: "0.7rem" }}>BILL IMPACT PREVIEW</div>
+            <div style={{ background: "var(--accent-tint)", border: "1px solid var(--accent-tint)", borderRadius: 8, padding: "0.75rem", marginBottom: "0.75rem", fontSize: "0.78rem" }}>
+              <div style={{ fontWeight: 700, color: "var(--accent)", marginBottom: 6, fontSize: "0.7rem" }}>BILL IMPACT PREVIEW</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", textAlign: "center" }}>
                 {[
-                  ["Before", origCalc.grandTotal, "#374151"],
-                  ["After", previewCalc.grandTotal, "#4f46e5"],
-                  ["Change", diff, diff > 0 ? "#dc2626" : diff < 0 ? "#059669" : "#374151"],
+                  ["Before", origCalc.grandTotal, "var(--fg-3)"],
+                  ["After", previewCalc.grandTotal, "var(--accent)"],
+                  ["Change", diff, diff > 0 ? "var(--danger)" : diff < 0 ? "var(--success)" : "var(--fg-3)"],
                 ].map(([l, v, c]) => (
-                  <div key={l} style={{ background: "white", borderRadius: 6, padding: "0.4rem" }}>
-                    <div style={{ fontSize: "0.6rem", color: "#9ca3af" }}>{l}</div>
+                  <div key={l} style={{ background: "var(--bg-surface)", borderRadius: 6, padding: "0.4rem" }}>
+                    <div style={{ fontSize: "0.6rem", color: "var(--fg-5)" }}>{l}</div>
                     <div style={{ fontWeight: 700, color: c, fontSize: "0.95rem" }}>{diff !== null && l === "Change" ? (diff > 0 ? "+" : "") : ""}₹{fmt(v)}</div>
                   </div>
                 ))}
@@ -336,19 +337,19 @@ function ParkingConfigPanel({ members, heads, parkingRates, interestRate, servic
               {previewCalc.charges.map(c => {
                 const orig = origCalc.charges.find(o => o.name === c.name);
                 if (!orig || orig.amount === c.amount) return null;
-                return <div key={c.name} style={{ marginTop: 4, color: "#7c3aed", fontSize: "0.7rem" }}>{c.name}: ₹{fmt(orig.amount)} → ₹{fmt(c.amount)}</div>;
+                return <div key={c.name} style={{ marginTop: 4, color: "var(--accent)", fontSize: "0.7rem" }}>{c.name}: ₹{fmt(orig.amount)} → ₹{fmt(c.amount)}</div>;
               })}
               {/* New charges */}
               {previewCalc.charges.filter(c => !origCalc.charges.find(o => o.name === c.name)).map(c => (
-                <div key={c.name} style={{ marginTop: 4, color: "#059669", fontSize: "0.7rem" }}>+ {c.name}: ₹{fmt(c.amount)}</div>
+                <div key={c.name} style={{ marginTop: 4, color: "var(--success)", fontSize: "0.7rem" }}>+ {c.name}: ₹{fmt(c.amount)}</div>
               ))}
               {/* Removed charges */}
               {origCalc.charges.filter(c => !previewCalc.charges.find(o => o.name === c.name)).map(c => (
-                <div key={c.name} style={{ marginTop: 4, color: "#dc2626", fontSize: "0.7rem" }}>− {c.name}: ₹{fmt(c.amount)}</div>
+                <div key={c.name} style={{ marginTop: 4, color: "var(--danger)", fontSize: "0.7rem" }}>− {c.name}: ₹{fmt(c.amount)}</div>
               ))}
             </div>
           )}
-          <button onClick={save} disabled={busy} style={{ width: "100%", padding: "8px", background: "#be185d", color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: "0.85rem", opacity: busy ? 0.6 : 1 }}>
+          <button onClick={save} disabled={busy} style={{ width: "100%", padding: "8px", background: "#be185d" /* TODO: unmapped color, needs design review */, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: "0.85rem", opacity: busy ? 0.6 : 1 }}>
             {busy ? "Saving..." : "Save Member Config"}
           </button>
         </>
@@ -359,19 +360,19 @@ function ParkingConfigPanel({ members, heads, parkingRates, interestRate, servic
 // ─── Member Stats Bar ─────────────────────────────────────────────────────────
 function MemberStatsBar({ members, onRefresh }) {
   return (
-    <div style={{ background: "#1e293b", borderRadius: 10, padding: "0.75rem 1rem", marginBottom: "0.75rem" }}>
+    <div style={{ background: "var(--fg-2)", borderRadius: 10, padding: "0.75rem 1rem", marginBottom: "0.75rem" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-        <span style={{ color: "#94a3b8", fontSize: "0.7rem", fontWeight: 700, letterSpacing: 1 }}>LIVE MEMBER BALANCES</span>
-        <button onClick={onRefresh} style={{ background: "#334155", color: "#e2e8f0", border: "none", borderRadius: 5, padding: "3px 10px", cursor: "pointer", fontSize: "0.7rem" }}>Refresh</button>
+        <span style={{ color: "var(--fg-5)", fontSize: "0.7rem", fontWeight: 700, letterSpacing: 1 }}>LIVE MEMBER BALANCES</span>
+        <button onClick={onRefresh} style={{ background: "var(--fg-3)", color: "var(--border)", border: "none", borderRadius: 5, padding: "3px 10px", cursor: "pointer", fontSize: "0.7rem" }}>Refresh</button>
       </div>
       <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
         {members.map(m => (
-          <div key={m._id} style={{ background: "#0f172a", borderRadius: 7, padding: "0.5rem 0.75rem", minWidth: 150 }}>
-            <div style={{ color: "#f8fafc", fontWeight: 700, fontSize: "0.75rem", marginBottom: 3 }}>{m.wing}-{m.flatNo} {m.ownerName}</div>
+          <div key={m._id} style={{ background: "var(--fg-1)", borderRadius: 7, padding: "0.5rem 0.75rem", minWidth: 150 }}>
+            <div style={{ color: "var(--bg-canvas)", fontWeight: 700, fontSize: "0.75rem", marginBottom: 3 }}>{m.wing}-{m.flatNo} {m.ownerName}</div>
             <div style={{ display: "flex", gap: 8 }}>
-              {[["P", m.openingPrincipal ?? 0, "#f59e0b"], ["I", m.openingInterest ?? 0, "#ef4444"], ["Adv", m.advanceCredit ?? 0, "#22c55e"]].map(([l, v, c]) => (
+              {[["P", m.openingPrincipal ?? 0, "var(--warning)"], ["I", m.openingInterest ?? 0, "var(--danger)"], ["Adv", m.advanceCredit ?? 0, "var(--success)"]].map(([l, v, c]) => (
                 <div key={l} style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "0.55rem", color: "#475569" }}>{l}</div>
+                  <div style={{ fontSize: "0.55rem", color: "var(--fg-3)" }}>{l}</div>
                   <div style={{ fontSize: "0.8rem", fontWeight: 700, color: c }}>₹{fmt(v)}</div>
                 </div>
               ))}
@@ -405,36 +406,36 @@ function LedgerStrip({ members }) {
   }, [members]);
   useEffect(() => { load(); }, [members]);
   return (
-    <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: "1rem", marginTop: "0.75rem" }}>
+    <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "1rem", marginTop: "0.75rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-        <h4 style={{ margin: 0, fontSize: "0.8rem", color: "#374151" }}>Ledger (last 20)</h4>
-        <button onClick={load} disabled={loading} style={{ fontSize: "0.7rem", padding: "3px 8px", border: "1px solid #d1d5db", borderRadius: 5, cursor: "pointer", background: "#f9fafb" }}>{loading ? "..." : "Refresh"}</button>
+        <h4 style={{ margin: 0, fontSize: "0.8rem", color: "var(--fg-3)" }}>Ledger (last 20)</h4>
+        <button onClick={load} disabled={loading} style={{ fontSize: "0.7rem", padding: "3px 8px", border: "1px solid var(--border-strong)", borderRadius: 5, cursor: "pointer", background: "var(--bg-sunken)" }}>{loading ? "..." : "Refresh"}</button>
       </div>
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.72rem" }}>
           <thead>
-            <tr style={{ background: "#f3f4f6" }}>
+            <tr style={{ background: "var(--bg-muted)" }}>
               {["Date", "Member", "Type", "Description", "Amount", "Balance"].map(h => (
-                <th key={h} style={{ padding: "5px 8px", textAlign: "left", border: "1px solid #e5e7eb", color: "#374151" }}>{h}</th>
+                <th key={h} style={{ padding: "5px 8px", textAlign: "left", border: "1px solid var(--border)", color: "var(--fg-3)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {rows.map((r, i) => (
-              <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
-                <td style={{ padding: "4px 8px", border: "1px solid #f3f4f6", whiteSpace: "nowrap" }}>{new Date(r.date || r.createdAt).toLocaleDateString("en-IN")}</td>
-                <td style={{ padding: "4px 8px", border: "1px solid #f3f4f6", fontWeight: 600 }}>{r.memberLabel}</td>
-                <td style={{ padding: "4px 8px", border: "1px solid #f3f4f6" }}>
-                  <span style={{ background: r.type === "Debit" ? "#fee2e2" : "#d1fae5", color: r.type === "Debit" ? "#dc2626" : "#059669", padding: "1px 5px", borderRadius: 3 }}>{r.type}</span>
+              <tr key={i} style={{ background: i % 2 === 0 ? "var(--bg-surface)" : "var(--bg-sunken)" }}>
+                <td style={{ padding: "4px 8px", border: "1px solid var(--bg-muted)", whiteSpace: "nowrap" }}>{new Date(r.date || r.createdAt).toLocaleDateString("en-IN")}</td>
+                <td style={{ padding: "4px 8px", border: "1px solid var(--bg-muted)", fontWeight: 600 }}>{r.memberLabel}</td>
+                <td style={{ padding: "4px 8px", border: "1px solid var(--bg-muted)" }}>
+                  <span style={{ background: r.type === "Debit" ? "var(--danger-bg)" : "var(--success-bg)", color: r.type === "Debit" ? "var(--danger)" : "var(--success)", padding: "1px 5px", borderRadius: 3 }}>{r.type}</span>
                 </td>
-                <td style={{ padding: "4px 8px", border: "1px solid #f3f4f6", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.description}</td>
-                <td style={{ padding: "4px 8px", border: "1px solid #f3f4f6", textAlign: "right", fontWeight: 600, color: r.type === "Debit" ? "#dc2626" : "#059669" }}>
+                <td style={{ padding: "4px 8px", border: "1px solid var(--bg-muted)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.description}</td>
+                <td style={{ padding: "4px 8px", border: "1px solid var(--bg-muted)", textAlign: "right", fontWeight: 600, color: r.type === "Debit" ? "var(--danger)" : "var(--success)" }}>
                   {r.type === "Debit" ? "+" : "-"}₹{fmt(r.amount)}
                 </td>
-                <td style={{ padding: "4px 8px", border: "1px solid #f3f4f6", textAlign: "right", fontWeight: 700 }}>₹{fmt(r.balanceAfterTransaction)}</td>
+                <td style={{ padding: "4px 8px", border: "1px solid var(--bg-muted)", textAlign: "right", fontWeight: 700 }}>₹{fmt(r.balanceAfterTransaction)}</td>
               </tr>
             ))}
-            {rows.length === 0 && !loading && <tr><td colSpan={6} style={{ padding: "1rem", textAlign: "center", color: "#9ca3af", fontSize: "0.75rem" }}>No ledger entries</td></tr>}
+            {rows.length === 0 && !loading && <tr><td colSpan={6} style={{ padding: "1rem", textAlign: "center", color: "var(--fg-5)", fontSize: "0.75rem" }}>No ledger entries</td></tr>}
           </tbody>
         </table>
       </div>
@@ -454,17 +455,17 @@ function BillsTable({ members, refreshTick }) {
   }, []);
   useEffect(() => { load(); }, [refreshTick]);
   return (
-    <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: "1rem", marginTop: "0.75rem" }}>
+    <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "1rem", marginTop: "0.75rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-        <h4 style={{ margin: 0, fontSize: "0.8rem", color: "#374151" }}>All Bills ({bills.length})</h4>
-        <button onClick={load} disabled={loading} style={{ fontSize: "0.7rem", padding: "3px 8px", border: "1px solid #d1d5db", borderRadius: 5, cursor: "pointer", background: "#f9fafb" }}>{loading ? "..." : "Refresh"}</button>
+        <h4 style={{ margin: 0, fontSize: "0.8rem", color: "var(--fg-3)" }}>All Bills ({bills.length})</h4>
+        <button onClick={load} disabled={loading} style={{ fontSize: "0.7rem", padding: "3px 8px", border: "1px solid var(--border-strong)", borderRadius: 5, cursor: "pointer", background: "var(--bg-sunken)" }}>{loading ? "..." : "Refresh"}</button>
       </div>
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.72rem" }}>
           <thead>
-            <tr style={{ background: "#f3f4f6" }}>
+            <tr style={{ background: "var(--bg-muted)" }}>
               {["Period", "Member", "PrevBal", "Interest", "CurrTotal", "Total", "Paid", "Balance", "Due", "Status"].map(h => (
-                <th key={h} style={{ padding: "5px 8px", textAlign: "right", border: "1px solid #e5e7eb", color: "#374151", whiteSpace: "nowrap" }}>{h}</th>
+                <th key={h} style={{ padding: "5px 8px", textAlign: "right", border: "1px solid var(--border)", color: "var(--fg-3)", whiteSpace: "nowrap" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -474,25 +475,25 @@ function BillsTable({ members, refreshTick }) {
               const rawId = pop?._id || b.memberId;
               const mem = members.find(m => String(m._id) === String(rawId));
               const label = pop ? `${pop.wing}-${pop.flatNo}` : mem ? `${mem.wing}-${mem.flatNo}` : "?";
-              const sc = b.status === "Paid" ? "#059669" : b.status === "Partial" ? "#d97706" : b.status === "Overdue" ? "#dc2626" : "#6b7280";
+              const sc = b.status === "Paid" ? "var(--success)" : b.status === "Partial" ? "var(--warning)" : b.status === "Overdue" ? "var(--danger)" : "var(--fg-4)";
               return (
-                <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
-                  <td style={{ padding: "4px 8px", border: "1px solid #f3f4f6", fontWeight: 600 }}>{b.billPeriodId}</td>
-                  <td style={{ padding: "4px 8px", border: "1px solid #f3f4f6", fontWeight: 600 }}>{label}</td>
-                  <td style={{ padding: "4px 8px", border: "1px solid #f3f4f6", textAlign: "right", color: Number(b.previousBalance) > 0 ? "#dc2626" : "#374151" }}>₹{fmt(b.previousBalance)}</td>
-                  <td style={{ padding: "4px 8px", border: "1px solid #f3f4f6", textAlign: "right" }}>₹{fmt(b.interestAmount)}</td>
-                  <td style={{ padding: "4px 8px", border: "1px solid #f3f4f6", textAlign: "right" }}>₹{fmt(b.currentBillTotal)}</td>
-                  <td style={{ padding: "4px 8px", border: "1px solid #f3f4f6", textAlign: "right", fontWeight: 700 }}>₹{fmt(b.totalAmount)}</td>
-                  <td style={{ padding: "4px 8px", border: "1px solid #f3f4f6", textAlign: "right", color: "#059669" }}>₹{fmt(b.amountPaid)}</td>
-                  <td style={{ padding: "4px 8px", border: "1px solid #f3f4f6", textAlign: "right", fontWeight: 700, color: Number(b.balanceAmount) > 0 ? "#dc2626" : "#059669" }}>₹{fmt(b.balanceAmount)}</td>
-                  <td style={{ padding: "4px 8px", border: "1px solid #f3f4f6", textAlign: "right" }}>{b.dueDate ? new Date(b.dueDate).toLocaleDateString("en-IN") : "-"}</td>
-                  <td style={{ padding: "4px 8px", border: "1px solid #f3f4f6", textAlign: "center" }}>
+                <tr key={i} style={{ background: i % 2 === 0 ? "var(--bg-surface)" : "var(--bg-sunken)" }}>
+                  <td style={{ padding: "4px 8px", border: "1px solid var(--bg-muted)", fontWeight: 600 }}>{b.billPeriodId}</td>
+                  <td style={{ padding: "4px 8px", border: "1px solid var(--bg-muted)", fontWeight: 600 }}>{label}</td>
+                  <td style={{ padding: "4px 8px", border: "1px solid var(--bg-muted)", textAlign: "right", color: Number(b.previousBalance) > 0 ? "var(--danger)" : "var(--fg-3)" }}>₹{fmt(b.previousBalance)}</td>
+                  <td style={{ padding: "4px 8px", border: "1px solid var(--bg-muted)", textAlign: "right" }}>₹{fmt(b.interestAmount)}</td>
+                  <td style={{ padding: "4px 8px", border: "1px solid var(--bg-muted)", textAlign: "right" }}>₹{fmt(b.currentBillTotal)}</td>
+                  <td style={{ padding: "4px 8px", border: "1px solid var(--bg-muted)", textAlign: "right", fontWeight: 700 }}>₹{fmt(b.totalAmount)}</td>
+                  <td style={{ padding: "4px 8px", border: "1px solid var(--bg-muted)", textAlign: "right", color: "var(--success)" }}>₹{fmt(b.amountPaid)}</td>
+                  <td style={{ padding: "4px 8px", border: "1px solid var(--bg-muted)", textAlign: "right", fontWeight: 700, color: Number(b.balanceAmount) > 0 ? "var(--danger)" : "var(--success)" }}>₹{fmt(b.balanceAmount)}</td>
+                  <td style={{ padding: "4px 8px", border: "1px solid var(--bg-muted)", textAlign: "right" }}>{b.dueDate ? new Date(b.dueDate).toLocaleDateString("en-IN") : "-"}</td>
+                  <td style={{ padding: "4px 8px", border: "1px solid var(--bg-muted)", textAlign: "center" }}>
                     <span style={{ background: sc, color: "#fff", padding: "1px 6px", borderRadius: 3, fontWeight: 600 }}>{b.status}</span>
                   </td>
                 </tr>
               );
             })}
-            {bills.length === 0 && !loading && <tr><td colSpan={10} style={{ padding: "1rem", textAlign: "center", color: "#9ca3af" }}>No bills yet</td></tr>}
+            {bills.length === 0 && !loading && <tr><td colSpan={10} style={{ padding: "1rem", textAlign: "center", color: "var(--fg-5)" }}>No bills yet</td></tr>}
           </tbody>
         </table>
       </div>
@@ -584,7 +585,7 @@ export default function BillingTestPage() {
       setPhase("done-gen"); setRefreshTick(t => t + 1);
     } catch (e) {
       if (e.status === 409 || e.message?.includes("already exist")) {
-        if (window.confirm(`Bills for ${periodLabel} already exist. Force regenerate?`)) generateBills(true);
+        if (await notify.confirm(`Bills for ${periodLabel} already exist. Force regenerate?`, { tone: "danger" })) generateBills(true);
         else setPhase("bill-ready");
       } else { log("Generate failed: " + e.message, "err"); setPhase("bill-ready"); }
     }
@@ -641,7 +642,7 @@ export default function BillingTestPage() {
       setPhase("done-gen"); setRefreshTick(t => t + 1); setExcelValidation(null); setBillGrid(null);
     } catch (e) {
       if (e.status === 409 || e.message?.includes("already exist")) {
-        if (window.confirm(`Bills for ${periodLabel} exist. Force?`)) generateFromExcel(true);
+        if (await notify.confirm(`Bills for ${periodLabel} exist. Force?`, { tone: "danger" })) generateFromExcel(true);
         else setPhase("validated");
       } else { log("Excel gen failed: " + e.message, "err"); setPhase("validated"); }
     }
@@ -707,7 +708,7 @@ export default function BillingTestPage() {
     } catch (e) { log("Export failed: " + e.message, "err"); }
   }, []);
   const phaseLabel = { idle: "Ready", previewing: "Working...", "bill-ready": "Preview Ready", downloading: "Downloading", "done-gen": "Bills Generated", validating: "Validating...", validated: "Validated", "payment-preview-ready": "Payment Ready", "payment-preview": "Payment Preview", confirming: "Confirming...", "payments-done": "Payments Done" }[phase] || phase;
-  const phaseColor = ["previewing", "downloading", "validating", "confirming"].includes(phase) ? "#d97706" : ["done-gen", "payments-done"].includes(phase) ? "#059669" : ["bill-ready", "validated", "payment-preview-ready", "payment-preview"].includes(phase) ? "#4f46e5" : "#64748b";
+  const phaseColor = ["previewing", "downloading", "validating", "confirming"].includes(phase) ? "var(--warning)" : ["done-gen", "payments-done"].includes(phase) ? "var(--success)" : ["bill-ready", "validated", "payment-preview-ready", "payment-preview"].includes(phase) ? "var(--primary)" : "var(--fg-4)";
   const diffIssues = excelValidation?.issues?.filter(i => i.type === "diff") || [];
   const allDiffsApproved = diffIssues.length === 0 || diffIssues.every(d => approvedDiffs.has(d.memberId));
   const canGenFromExcel = allDiffsApproved && excelValidation?.canProceed !== false && (excelValidation?.bills?.length ?? 0) > 0;
@@ -716,16 +717,16 @@ export default function BillingTestPage() {
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: "1.3rem", color: "#1e293b" }}>Billing Test Console</h1>
-          <p style={{ margin: "2px 0 0", fontSize: "0.75rem", color: "#64748b" }}>
+          <h1 style={{ margin: 0, fontSize: "1.3rem", color: "var(--fg-2)" }}>Billing Test Console</h1>
+          <p style={{ margin: "2px 0 0", fontSize: "0.75rem", color: "var(--fg-4)" }}>
             {society.name || "—"} | {periodLabel} | IR: {interestRate}% | ST: {serviceTaxRate}%
           </p>
         </div>
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
           <span style={{ background: phaseColor, color: "#fff", padding: "3px 12px", borderRadius: 20, fontSize: "0.75rem", fontWeight: 700 }}>{phaseLabel}</span>
-          <button onClick={() => setShowBills(s => !s)} style={{ padding: "5px 12px", border: `2px solid #059669`, background: showBills ? "#059669" : "white", color: showBills ? "white" : "#059669", borderRadius: 7, cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}>Bills</button>
-          <button onClick={() => setShowLedger(s => !s)} style={{ padding: "5px 12px", border: `2px solid #d97706`, background: showLedger ? "#d97706" : "white", color: showLedger ? "white" : "#d97706", borderRadius: 7, cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}>Ledger</button>
-          <button onClick={exportBills} style={{ padding: "5px 12px", border: "2px solid #374151", background: "white", color: "#374151", borderRadius: 7, cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}>Export Excel</button>
+          <button onClick={() => setShowBills(s => !s)} style={{ padding: "5px 12px", border: `2px solid var(--success)`, background: showBills ? "var(--success)" : "white", color: showBills ? "white" : "var(--success)", borderRadius: 7, cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}>Bills</button>
+          <button onClick={() => setShowLedger(s => !s)} style={{ padding: "5px 12px", border: `2px solid var(--warning)`, background: showLedger ? "var(--warning)" : "white", color: showLedger ? "white" : "var(--warning)", borderRadius: 7, cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}>Ledger</button>
+          <button onClick={exportBills} style={{ padding: "5px 12px", border: "2px solid var(--fg-3)", background: "white", color: "var(--fg-3)", borderRadius: 7, cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}>Export Excel</button>
         </div>
       </div>
       {/* ── Member Stats ── */}
@@ -733,40 +734,40 @@ export default function BillingTestPage() {
       {/* ── Main 2-column layout ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "0.75rem", alignItems: "start" }}>
         {/* ── LEFT: Flow panel ── */}
-        <div style={{ background: "#fff", border: "2px solid #c7d2fe", borderRadius: 12, padding: "1.25rem" }}>
+        <div style={{ background: "var(--bg-surface)", border: "2px solid var(--accent-tint)", borderRadius: 12, padding: "1.25rem" }}>
           {/* Period selector + step buttons */}
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-            <h2 style={{ margin: 0, fontSize: "0.95rem", color: "#3730a3" }}>Flow — {periodLabel}</h2>
-            <select value={billMonth} onChange={e => { setBillMonth(parseInt(e.target.value)); setPhase("idle"); setPreviewData(null); }} style={{ padding: "4px 7px", border: "1px solid #d1d5db", borderRadius: 5, fontSize: "0.8rem" }}>
+            <h2 style={{ margin: 0, fontSize: "0.95rem", color: "var(--primary)" }}>Flow — {periodLabel}</h2>
+            <select value={billMonth} onChange={e => { setBillMonth(parseInt(e.target.value)); setPhase("idle"); setPreviewData(null); }} style={{ padding: "4px 7px", border: "1px solid var(--border-strong)", borderRadius: 5, fontSize: "0.8rem" }}>
               {Array.from({ length: 12 }, (_, i) => (
                 <option key={i} value={i}>{new Date(2000, i).toLocaleString("default", { month: "long" })}</option>
               ))}
             </select>
-            <input type="number" value={billYear} onChange={e => { setBillYear(parseInt(e.target.value)); setPhase("idle"); setPreviewData(null); }} min={2020} max={2035} style={{ width: 75, padding: "4px 7px", border: "1px solid #d1d5db", borderRadius: 5 }} />
+            <input type="number" value={billYear} onChange={e => { setBillYear(parseInt(e.target.value)); setPhase("idle"); setPreviewData(null); }} min={2020} max={2035} style={{ width: 75, padding: "4px 7px", border: "1px solid var(--border-strong)", borderRadius: 5 }} />
           </div>
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
             {[
-              ["1. Preview Bills", buildPreview, "#4f46e5", phase === "previewing"],
-              ["2. Generate Bills", () => generateBills(false), "#059669", !previewData || phase === "previewing"],
-              ["3. Download Template", downloadTemplate, "#7c3aed", phase === "downloading"],
+              ["1. Preview Bills", buildPreview, "var(--primary)", phase === "previewing"],
+              ["2. Generate Bills", () => generateBills(false), "var(--success)", !previewData || phase === "previewing"],
+              ["3. Download Template", downloadTemplate, "#7c3aed" /* TODO: unmapped color, needs design review */, phase === "downloading"],
             ].map(([label, fn, bg, disabled]) => (
               <button key={label} onClick={fn} disabled={disabled}
                 style={{ padding: "7px 14px", background: bg, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 600, fontSize: "0.8rem", opacity: disabled ? 0.45 : 1 }}>
                 {label}
               </button>
             ))}
-            <label style={{ padding: "7px 14px", background: "#0891b2", color: "white", borderRadius: 7, cursor: "pointer", fontWeight: 600, fontSize: "0.8rem", display: "inline-flex", alignItems: "center" }}>
+            <label style={{ padding: "7px 14px", background: "#0891b2" /* TODO: unmapped color, needs design review */, color: "white", borderRadius: 7, cursor: "pointer", fontWeight: 600, fontSize: "0.8rem", display: "inline-flex", alignItems: "center" }}>
               4. Upload Template
               <input type="file" accept=".xlsx,.xls" style={{ display: "none" }} ref={fileRef} onChange={e => { const f = e.target.files?.[0]; if (f) { runValidation(f); e.target.value = ""; } }} />
             </label>
             {phase === "payment-preview" && payBatchKey && (
               <button onClick={confirmPayments} disabled={phase === "confirming"}
-                style={{ padding: "7px 14px", background: "#d97706", color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 600, fontSize: "0.8rem", opacity: phase === "confirming" ? 0.6 : 1 }}>
+                style={{ padding: "7px 14px", background: "var(--warning)", color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 600, fontSize: "0.8rem", opacity: phase === "confirming" ? 0.6 : 1 }}>
                 5. Confirm Payments
               </button>
             )}
             {(phase === "payments-done" || phase === "done-gen") && (
-              <button onClick={autoGenNext} style={{ padding: "7px 14px", background: "#dc2626", color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: "0.8rem" }}>
+              <button onClick={autoGenNext} style={{ padding: "7px 14px", background: "var(--danger)", color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: "0.8rem" }}>
                 Auto-Gen Next Month →
               </button>
             )}
@@ -776,25 +777,25 @@ export default function BillingTestPage() {
             <div style={{ overflowX: "auto", marginBottom: "0.75rem" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.72rem" }}>
                 <thead>
-                  <tr style={{ background: "#eef2ff" }}>
+                  <tr style={{ background: "var(--accent-tint)" }}>
                     {["Member", "Area", "PrevBal", "PrevInt", "CurrInt", "Subtotal", "Tax", "CurrTotal", "Advance", "Grand Total"].map(h => (
-                      <th key={h} style={{ padding: "5px 8px", border: "1px solid #c7d2fe", color: "#3730a3", textAlign: "right", whiteSpace: "nowrap" }}>{h}</th>
+                      <th key={h} style={{ padding: "5px 8px", border: "1px solid var(--accent-tint)", color: "var(--primary)", textAlign: "right", whiteSpace: "nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {previewData.map((b, i) => (
-                    <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f5f3ff" }}>
-                      <td style={{ padding: "4px 8px", border: "1px solid #e0e7ff", fontWeight: 600, whiteSpace: "nowrap" }}>{b.member} {b.memberName}</td>
-                      <td style={{ padding: "4px 8px", border: "1px solid #e0e7ff", textAlign: "right" }}>{b.area}</td>
-                      <td style={{ padding: "4px 8px", border: "1px solid #e0e7ff", textAlign: "right", color: b.prevBalance > 0 ? "#dc2626" : "#374151" }}>₹{fmt(b.prevBalance)}</td>
-                      <td style={{ padding: "4px 8px", border: "1px solid #e0e7ff", textAlign: "right" }}>₹{fmt(b.remInt)}</td>
-                      <td style={{ padding: "4px 8px", border: "1px solid #e0e7ff", textAlign: "right" }}>₹{fmt(b.currInt)}</td>
-                      <td style={{ padding: "4px 8px", border: "1px solid #e0e7ff", textAlign: "right" }}>₹{fmt(b.subtotal)}</td>
-                      <td style={{ padding: "4px 8px", border: "1px solid #e0e7ff", textAlign: "right" }}>₹{fmt(b.serviceTax)}</td>
-                      <td style={{ padding: "4px 8px", border: "1px solid #e0e7ff", textAlign: "right" }}>₹{fmt(b.currentBillTotal)}</td>
-                      <td style={{ padding: "4px 8px", border: "1px solid #e0e7ff", textAlign: "right", color: "#059669" }}>₹{fmt(b.advanceCredit)}</td>
-                      <td style={{ padding: "4px 8px", border: "1px solid #e0e7ff", textAlign: "right", fontWeight: 700, color: "#1e40af" }}>₹{fmt(b.grandTotal)}</td>
+                    <tr key={i} style={{ background: i % 2 === 0 ? "var(--bg-surface)" : "var(--accent-tint)" }}>
+                      <td style={{ padding: "4px 8px", border: "1px solid var(--accent-tint)", fontWeight: 600, whiteSpace: "nowrap" }}>{b.member} {b.memberName}</td>
+                      <td style={{ padding: "4px 8px", border: "1px solid var(--accent-tint)", textAlign: "right" }}>{b.area}</td>
+                      <td style={{ padding: "4px 8px", border: "1px solid var(--accent-tint)", textAlign: "right", color: b.prevBalance > 0 ? "var(--danger)" : "var(--fg-3)" }}>₹{fmt(b.prevBalance)}</td>
+                      <td style={{ padding: "4px 8px", border: "1px solid var(--accent-tint)", textAlign: "right" }}>₹{fmt(b.remInt)}</td>
+                      <td style={{ padding: "4px 8px", border: "1px solid var(--accent-tint)", textAlign: "right" }}>₹{fmt(b.currInt)}</td>
+                      <td style={{ padding: "4px 8px", border: "1px solid var(--accent-tint)", textAlign: "right" }}>₹{fmt(b.subtotal)}</td>
+                      <td style={{ padding: "4px 8px", border: "1px solid var(--accent-tint)", textAlign: "right" }}>₹{fmt(b.serviceTax)}</td>
+                      <td style={{ padding: "4px 8px", border: "1px solid var(--accent-tint)", textAlign: "right" }}>₹{fmt(b.currentBillTotal)}</td>
+                      <td style={{ padding: "4px 8px", border: "1px solid var(--accent-tint)", textAlign: "right", color: "var(--success)" }}>₹{fmt(b.advanceCredit)}</td>
+                      <td style={{ padding: "4px 8px", border: "1px solid var(--accent-tint)", textAlign: "right", fontWeight: 700, color: "var(--info)" }}>₹{fmt(b.grandTotal)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -805,21 +806,21 @@ export default function BillingTestPage() {
           {excelValidation && (
             <div style={{ marginBottom: "0.75rem" }}>
               <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
-                {[["Errors", "#dc2626", excelValidation.errorCount], ["Warnings", "#d97706", excelValidation.warningCount], ["Dups", "#7c3aed", excelValidation.duplicateCount]].map(([l, c, v]) => (
+                {[["Errors", "var(--danger)", excelValidation.errorCount], ["Warnings", "var(--warning)", excelValidation.warningCount], ["Dups", "#7c3aed" /* TODO: unmapped color, needs design review */, excelValidation.duplicateCount]].map(([l, c, v]) => (
                   <span key={l} style={{ border: `2px solid ${c}`, color: c, padding: "3px 10px", borderRadius: 5, fontWeight: 700, fontSize: "0.8rem", background: "white" }}>{v} {l}</span>
                 ))}
-                <span style={{ border: "2px solid #86efac", color: "#065f46", padding: "3px 10px", borderRadius: 5, fontWeight: 700, fontSize: "0.8rem", background: "#f0fdf4" }}>
+                <span style={{ border: "2px solid var(--success)", color: "var(--success-fg)", padding: "3px 10px", borderRadius: 5, fontWeight: 700, fontSize: "0.8rem", background: "var(--success-bg)" }}>
                   gen={excelValidation.bills?.length ?? 0} alreadyBilled={excelValidation.alreadyBilledRows?.length ?? 0}
                 </span>
                 {canGenFromExcel && (
-                  <button onClick={() => generateFromExcel(false)} style={{ padding: "5px 14px", background: "#059669", color: "white", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>
+                  <button onClick={() => generateFromExcel(false)} style={{ padding: "5px 14px", background: "var(--success)", color: "white", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>
                     Generate Bills from Excel
                   </button>
                 )}
               </div>
               {diffIssues.length > 0 && (
-                <div style={{ background: "#fff7ed", border: "2px solid #f97316", borderRadius: 8, padding: "0.75rem" }}>
-                  <div style={{ fontWeight: 700, color: "#9a3412", marginBottom: "0.4rem", fontSize: "0.8rem" }}>{diffIssues.length} Mismatches — approve each:</div>
+                <div style={{ background: "var(--warning-bg)", border: "2px solid var(--warning)", borderRadius: 8, padding: "0.75rem" }}>
+                  <div style={{ fontWeight: 700, color: "var(--warning-fg)", marginBottom: "0.4rem", fontSize: "0.8rem" }}>{diffIssues.length} Mismatches — approve each:</div>
                   {diffIssues.map((issue, i) => (
                     <label key={i} style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.3rem", cursor: "pointer", fontSize: "0.78rem" }}>
                       <input type="checkbox" checked={approvedDiffs.has(issue.memberId)} onChange={e => setApprovedDiffs(prev => { const n = new Set(prev); e.target.checked ? n.add(issue.memberId) : n.delete(issue.memberId); return n; })} />
@@ -845,12 +846,12 @@ export default function BillingTestPage() {
             </div>
           )}
           {/* Status log */}
-          <div style={{ background: "#0f172a", borderRadius: 8, padding: "0.75rem", maxHeight: 130, overflowY: "auto", marginTop: "0.75rem" }}>
-            <div style={{ color: "#475569", fontSize: "0.65rem", marginBottom: "0.3rem", fontWeight: 700 }}>LOG</div>
-            {statusLog.length === 0 && <div style={{ color: "#334155", fontSize: "0.7rem" }}>No events yet</div>}
+          <div style={{ background: "var(--fg-1)", borderRadius: 8, padding: "0.75rem", maxHeight: 130, overflowY: "auto", marginTop: "0.75rem" }}>
+            <div style={{ color: "var(--fg-3)", fontSize: "0.65rem", marginBottom: "0.3rem", fontWeight: 700 }}>LOG</div>
+            {statusLog.length === 0 && <div style={{ color: "var(--fg-3)", fontSize: "0.7rem" }}>No events yet</div>}
             {statusLog.map((e, i) => (
-              <div key={i} style={{ fontSize: "0.7rem", color: e.type === "err" ? "#f87171" : e.type === "ok" ? "#4ade80" : "#64748b", marginBottom: 1 }}>
-                <span style={{ color: "#334155", marginRight: 6 }}>{e.t}</span>{e.msg}
+              <div key={i} style={{ fontSize: "0.7rem", color: e.type === "err" ? "var(--danger)" : e.type === "ok" ? "var(--success)" : "var(--fg-4)", marginBottom: 1 }}>
+                <span style={{ color: "var(--fg-3)", marginRight: 6 }}>{e.t}</span>{e.msg}
               </div>
             ))}
           </div>
@@ -861,7 +862,7 @@ export default function BillingTestPage() {
           <div style={{ display: "flex", gap: "0.4rem", marginBottom: "0.5rem" }}>
             {[["expected", "Expected Bill"], ["parking", "Parking Config"]].map(([key, label_]) => (
               <button key={key} onClick={() => setRightPanel(key)}
-                style={{ flex: 1, padding: "6px", border: `2px solid ${rightPanel === key ? "#4f46e5" : "#e0e7ff"}`, background: rightPanel === key ? "#4f46e5" : "#f5f3ff", color: rightPanel === key ? "white" : "#4f46e5", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: "0.78rem" }}>
+                style={{ flex: 1, padding: "6px", border: `2px solid ${rightPanel === key ? "var(--primary)" : "var(--accent-tint)"}`, background: rightPanel === key ? "var(--primary)" : "var(--accent-tint)", color: rightPanel === key ? "white" : "var(--primary)", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: "0.78rem" }}>
                 {label_}
               </button>
             ))}

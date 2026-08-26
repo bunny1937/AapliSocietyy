@@ -3,7 +3,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  color: #e6e8ee;
+  color: var(--fg-5);
 }
 .header {
   display: flex;
@@ -21,7 +21,7 @@
 }
 .subtitle {
   margin: 0;
-  color: #9aa1b1;
+  color: var(--fg-5);
   font-size: 13px;
   max-width: 900px;
 }
@@ -31,7 +31,7 @@
   align-items: flex-start;
   background: rgba(229, 72, 77, 0.1);
   border: 1px solid rgba(229, 72, 77, 0.35);
-  color: #ffb4b4;
+  color: var(--danger);
   padding: 12px 14px;
   border-radius: 10px;
   font-size: 13px;
@@ -41,7 +41,7 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #c7cbd6;
+  color: var(--fg-5);
   cursor: pointer;
 }
 .configGrid {
@@ -58,20 +58,20 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #8b93a7;
+  color: var(--fg-5);
 }
 .configField input,
 .configField select {
-  background: #171a23;
-  border: 1px solid #2a2f3d;
+  background: var(--fg-1);
+  border: 1px solid var(--fg-2);
   border-radius: 8px;
   padding: 8px 10px;
-  color: #e6e8ee;
+  color: var(--fg-5);
   font-size: 13px;
 }
 .hint {
   font-size: 11px;
-  color: #8b93a7;
+  color: var(--fg-5);
   line-height: 1.4;
 }
 .laneBToggleRow {
@@ -79,8 +79,8 @@
   flex-direction: column;
   gap: 10px;
   padding: 14px;
-  background: #12141b;
-  border: 1px solid #22262f;
+  background: var(--fg-1);
+  border: 1px solid var(--fg-2);
   border-radius: 10px;
 }
 .runControls {
@@ -101,7 +101,7 @@
   border: 1px solid transparent;
 }
 .btnPrimary {
-  background: #3b82f6;
+  background: var(--accent);
   color: white;
 }
 .btnPrimary:disabled,
@@ -110,9 +110,9 @@
   cursor: not-allowed;
 }
 .btnSecondary {
-  background: #171a23;
-  border-color: #2a2f3d;
-  color: #e6e8ee;
+  background: var(--fg-1);
+  border-color: var(--fg-2);
+  color: var(--fg-5);
 }
 .spin {
   animation: spin 1s linear infinite;
@@ -131,8 +131,8 @@
   gap: 16px;
 }
 .laneCard {
-  background: #12141b;
-  border: 1px solid #22262f;
+  background: var(--fg-1);
+  border: 1px solid var(--fg-2);
   border-radius: 12px;
   padding: 16px;
   display: flex;
@@ -142,7 +142,7 @@
 .laneHeader {
   font-size: 13px;
   font-weight: 600;
-  color: #c7cbd6;
+  color: var(--fg-5);
 }
 .flowDiagram {
   display: flex;
@@ -155,28 +155,28 @@
   align-items: center;
   gap: 4px;
   font-size: 10px;
-  color: #6b7280;
+  color: var(--fg-4);
   padding: 8px;
   border-radius: 10px;
-  border: 1px solid #22262f;
+  border: 1px solid var(--fg-2);
   min-width: 64px;
 }
 .flowNodeActive {
-  color: #3b82f6;
-  border-color: #3b82f6;
+  color: var(--accent);
+  border-color: var(--accent);
   background: rgba(59, 130, 246, 0.08);
 }
 .flowTrack {
   position: relative;
   flex: 1;
   height: 2px;
-  background: #22262f;
+  background: var(--fg-2);
   min-width: 40px;
 }
 .flowLine {
   position: absolute;
   inset: 0;
-  background: #22262f;
+  background: var(--fg-2);
 }
 .flowPill {
   position: absolute;
@@ -184,7 +184,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: var(--accent);
   box-shadow: 0 0 8px 2px rgba(59, 130, 246, 0.6);
 }
 .metricsGrid {
@@ -193,8 +193,8 @@
   gap: 8px;
 }
 .metricCard {
-  background: #171a23;
-  border: 1px solid #22262f;
+  background: var(--fg-1);
+  border: 1px solid var(--fg-2);
   border-radius: 8px;
   padding: 10px;
 }
@@ -203,7 +203,7 @@
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: #9aa1b1;
+  color: var(--fg-5);
   margin-bottom: 4px;
 }
 .metricLabel {
@@ -217,16 +217,16 @@
 }
 .metricSub {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--fg-4);
 }
 .iconPass {
-  color: #2f9e5c;
+  color: var(--success);
 }
 .iconFail {
-  color: #e5484d;
+  color: var(--danger);
 }
 .iconIdle {
-  color: #6b7280;
+  color: var(--fg-4);
 }
 .panelsGrid {
   display: grid;
@@ -234,19 +234,19 @@
   gap: 16px;
 }
 .panel {
-  background: #12141b;
-  border: 1px solid #22262f;
+  background: var(--fg-1);
+  border: 1px solid var(--fg-2);
   border-radius: 12px;
   padding: 16px;
 }
 .panel h3 {
   margin: 0 0 12px 0;
   font-size: 13px;
-  color: #c7cbd6;
+  color: var(--fg-5);
 }
 .emptyNote {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--fg-4);
   padding: 12px 0;
 }
 .waterfallWrap {
@@ -264,7 +264,7 @@
   font-size: 11px;
 }
 .waterfallLabel {
-  color: #9aa1b1;
+  color: var(--fg-5);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -272,7 +272,7 @@
 .waterfallTrack {
   position: relative;
   height: 10px;
-  background: #171a23;
+  background: var(--fg-1);
   border-radius: 4px;
 }
 .waterfallBar {
@@ -283,13 +283,13 @@
   min-width: 2px;
 }
 .barPass {
-  background: #2f9e5c;
+  background: var(--success);
 }
 .barFail {
-  background: #e5484d;
+  background: var(--danger);
 }
 .waterfallMs {
-  color: #6b7280;
+  color: var(--fg-4);
   text-align: right;
 }
 .latencySvg {
@@ -312,10 +312,10 @@
   border-radius: 6px;
 }
 .eventLogItem:hover {
-  background: #171a23;
+  background: var(--fg-1);
 }
 .eventLogTime {
-  color: #6b7280;
+  color: var(--fg-4);
   min-width: 76px;
 }
 .eventLogBadge {
@@ -326,45 +326,45 @@
 }
 .badgePass {
   background: rgba(47, 158, 92, 0.15);
-  color: #2f9e5c;
+  color: var(--success);
 }
 .badgeFail {
   background: rgba(229, 72, 77, 0.15);
-  color: #e5484d;
+  color: var(--danger);
 }
 .badgeInfo {
   background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
+  color: var(--accent);
 }
 .eventLogLane {
-  color: #c7cbd6;
+  color: var(--fg-5);
   font-weight: 600;
   min-width: 16px;
 }
 .eventLogStage {
-  color: #9aa1b1;
+  color: var(--fg-5);
   flex: 1;
 }
 .eventLogMs {
-  color: #6b7280;
+  color: var(--fg-4);
 }
 .eventLogStatus {
-  color: #6b7280;
+  color: var(--fg-4);
 }
 .eventLogError {
-  color: #e5484d;
+  color: var(--danger);
 }
 
 /* ---- v2 additions: provisioning, phases, percentiles, raw body log ---- */
 .flowActiveLabel {
   font-size: 11px;
-  color: #3b82f6;
+  color: var(--accent);
   margin-left: 8px;
 }
 .laneOkBadge {
   font-size: 10px;
   text-transform: uppercase;
-  color: #2f9e5c;
+  color: var(--success);
   background: rgba(47, 158, 92, 0.15);
   padding: 2px 6px;
   border-radius: 4px;
@@ -372,18 +372,18 @@
 .laneErrBadge {
   font-size: 10px;
   text-transform: uppercase;
-  color: #9aa1b1;
+  color: var(--fg-5);
   background: rgba(155, 161, 177, 0.12);
   padding: 2px 6px;
   border-radius: 4px;
 }
 .laneMeta {
   font-size: 12px;
-  color: #c7cbd6;
+  color: var(--fg-5);
 }
 .laneError {
   font-size: 12px;
-  color: #ffb4b4;
+  color: var(--danger);
   background: rgba(229, 72, 77, 0.08);
   border: 1px solid rgba(229, 72, 77, 0.3);
   border-radius: 8px;
@@ -401,7 +401,7 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #8b93a7;
+  color: var(--fg-5);
   margin-bottom: 8px;
 }
 .statsBlock {
@@ -412,7 +412,7 @@
 .statsBlock h4 {
   margin: 0;
   font-size: 13px;
-  color: #c7cbd6;
+  color: var(--fg-5);
 }
 .statsGrid {
   display: grid;
@@ -420,8 +420,8 @@
   gap: 8px;
 }
 .statCard {
-  background: #171a23;
-  border: 1px solid #22262f;
+  background: var(--fg-1);
+  border: 1px solid var(--fg-2);
   border-radius: 8px;
   padding: 10px;
   text-align: center;
@@ -438,7 +438,7 @@
 }
 .statLabel {
   font-size: 10px;
-  color: #8b93a7;
+  color: var(--fg-5);
   text-transform: uppercase;
 }
 .byStageTable {
@@ -451,18 +451,18 @@
   display: grid;
   grid-template-columns: 1fr 70px 60px 60px 70px;
   gap: 6px;
-  color: #9aa1b1;
+  color: var(--fg-5);
   padding: 4px 0;
-  border-top: 1px solid #22262f;
+  border-top: 1px solid var(--fg-2);
 }
 .byStageName {
-  color: #c7cbd6;
+  color: var(--fg-5);
 }
 .statPassText {
-  color: #2f9e5c;
+  color: var(--success);
 }
 .statFailText {
-  color: #e5484d;
+  color: var(--danger);
 }
 .phaseBarWrap {
   display: flex;
@@ -475,7 +475,7 @@
   height: 10px;
   border-radius: 4px;
   overflow: hidden;
-  background: #171a23;
+  background: var(--fg-1);
 }
 .phaseBarSeg {
   height: 100%;
@@ -485,7 +485,7 @@
   flex-wrap: wrap;
   gap: 10px;
   font-size: 10px;
-  color: #9aa1b1;
+  color: var(--fg-5);
 }
 .phaseLegendItem {
   display: inline-flex;
@@ -507,36 +507,36 @@
   border-radius: 6px;
 }
 .eventLogRow:hover {
-  background: #171a23;
+  background: var(--fg-1);
 }
 .eventLogPhase {
   font-size: 9px;
   text-transform: uppercase;
-  color: #8b93a7;
-  border: 1px solid #22262f;
+  color: var(--fg-5);
+  border: 1px solid var(--fg-2);
   border-radius: 4px;
   padding: 0 4px;
 }
 .badgeSkip {
   background: rgba(155, 161, 177, 0.12);
-  color: #9aa1b1;
+  color: var(--fg-5);
 }
 .eventLogDetail {
   margin: 4px 0 8px 20px;
   padding: 10px;
-  background: #0e1016;
-  border: 1px solid #22262f;
+  background: var(--fg-1);
+  border: 1px solid var(--fg-2);
   border-radius: 8px;
 }
 .rawBodyLabel {
   font-size: 10px;
-  color: #8b93a7;
+  color: var(--fg-5);
   margin: 6px 0 4px 0;
   text-transform: uppercase;
 }
 .rawBody {
   font-size: 11px;
-  color: #c7cbd6;
+  color: var(--fg-5);
   max-height: 260px;
   overflow: auto;
   white-space: pre-wrap;

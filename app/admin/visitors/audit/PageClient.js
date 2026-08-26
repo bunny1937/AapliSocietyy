@@ -21,9 +21,9 @@ async function api(url) {
   return data;
 }
 const ACTION_META = {
-  VISITOR_OFFLINE_ENTRY: { label: "📴 Offline entry", color: "#f59e0b" },
-  VISITOR_ENTRY_CONFIRMED: { label: "✅ Confirmed", color: "#10b981" },
-  VISITOR_ENTRY_FLAGGED: { label: "🚨 Flagged", color: "#ef4444" },
+  VISITOR_OFFLINE_ENTRY: { label: "📴 Offline entry", color: "var(--warning)" },
+  VISITOR_ENTRY_CONFIRMED: { label: "✅ Confirmed", color: "var(--success)" },
+  VISITOR_ENTRY_FLAGGED: { label: "🚨 Flagged", color: "var(--danger)" },
 };
 const S = {
   filters: {
@@ -46,7 +46,7 @@ const S = {
   },
   td: {
     padding: "10px 12px",
-    borderBottom: "1px solid #f3f4f6",
+    borderBottom: "1px solid var(--bg-muted)",
     verticalAlign: "top",
   },
   badge: (c) => ({

@@ -2,8 +2,8 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  background: linear-gradient(135deg, var(--primary) 0%, #1a3578 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-press) 100%);
+  color: var(--bg-surface);
   padding: 14px 16px;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.1);
@@ -44,5 +44,5 @@
 }
 .close:hover {
   background: rgba(255,255,255,0.2);
-  color: #fff;
+  color: var(--bg-surface);
 }

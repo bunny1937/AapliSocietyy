@@ -5,6 +5,7 @@ import { apiClient } from "@/lib/api-client";
 import ExcelJS from "exceljs";
 import styles from "@/styles/ImportBills.module.css";
 import DropZone from "../../../components/DropZone";
+import notify from "@/lib/notify";
 
 // Builds a workbook from our own trusted data and triggers a browser
 // download — no `xlsx`/SheetJS involved (unfixed prototype-pollution + ReDoS
@@ -42,7 +43,7 @@ export default function ImportBillsPage() {
   // Generate dynamic template
   const downloadTemplate = async () => {
     if (!configData) {
-      alert("Loading configuration...");
+      notify.info("Loading configuration...");
       return;
     }
     const society = configData.society;
@@ -144,7 +145,7 @@ export default function ImportBillsPage() {
       setStep(2);
     },
     onError: (error) => {
-      alert("Validation failed: " + error.message);
+      notify.error("Validation failed: " + error.message);
     },
   });
   // Confirm import
@@ -160,7 +161,7 @@ export default function ImportBillsPage() {
       return response.json();
     },
     onSuccess: (data) => {
-      alert(`✅ ${data.imported} bills imported successfully!`);
+      notify.success(`${data.imported} bills imported successfully!`);
       setStep(3);
       queryClient.invalidateQueries(["view-bills"]);
     },
@@ -168,11 +169,11 @@ export default function ImportBillsPage() {
   const handleFileChange = (selectedFile) => {
     if (!selectedFile) return;
     if (!selectedFile.name.match(/\.(xlsx|xls)$/)) {
-      alert("Only Excel files (.xlsx, .xls) are allowed");
+      notify.warning("Only Excel files (.xlsx, .xls) are allowed");
       return;
     }
     if (selectedFile.size > 10 * 1024 * 1024) {
-      alert("File size must be less than 10MB");
+      notify.warning("File size must be less than 10MB");
       return;
     }
     setFile(selectedFile);
@@ -232,19 +233,19 @@ export default function ImportBillsPage() {
       {step === 2 && preview && (
         <div className={styles.previewSection}>
           <div className={styles.statsGrid}>
-            <div className={styles.statCard} style={{ borderColor: "#10b981" }}>
+            <div className={styles.statCard} style={{ borderColor: "var(--success)" }}>
               <div className={styles.statNumber}>{preview.valid}</div>
               <div className={styles.statLabel}>✅ Valid</div>
             </div>
-            <div className={styles.statCard} style={{ borderColor: "#f59e0b" }}>
+            <div className={styles.statCard} style={{ borderColor: "var(--warning)" }}>
               <div className={styles.statNumber}>{preview.warnings}</div>
               <div className={styles.statLabel}>⚠️ Warnings</div>
             </div>
-            <div className={styles.statCard} style={{ borderColor: "#ef4444" }}>
+            <div className={styles.statCard} style={{ borderColor: "var(--danger)" }}>
               <div className={styles.statNumber}>{preview.errors}</div>
               <div className={styles.statLabel}>❌ Errors</div>
             </div>
-            <div className={styles.statCard} style={{ borderColor: "#f97316" }}>
+            <div className={styles.statCard} style={{ borderColor: "var(--warning)" }}>
               <div className={styles.statNumber}>{preview.duplicates}</div>
               <div className={styles.statLabel}>🔁 Duplicates</div>
             </div>
@@ -253,7 +254,7 @@ export default function ImportBillsPage() {
           {preview.errors > 0 && (
             <div
               className={styles.alertBox}
-              style={{ background: "#fee2e2", borderColor: "#ef4444" }}
+              style={{ background: "var(--danger-bg)", borderColor: "var(--danger)" }}
             >
               <h4>❌ Errors Found ({preview.errors})</h4>
               <ul>
@@ -272,7 +273,7 @@ export default function ImportBillsPage() {
           {preview.duplicates > 0 && (
             <div
               className={styles.alertBox}
-              style={{ background: "#fef3c7", borderColor: "#f59e0b" }}
+              style={{ background: "var(--warning-bg)", borderColor: "var(--warning)" }}
             >
               <h4>🔁 Duplicate Bills ({preview.duplicates})</h4>
               <p>These bills already exist in the database:</p>

@@ -38,7 +38,7 @@ export default function DropZone({
   };
   const baseStyle = {
     border: `2px dashed ${
-      dragOver ? "#6b8eef" : file ? "#10b981" : "#cbd5e1"
+      dragOver ? "var(--accent)" : file ? "var(--success)" : "var(--border-strong)"
     }`,
     borderRadius: 14,
     padding: "28px 32px",
@@ -47,7 +47,7 @@ export default function DropZone({
       ? "rgba(107, 142, 239, 0.06)"
       : file
         ? "rgba(16, 185, 129, 0.05)"
-        : "#f4faff",
+        : "var(--accent-tint)",
     cursor: file ? "default" : "pointer",
     transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
     boxShadow: dragOver
@@ -83,12 +83,12 @@ export default function DropZone({
             alignItems: "center",
             justifyContent: "center",
           }}>
-            <FileSpreadsheet size={24} color="#059669" />
+            <FileSpreadsheet size={24} color="var(--success)" />
           </div>
-          <div style={{ fontWeight: 700, color: "#065f46", fontSize: 14 }}>
+          <div style={{ fontWeight: 700, color: "var(--success-fg)", fontSize: 14 }}>
             {file.name}
           </div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>
+          <div style={{ fontSize: 12, color: "var(--fg-4)" }}>
             {(file.size / 1024).toFixed(1)} KB
           </div>
           {onClear && (
@@ -100,23 +100,23 @@ export default function DropZone({
                 fontSize: 12,
                 fontWeight: 600,
                 background: "transparent",
-                border: "1.5px solid #d1d5db",
+                border: "1.5px solid var(--border-strong)",
                 borderRadius: 8,
                 cursor: "pointer",
-                color: "#6b7280",
+                color: "var(--fg-4)",
                 display: "flex",
                 alignItems: "center",
                 gap: 5,
                 transition: "all 0.15s",
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.borderColor = "#ef4444";
-                e.currentTarget.style.color = "#ef4444";
-                e.currentTarget.style.background = "#fee2e2";
+                e.currentTarget.style.borderColor = "var(--danger)";
+                e.currentTarget.style.color = "var(--danger)";
+                e.currentTarget.style.background = "var(--danger-bg)";
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.borderColor = "#d1d5db";
-                e.currentTarget.style.color = "#6b7280";
+                e.currentTarget.style.borderColor = "var(--border-strong)";
+                e.currentTarget.style.color = "var(--fg-4)";
                 e.currentTarget.style.background = "transparent";
               }}
             >
@@ -137,10 +137,10 @@ export default function DropZone({
             justifyContent: "center",
             transition: "all 0.2s",
           }}>
-            <Upload size={22} color={dragOver ? "#6b8eef" : "#1e3a8a"} />
+            <Upload size={22} color={dragOver ? "var(--accent)" : "var(--primary)"} />
           </div>
-          <div style={{ fontWeight: 600, color: "#1e3a8a", fontSize: 14 }}>{label}</div>
-          <div style={{ fontSize: 12, color: "#94a3b8" }}>{hint}</div>
+          <div style={{ fontWeight: 600, color: "var(--primary)", fontSize: 14 }}>{label}</div>
+          <div style={{ fontSize: 12, color: "var(--fg-5)" }}>{hint}</div>
         </div>
       )}
     </div>

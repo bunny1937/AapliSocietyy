@@ -4,6 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import styles from "./SocietyDetail.module.css";
 import { adminApi } from "@/lib/admin-api";
+import notify from "@/lib/notify";
 export default function SocietyDetail() {
   const [activeTab, setActiveTab] = useState("overview");
   const router = useRouter();
@@ -53,11 +54,16 @@ export default function SocietyDetail() {
       // Invalidate cache to refetch fresh data
       queryClient.invalidateQueries(["society", societyId]);
       queryClient.invalidateQueries(["admin-societies"]);
-      alert("Society updated successfully");
+      notify.success("Society updated successfully");
     },
   });
-  const handleSuspend = () => {
-    if (!confirm("Suspend this society? They will lose access immediately."))
+  const handleSuspend = async () => {
+    if (
+      !(await notify.confirm(
+        "Suspend this society? They will lose access immediately.",
+        { tone: "warning" },
+      ))
+    )
       return;
     updateMutation.mutate({ "subscription.status": "Suspended" });
   };
@@ -249,7 +255,7 @@ export default function SocietyDetail() {
                   <td>
                     <button
                       style={{
-                        background: member.isActive ? "#4CAF50" : "#f44336",
+                        background: member.isActive ? "var(--success)" : "var(--danger)",
                         color: "#fff",
                         border: "none",
                         padding: "4px 10px",

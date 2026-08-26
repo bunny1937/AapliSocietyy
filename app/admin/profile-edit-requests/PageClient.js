@@ -4,6 +4,7 @@ import {
   Card, PageHeader, Button, Badge, Spinner, Toast, EmptyState,
   Modal, StatCard, tokens, fmtTime, grid,
 } from "@/components/visitor/ui";
+import notify from "@/lib/notify";
 
 async function api(url, opts) {
   const res = await fetch(url, {
@@ -23,7 +24,7 @@ const SECTION_LABELS = {
   EmergencyContact: "Emergency contact",
   Parking: "Parking",
 };
-const STATUS_COLOR = { Pending: "#92400e", Approved: "#166534", Rejected: "#991b1b" };
+const STATUS_COLOR = { Pending: "var(--warning-fg)", Approved: "var(--success-fg)", Rejected: "var(--danger-fg)" };
 const TABS = ["Pending", "Approved", "Rejected", "All"];
 const DASH = "\u2014";
 
@@ -44,7 +45,7 @@ function describePayload(item) {
 }
 
 const S = {
-  card: { border: `1px solid ${tokens.border}`, borderRadius: 12, padding: 16, display: "grid", gap: 10, background: "#fff" },
+  card: { border: `1px solid ${tokens.border}`, borderRadius: 12, padding: 16, display: "grid", gap: 10, background: "var(--bg-surface)" },
   head: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 },
   name: { fontWeight: 800, fontSize: 14.5, color: tokens.text },
   meta: { fontSize: 12.5, color: tokens.sub, marginTop: 3 },
@@ -54,13 +55,13 @@ const S = {
   tab: (on) => ({
     padding: "7px 14px", borderRadius: 20,
     border: `1px solid ${on ? tokens.primary : tokens.border}`,
-    background: on ? tokens.primary : "#fff",
-    color: on ? "#fff" : tokens.sub,
+    background: on ? tokens.primary : "var(--bg-surface)",
+    color: on ? "var(--bg-surface)" : tokens.sub,
     fontWeight: 600, fontSize: 13, cursor: "pointer",
   }),
   search: { marginLeft: "auto", padding: "7px 12px", borderRadius: 8, border: `1px solid ${tokens.border}`, fontSize: 13, minWidth: 220 },
   center: { display: "flex", justifyContent: "center", padding: 48 },
-  pre: { background: "#f9fafb", border: `1px solid ${tokens.border}`, borderRadius: 8, padding: 12, fontSize: 12, whiteSpace: "pre-wrap", wordBreak: "break-word" },
+  pre: { background: "var(--bg-sunken)", border: `1px solid ${tokens.border}`, borderRadius: 8, padding: 12, fontSize: 12, whiteSpace: "pre-wrap", wordBreak: "break-word" },
 };
 
 export default function ProfileChangesPage() {
@@ -115,7 +116,7 @@ export default function ProfileChangesPage() {
   }
 
   async function reject(id) {
-    const reason = window.prompt("Reason for rejection (shown to the owner):", "");
+    const reason = await notify.prompt("Reason for rejection (shown to the owner):", "");
     if (reason === null) return;
     setBusyId(id);
     try {
@@ -135,9 +136,9 @@ export default function ProfileChangesPage() {
       />
 
       <div style={{ ...grid(200), marginBottom: 18 }}>
-        <StatCard label="Pending" value={counts.Pending} color="#d97706" />
-        <StatCard label="Approved" value={counts.Approved} color="#16a34a" />
-        <StatCard label="Rejected" value={counts.Rejected} color="#dc2626" />
+        <StatCard label="Pending" value={counts.Pending} color="var(--warning)" />
+        <StatCard label="Approved" value={counts.Approved} color="var(--success)" />
+        <StatCard label="Rejected" value={counts.Rejected} color="var(--danger)" />
       </div>
 
       <div style={S.tabs}>
@@ -207,7 +208,7 @@ export default function ProfileChangesPage() {
             </div>
             <div style={S.body}>{describePayload(detail)}</div>
             {detail.rejectionReason && (
-              <div style={{ fontSize: 12.5, color: "#991b1b", fontWeight: 600 }}>
+              <div style={{ fontSize: 12.5, color: "var(--danger-fg)", fontWeight: 600 }}>
                 Rejection reason: {detail.rejectionReason}
               </div>
             )}

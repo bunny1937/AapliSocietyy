@@ -150,7 +150,7 @@ export default function IncidentsPage() {
             <div className={styles.modalBody}>
               <div className={styles.field}>
                 <label className={styles.label}>Description</label>
-                <p style={{ fontSize: 13, color: "#374151", margin: 0, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>
+                <p style={{ fontSize: 13, color: "var(--fg-3)", margin: 0, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>
                   {detail.description}
                 </p>
               </div>

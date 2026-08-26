@@ -1,3 +1,9 @@
+/* TODO: unmapped color, needs design review — this whole file is a fixed
+   black-terminal/console aesthetic (near-black background, #0f0 monospace
+   text) that is intentionally the same regardless of the app's light/dark
+   toggle. Mapping these to the bg-*/fg-* tokens would turn the console
+   near-white in light mode and destroy the terminal look, so the raw hex
+   values below are left as-is on purpose. */
 .container {
   min-height: 100vh;
   background: #0a0a0a;

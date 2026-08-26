@@ -31,8 +31,8 @@ async function api(url, opts) {
 const S = {
   colWrap: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 },
   colTitle: { display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700, color: tokens.text, marginBottom: 12 },
-  count: { background: "#eef2ff", color: tokens.primary, borderRadius: 999, padding: "1px 9px", fontSize: 12, fontWeight: 700 },
-  item: { display: "flex", gap: 12, alignItems: "flex-start", padding: "10px 0", borderBottom: "1px solid #f3f4f6" },
+  count: { background: "var(--accent-tint)", color: tokens.primary, borderRadius: 999, padding: "1px 9px", fontSize: 12, fontWeight: 700 },
+  item: { display: "flex", gap: 12, alignItems: "flex-start", padding: "10px 0", borderBottom: "1px solid var(--bg-muted)" },
   body: { flex: 1, minWidth: 0 },
   name: { fontWeight: 600, color: tokens.text },
   meta: { fontSize: 12, color: tokens.sub, marginTop: 3, display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" },

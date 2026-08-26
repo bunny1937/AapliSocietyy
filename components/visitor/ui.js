@@ -8,17 +8,17 @@ import { STATUS_COLOR, PURPOSE_ICON } from "@/lib/visitor-config";
 export const tokens = {
   radius: 14,
   radiusSm: 10,
-  border: "1px solid #e5e7eb",
+  border: "1px solid var(--border)",
   shadow: "0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06)",
   shadowLg: "0 10px 30px rgba(16,24,40,.10)",
-  bg: "#f7f8fa",
-  card: "#ffffff",
-  text: "#111827",
-  sub: "#6b7280",
-  primary: "#4f46e5",
-  primaryDark: "#4338ca",
-  danger: "#ef4444",
-  success: "#10b981",
+  bg: "var(--bg-canvas)",
+  card: "var(--bg-surface)",
+  text: "var(--fg-1)",
+  sub: "var(--fg-4)",
+  primary: "var(--accent)",
+  primaryDark: "var(--primary)",
+  danger: "var(--danger)",
+  success: "var(--success)",
 };
 export function Card({ children, style, pad = 20, ...rest }) {
   const s = {
@@ -88,7 +88,7 @@ export function Button({
       border: tokens.border,
     },
     subtle: {
-      background: "#f3f4f6",
+      background: "var(--bg-muted)",
       color: tokens.text,
       border: "1px solid transparent",
     },
@@ -127,7 +127,7 @@ export function Button({
   );
 }
 export function StatusBadge({ status }) {
-  const color = STATUS_COLOR[status] || "#6b7280";
+  const color = STATUS_COLOR[status] || "var(--fg-4)";
   const s = {
     display: "inline-flex",
     alignItems: "center",
@@ -147,7 +147,7 @@ export function StatusBadge({ status }) {
     </span>
   );
 }
-export function Badge({ children, color = "#6b7280" }) {
+export function Badge({ children, color = "var(--fg-4)" }) {
   const s = {
     background: color + "1a",
     color,
@@ -197,7 +197,7 @@ const inputBase = {
   fontSize: 14,
   color: tokens.text,
   outline: "none",
-  background: "#fff",
+  background: "var(--bg-surface)",
   boxSizing: "border-box",
 };
 export function Input(props) {
@@ -208,7 +208,7 @@ export function Input(props) {
       {...rest}
       style={s}
       onFocus={(e) => (e.target.style.borderColor = tokens.primary)}
-      onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
+      onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
     />
   );
 }
@@ -265,7 +265,7 @@ export function Avatar({ src, name, size = 44 }) {
     width: size,
     height: size,
     borderRadius: 10,
-    background: "#eef2ff",
+    background: "var(--primary-tint)",
     color: tokens.primary,
     display: "flex",
     alignItems: "center",
@@ -293,7 +293,7 @@ export function Spinner({ size = 22 }) {
     display: "inline-block",
     width: size,
     height: size,
-    border: "3px solid #e5e7eb",
+    border: "3px solid var(--border)",
     borderTopColor: tokens.primary,
     borderRadius: "50%",
     animation: "vspin 0.7s linear infinite",
@@ -347,7 +347,7 @@ export function Modal({ open, title, onClose, children, footer, width = 480 }) {
     padding: 16,
   };
   const box = {
-    background: "#fff",
+    background: "var(--bg-surface)",
     borderRadius: tokens.radius,
     boxShadow: tokens.shadowLg,
     width: "100%",
@@ -519,8 +519,8 @@ export function PhotoCapture({
     flexDirection: "column",
     padding: "22px 16px",
     borderRadius: tokens.radiusSm,
-    border: `1.5px dashed ${disabled ? "#e5e7eb" : "#c7cdd6"}`,
-    background: disabled ? "#f9fafb" : "#fbfbfd",
+    border: `1.5px dashed ${disabled ? "var(--border)" : "var(--border-strong)"}`,
+    background: disabled ? "var(--bg-sunken)" : "var(--bg-canvas)",
     color: tokens.text,
     cursor: disabled || uploading ? "not-allowed" : "pointer",
     transition: "border-color .15s ease, background .15s ease",

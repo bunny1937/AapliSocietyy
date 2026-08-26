@@ -15,8 +15,9 @@
       rgba(59, 130, 246, 0.16),
       transparent 32%
     ),
-    linear-gradient(135deg, #0f172a 0%, #111827 55%, #1e293b 100%);
-  color: #ffffff;
+    /* TODO: unmapped color, needs design review — fixed dark hero gradient, intentionally always-dark regardless of theme toggle; mapping to fg-*/bg-* tokens would invert it in dark mode */
+    linear-gradient(135deg, var(--fg-1) 0%, var(--fg-1) 55%, var(--fg-2) 100%);
+  color: var(--bg-surface);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 20px 45px rgba(15, 23, 42, 0.22);
 }
@@ -70,8 +71,8 @@
   gap: 16px;
 }
 .statCard {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid #e5e7eb;
+  background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-canvas) 100%);
+  border: 1px solid var(--border);
   border-radius: 20px;
   padding: 20px;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
@@ -81,19 +82,19 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #6b7280;
+  color: var(--fg-4);
   margin-bottom: 10px;
 }
 .statValue {
   margin: 0;
   font-size: 30px;
   line-height: 1;
-  color: #111827;
+  color: var(--fg-1);
   font-weight: 800;
 }
 .statMeta {
   margin: 10px 0 0;
-  color: #6b7280;
+  color: var(--fg-4);
   font-size: 14px;
 }
 .contentGrid {
@@ -103,8 +104,8 @@
   align-items: start;
 }
 .panel {
-  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-  border: 1px solid #e5e7eb;
+  background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-canvas) 100%);
+  border: 1px solid var(--border);
   border-radius: 24px;
   padding: 22px;
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
@@ -120,11 +121,11 @@
   margin: 0;
   font-size: 22px;
   font-weight: 800;
-  color: #111827;
+  color: var(--fg-1);
 }
 .panelDesc {
   margin: 8px 0 0;
-  color: #6b7280;
+  color: var(--fg-4);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -140,14 +141,14 @@
 .label {
   font-size: 14px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--fg-2);
 }
 .input,
 .textarea {
   width: 100%;
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  color: #111827;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface);
+  color: var(--fg-1);
   border-radius: 14px;
   padding: 13px 15px;
   font-size: 14px;
@@ -159,7 +160,7 @@
 }
 .input:focus,
 .textarea:focus {
-  border-color: #2563eb;
+  border-color: var(--border-focus);
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
 .textarea {
@@ -173,22 +174,22 @@
 }
 .helperText {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--fg-4);
 }
 .searchResults {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--bg-surface);
   box-shadow: 0 18px 30px rgba(15, 23, 42, 0.08);
 }
 .searchResultItem {
   width: 100%;
   text-align: left;
   padding: 14px 16px;
-  background: #ffffff;
+  background: var(--bg-surface);
   border: none;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--bg-muted);
   cursor: pointer;
   transition: background 0.18s ease;
 }
@@ -196,7 +197,7 @@
   border-bottom: none;
 }
 .searchResultItem:hover {
-  background: #f8fafc;
+  background: var(--bg-canvas);
 }
 .searchResultTop {
   display: flex;
@@ -206,43 +207,43 @@
 }
 .flatCode {
   font-weight: 800;
-  color: #111827;
+  color: var(--fg-1);
 }
 .flatType {
   font-size: 12px;
   font-weight: 700;
-  color: #1d4ed8;
-  background: #dbeafe;
+  color: var(--info);
+  background: var(--info-bg);
   border-radius: 999px;
   padding: 5px 10px;
 }
 .searchResultMeta {
   margin-top: 6px;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--fg-4);
 }
 .selectedFlat {
   display: grid;
   gap: 6px;
   padding: 14px 16px;
   border-radius: 16px;
-  background: linear-gradient(180deg, #eff6ff 0%, #eef2ff 100%);
-  border: 1px solid #bfdbfe;
-  color: #1d4ed8;
+  background: linear-gradient(180deg, var(--accent-tint) 0%, var(--accent-tint) 100%);
+  border: 1px solid var(--primary-tint);
+  color: var(--info);
 }
 .selectedFlatLabel {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #2563eb;
+  color: var(--info);
 }
 .message {
   padding: 13px 14px;
   border-radius: 14px;
-  background: #f3f4f6;
-  color: #111827;
+  background: var(--bg-muted);
+  color: var(--fg-1);
   font-size: 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
 }
 .formActions {
   display: flex;
@@ -252,8 +253,9 @@
   border: none;
   border-radius: 14px;
   padding: 13px 18px;
-  background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
-  color: #ffffff;
+  /* TODO: unmapped color, needs design review — fixed dark button gradient, intentionally always-dark regardless of theme toggle */
+  background: linear-gradient(135deg, var(--fg-1) 0%, var(--fg-2) 100%);
+  color: var(--bg-surface);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -276,10 +278,10 @@
   gap: 12px;
 }
 .visitorCard {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   border-radius: 18px;
   padding: 16px;
-  background: #ffffff;
+  background: var(--bg-surface);
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
 }
 .visitorCardTop {
@@ -291,12 +293,12 @@
 .visitorName {
   font-size: 16px;
   font-weight: 800;
-  color: #111827;
+  color: var(--fg-1);
 }
 .visitorMeta {
   margin-top: 4px;
   font-size: 14px;
-  color: #6b7280;
+  color: var(--fg-4);
 }
 .visitorDetails {
   display: flex;
@@ -304,7 +306,7 @@
   flex-wrap: wrap;
   margin-top: 12px;
   font-size: 13px;
-  color: #4b5563;
+  color: var(--fg-3);
 }
 .statusBadge {
   display: inline-flex;
@@ -316,27 +318,28 @@
   white-space: nowrap;
 }
 .status_pending {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--warning-bg);
+  color: var(--warning-fg);
 }
 .status_approved {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--success-bg);
+  color: var(--success-fg);
 }
 .status_rejected {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--danger-bg);
+  color: var(--danger-fg);
 }
 .status_entered {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--info-bg);
+  color: var(--info);
 }
 .status_exited {
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--border);
+  color: var(--fg-3);
 }
 .status_expired {
-  background: #ede9fe;
+  /* TODO: unmapped color, needs design review — purple status badge has no purple family token */
+  background: var(--accent-tint);
   color: #6d28d9;
 }
 .emptyState {
@@ -344,15 +347,15 @@
   place-items: center;
   text-align: center;
   padding: 48px 20px;
-  border: 1px dashed #d1d5db;
+  border: 1px dashed var(--border-strong);
   border-radius: 18px;
-  color: #6b7280;
-  background: #f9fafb;
+  color: var(--fg-4);
+  background: var(--bg-sunken);
 }
 .emptyIcon {
   font-size: 28px;
   margin-bottom: 10px;
-  color: #9ca3af;
+  color: var(--fg-5);
 }
 @media (max-width: 1100px) {
   .hero,

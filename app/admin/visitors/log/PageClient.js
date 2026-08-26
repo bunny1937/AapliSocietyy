@@ -51,7 +51,7 @@ const S = {
   },
   td: {
     padding: "10px 12px",
-    borderBottom: "1px solid #f3f4f6",
+    borderBottom: "1px solid var(--bg-muted)",
     verticalAlign: "middle",
   },
   visitorCell: { display: "flex", alignItems: "center", gap: 10 },

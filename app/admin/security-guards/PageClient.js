@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import notify from "@/lib/notify";
 export default function SecurityGuardsPage() {
   const [guards, setGuards] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -92,7 +93,7 @@ export default function SecurityGuardsPage() {
     }
   }
   async function removeGuard(guardId, name) {
-    if (!window.confirm(`Delete the guard account for ${name}? This cannot be undone.`)) return;
+    if (!(await notify.confirm(`Delete the guard account for ${name}? This cannot be undone.`, { tone: "danger" }))) return;
     const res = await fetch(`/api/admin/security-guards/${guardId}`, {
       method: "DELETE",
       credentials: "include",
@@ -116,7 +117,7 @@ export default function SecurityGuardsPage() {
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>
             Security Guards
           </h1>
-          <p style={{ margin: "6px 0 0", color: "#6b7280" }}>
+          <p style={{ margin: "6px 0 0", color: "var(--fg-4)" }}>
             Manage gate guard accounts for this society.
           </p>
         </div>
@@ -127,7 +128,7 @@ export default function SecurityGuardsPage() {
           }}
           style={{
             padding: "10px 18px",
-            background: "#111827",
+            background: "var(--fg-1)",
             color: "#fff",
             border: "none",
             borderRadius: 8,
@@ -142,10 +143,10 @@ export default function SecurityGuardsPage() {
         <div
           style={{
             padding: "10px 14px",
-            background: "#f0fdf4",
-            border: "1px solid #86efac",
+            background: "var(--success-bg)",
+            border: "1px solid var(--success)",
             borderRadius: 8,
-            color: "#166534",
+            color: "var(--success-fg)",
             fontSize: 14,
           }}
         >
@@ -156,8 +157,8 @@ export default function SecurityGuardsPage() {
         <form
           onSubmit={handleCreate}
           style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "var(--bg-surface)",
+            border: "1px solid var(--border)",
             borderRadius: 12,
             padding: 20,
             display: "grid",
@@ -187,7 +188,7 @@ export default function SecurityGuardsPage() {
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: 8,
-                  border: "1px solid #d1d5db",
+                  border: "1px solid var(--border-strong)",
                 }}
               />
             </div>
@@ -208,7 +209,7 @@ export default function SecurityGuardsPage() {
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: 8,
-                  border: "1px solid #d1d5db",
+                  border: "1px solid var(--border-strong)",
                 }}
               />
             </div>
@@ -230,7 +231,7 @@ export default function SecurityGuardsPage() {
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: 8,
-                  border: "1px solid #d1d5db",
+                  border: "1px solid var(--border-strong)",
                 }}
               />
             </div>
@@ -250,7 +251,7 @@ export default function SecurityGuardsPage() {
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: 8,
-                  border: "1px solid #d1d5db",
+                  border: "1px solid var(--border-strong)",
                 }}
               />
             </div>
@@ -260,7 +261,7 @@ export default function SecurityGuardsPage() {
             disabled={saving}
             style={{
               padding: "11px 0",
-              background: "#111827",
+              background: "var(--fg-1)",
               color: "#fff",
               border: "none",
               borderRadius: 8,
@@ -274,16 +275,16 @@ export default function SecurityGuardsPage() {
       )}
       <div
         style={{
-          background: "#fff",
-          border: "1px solid #e5e7eb",
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border)",
           borderRadius: 12,
           padding: 20,
         }}
       >
         {loading ? (
-          <div style={{ color: "#6b7280" }}>Loading...</div>
+          <div style={{ color: "var(--fg-4)" }}>Loading...</div>
         ) : guards.length === 0 ? (
-          <div style={{ color: "#6b7280" }}>
+          <div style={{ color: "var(--fg-4)" }}>
             No security guards yet. Add one above.
           </div>
         ) : (
@@ -292,7 +293,7 @@ export default function SecurityGuardsPage() {
               <div
                 key={g._id}
                 style={{
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid var(--border)",
                   borderRadius: 10,
                   padding: 14,
                   display: "flex",
@@ -302,7 +303,7 @@ export default function SecurityGuardsPage() {
               >
                 <div style={{ display: "grid", gap: 3 }}>
                   <div style={{ fontWeight: 700 }}>{g.name}</div>
-                  <div style={{ color: "#6b7280", fontSize: 14 }}>
+                  <div style={{ color: "var(--fg-4)", fontSize: 14 }}>
                     @{g.username} · {g.gateLabel || "Main Gate"}
                     {g.phone ? ` · ${g.phone}` : " · no phone on file"}
                   </div>
@@ -321,9 +322,9 @@ export default function SecurityGuardsPage() {
                     style={{
                       padding: "6px 14px",
                       borderRadius: 20,
-                      border: "1px solid #d1d5db",
-                      background: "#fff",
-                      color: "#374151",
+                      border: "1px solid var(--border-strong)",
+                      background: "var(--bg-surface)",
+                      color: "var(--fg-3)",
                       fontWeight: 600,
                       fontSize: 13,
                       cursor: "pointer",
@@ -336,9 +337,9 @@ export default function SecurityGuardsPage() {
                     style={{
                       padding: "6px 14px",
                       borderRadius: 20,
-                      border: "1px solid #fecaca",
-                      background: "#fff",
-                      color: "#991b1b",
+                      border: "1px solid var(--danger)",
+                      background: "var(--bg-surface)",
+                      color: "var(--danger-fg)",
                       fontWeight: 600,
                       fontSize: 13,
                       cursor: "pointer",
@@ -355,8 +356,8 @@ export default function SecurityGuardsPage() {
                       fontWeight: 600,
                       fontSize: 13,
                       cursor: "pointer",
-                      background: g.isActive ? "#dcfce7" : "#fee2e2",
-                      color: g.isActive ? "#166534" : "#991b1b",
+                      background: g.isActive ? "var(--success-bg)" : "var(--danger-bg)",
+                      color: g.isActive ? "var(--success-fg)" : "var(--danger-fg)",
                     }}
                   >
                     {g.isActive ? "Active" : "Inactive"}
@@ -385,7 +386,7 @@ export default function SecurityGuardsPage() {
             onClick={(e) => e.stopPropagation()}
             onSubmit={saveEdit}
             style={{
-              background: "#fff",
+              background: "var(--bg-surface)",
               borderRadius: 14,
               padding: 22,
               width: "100%",
@@ -395,11 +396,11 @@ export default function SecurityGuardsPage() {
             }}
           >
             <div style={{ fontWeight: 800, fontSize: 17 }}>Edit guard</div>
-            <div style={{ color: "#6b7280", fontSize: 13, marginTop: -8 }}>
+            <div style={{ color: "var(--fg-4)", fontSize: 13, marginTop: -8 }}>
               @{edit.username} · username and password cannot be changed here
             </div>
             {editErr && (
-              <div style={{ color: "#991b1b", fontSize: 13, fontWeight: 600 }}>{editErr}</div>
+              <div style={{ color: "var(--danger-fg)", fontSize: 13, fontWeight: 600 }}>{editErr}</div>
             )}
             <div>
               <label style={{ display: "block", marginBottom: 6, fontWeight: 600 }}>Name</label>
@@ -407,7 +408,7 @@ export default function SecurityGuardsPage() {
                 value={edit.name}
                 onChange={(e) => setEdit((s) => ({ ...s, name: e.target.value }))}
                 required
-                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db" }}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--border-strong)" }}
               />
             </div>
             <div>
@@ -418,7 +419,7 @@ export default function SecurityGuardsPage() {
                 value={edit.phone}
                 onChange={(e) => setEdit((s) => ({ ...s, phone: e.target.value }))}
                 placeholder="Used by the Call guard button in the resident app"
-                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db" }}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--border-strong)" }}
               />
             </div>
             <div>
@@ -427,7 +428,7 @@ export default function SecurityGuardsPage() {
                 value={edit.gateLabel}
                 onChange={(e) => setEdit((s) => ({ ...s, gateLabel: e.target.value }))}
                 placeholder="e.g. Main Gate, Rear Gate"
-                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db" }}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--border-strong)" }}
               />
             </div>
             <div style={{ display: "flex", gap: 10 }}>
@@ -437,7 +438,7 @@ export default function SecurityGuardsPage() {
                 style={{
                   flex: 1,
                   padding: "11px 0",
-                  background: "#111827",
+                  background: "var(--fg-1)",
                   color: "#fff",
                   border: "none",
                   borderRadius: 8,
@@ -452,9 +453,9 @@ export default function SecurityGuardsPage() {
                 onClick={() => setEdit(null)}
                 style={{
                   padding: "11px 18px",
-                  background: "#fff",
-                  color: "#374151",
-                  border: "1px solid #d1d5db",
+                  background: "var(--bg-surface)",
+                  color: "var(--fg-3)",
+                  border: "1px solid var(--border-strong)",
                   borderRadius: 8,
                   fontWeight: 600,
                   cursor: "pointer",

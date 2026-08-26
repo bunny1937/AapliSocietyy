@@ -99,11 +99,11 @@ export default function AdminComplaintsPage() {
     }
   };
   const STATUS_COLOR = {
-    PENDING: "#f59e0b",
-    APPROVED: "#10b981",
-    REJECTED: "#ef4444",
-    CLOSED: "#6b7280",
-    EXPIRED: "#6b7280",
+    PENDING: "var(--warning)",
+    APPROVED: "var(--success)",
+    REJECTED: "var(--danger)",
+    CLOSED: "var(--fg-4)",
+    EXPIRED: "var(--fg-4)",
   };
   return (
     <div className={styles.page}>

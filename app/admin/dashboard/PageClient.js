@@ -1,56 +1,206 @@
 "use client";
+/**
+ * Admin dashboard — revamped against the design system's "Pulse" kit
+ * (ui_kits/revamp/AdminViews.jsx → AdminDashboard).
+ *
+ * Layout follows the kit's "today first" order: needs-attention tiles, then a
+ * bento of heroic numbers led by one large collection card, then context
+ * (quick actions, FY summary, recent payments, monthly breakdown).
+ *
+ * Every figure still comes from /api/admin/dashboard-stats exactly as before —
+ * this change is presentational, the query, the period/FY filters and the
+ * derived values are unchanged.
+ */
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import styles from "@/styles/Dashboard.module.css";
+import {
+  PageHeader, SectionLabel, ActionTile, Card, CardHead, MiniMetric, MiniTable,
+  Progress, Sparkline, Avatar, Pill, Btn, Select, Icon, SummaryStat, EmptyState,
+} from "@/components/revamp";
+
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
 function fmt(n) {
   return (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-function Ring({ pct, color = "#3B82F6", size = 80, stroke = 8 }) {
+/** Compact rupee for the hero number: ₹8.47L / ₹1.24Cr / ₹9,400. */
+function compactINR(n) {
+  const v = Number(n || 0);
+  if (v >= 1e7) return `₹${(v / 1e7).toFixed(2)}Cr`;
+  if (v >= 1e5) return `₹${(v / 1e5).toFixed(2)}L`;
+  return `₹${Math.round(v).toLocaleString("en-IN")}`;
+}
+
+function Ring({ pct, color = "var(--r-brand)", size = 80, stroke = 8 }) {
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
   const dash = (Math.min(pct, 100) / 100) * circ;
   return (
     <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#E5E7EB" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--r-surface-3)" strokeWidth={stroke} />
       <circle
         cx={size / 2} cy={size / 2} r={r}
         fill="none" stroke={color} strokeWidth={stroke}
         strokeDasharray={`${dash} ${circ}`}
         strokeLinecap="round"
-        style={{ transition: "stroke-dasharray 0.6s ease" }}
+        style={{ transition: "stroke-dasharray 0.6s cubic-bezier(.16,1,.3,1)" }}
       />
     </svg>
   );
 }
-function BarChart({ data, height = 120 }) {
-  if (!data || data.length === 0) return <div style={{ color: "#9CA3AF", padding: "1rem", textAlign: "center" }}>No data</div>;
-  const maxVal = Math.max(...data.map((d) => Math.max(d.totalBilled || 0, d.totalCollected || 0)), 1);
+
+/** Wing-chip style mini stat used inside the bento tiles. */
+function Chip({ label, value, tone }) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height, padding: "0 4px" }}>
-      {data.map((d, i) => {
-        const billedH = Math.round(((d.totalBilled || 0) / maxVal) * (height - 24));
-        const collH = Math.round(((d.totalCollected || 0) / maxVal) * (height - 24));
-        return (
-          <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: height - 24 }}>
-              <div
-                title={`Billed: ₹${fmt(d.totalBilled)}`}
-                style={{ width: 10, height: billedH || 2, background: "#BFDBFE", borderRadius: "2px 2px 0 0", transition: "height 0.4s" }}
-              />
-              <div
-                title={`Collected: ₹${fmt(d.totalCollected)}`}
-                style={{ width: 10, height: collH || 2, background: "#3B82F6", borderRadius: "2px 2px 0 0", transition: "height 0.4s" }}
-              />
-            </div>
-            <span style={{ fontSize: 9, color: "#9CA3AF", whiteSpace: "nowrap" }}>{d.label}</span>
-          </div>
-        );
-      })}
+    <div style={{ flex: 1, padding: "6px 8px", background: "var(--r-surface-2)", borderRadius: 7, border: "1px solid var(--r-hairline)", textAlign: "center" }}>
+      <div style={{ fontSize: 10, color: "var(--r-fg-4)", fontWeight: 600 }}>{label}</div>
+      <div className="revamp-num" style={{
+        fontSize: 14, fontWeight: 700,
+        color: tone === "success" ? "var(--r-success)" : tone === "danger" ? "var(--r-danger)" : "var(--r-fg-1)",
+      }}>{value}</div>
     </div>
   );
 }
+
+// A society being handed its records has no reason to be checking a page it
+// has never visited. The emailed link now lands here-adjacent, but a committee
+// member who logs in a week later, from habit, would otherwise never see it.
+// So the dashboard says so, once, until they have collected.
+//
+// Self-contained and failure-silent: an error leaves the dashboard exactly as
+// it was rather than blocking it behind a fetch that has nothing to do with
+// the numbers on it.
+// Grace and read-only, said once.
+//
+// Blocked societies never reach this component — middleware redirects them to
+// /subscription — so this covers only the two states where the app still works
+// and the committee needs to know it will not for long.
+//
+// Deliberately admin-only and deliberately one banner, not a modal and not a
+// per-page nag. A committee that sees the same warning forty times stops
+// reading it, which is the outcome that actually costs a renewal.
+function SubscriptionBanner() {
+  const [lifecycle, setLifecycle] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/entitlements", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const l = d?.lifecycle;
+        if (alive && l && (l.state === "grace" || l.state === "restricted")) setLifecycle(l);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (!lifecycle) return null;
+  const urgent = lifecycle.state === "restricted";
+  const blocksOn = lifecycle.blockedAt
+    ? new Date(lifecycle.blockedAt).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long",
+      })
+    : null;
+
+  return (
+    <div
+      style={{
+        border: `1.5px solid ${urgent ? "#ef4444" : "#f59e0b"}`,
+        background: urgent ? "#fef2f2" : "#fffbeb",
+        color: "#111",
+        borderRadius: 10,
+        padding: "14px 18px",
+        marginBottom: 16,
+        lineHeight: 1.6,
+      }}
+    >
+      <div style={{ fontWeight: 700, fontSize: 15 }}>
+        {urgent
+          ? "This account is read-only until the subscription is renewed"
+          : "Your subscription has ended"}
+      </div>
+      <div style={{ fontSize: 13.5, marginTop: 2 }}>
+        {lifecycle.message}
+        {blocksOn && urgent ? ` Access closes on ${blocksOn}.` : ""}
+      </div>
+      <a
+        href="/subscription/renew"
+        style={{
+          display: "inline-block",
+          marginTop: 10,
+          background: urgent ? "#b91c1c" : "#b45309",
+          color: "#fff",
+          padding: "7px 16px",
+          borderRadius: 6,
+          textDecoration: "none",
+          fontWeight: 600,
+          fontSize: 13,
+        }}
+      >
+        Renew now
+      </a>
+    </div>
+  );
+}
+
+function HandoverBanner() {
+  const [pending, setPending] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/v1/society-handover", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const h = d?.handover;
+        if (alive && h && !h.confirmedAt) setPending({ ...d, handover: h });
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (!pending) return null;
+  const deadline = pending.scheduledErasure
+    ? new Date(pending.scheduledErasure).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : null;
+
+  return (
+    <a
+      href="/admin/data-handover"
+      style={{
+        display: "block",
+        textDecoration: "none",
+        border: "1.5px solid #f59e0b",
+        background: "#fffbeb",
+        color: "#111",
+        borderRadius: 10,
+        padding: "14px 18px",
+        marginBottom: 16,
+        lineHeight: 1.6,
+      }}
+    >
+      <div style={{ fontWeight: 700, fontSize: 15 }}>
+        A copy of your society's records is ready for you to save
+      </div>
+      <div style={{ fontSize: 13.5, marginTop: 2 }}>
+        {deadline
+          ? `Please save it before ${deadline}, when your society's information is removed from this system. `
+          : "Download it and keep it with your society's own files. "}
+        Click here to collect it — it takes about a minute.
+      </div>
+    </a>
+  );
+}
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const now = new Date();
@@ -126,368 +276,305 @@ export default function AdminDashboardPage() {
   const periodLabel = filterMonth && filterYear
     ? `${MONTHS[filterMonth - 1]} ${filterYear}`
     : filterYear || "All";
-  const cardStyle = {
-    background: "#fff",
-    borderRadius: 12,
-    border: "1px solid #E5E7EB",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-  };
+
+  const collectedTrend = useMemo(() => trend.map((t) => Number(t.totalCollected || 0)), [trend]);
+  const balanceTrend = useMemo(() => trend.map((t) => Number(t.totalBalance || 0)), [trend]);
+  const avgCollected = collectedTrend.length
+    ? collectedTrend.reduce((a, b) => a + b, 0) / collectedTrend.length
+    : 0;
+
+  const rateColor = collectionRate >= 80 ? "var(--r-success)" : collectionRate >= 50 ? "var(--r-warning)" : "var(--r-danger)";
+
   const quickLinks = [
-    { label: "Generate Bills", icon: "📄", path: "/admin/generate-bills", color: "#3B82F6" },
-    { label: "Record Payment", icon: "💳", path: "/admin/payments", color: "#059669" },
-    { label: "View Bills", icon: "🧾", path: "/admin/view-bills", color: "#7C3AED" },
-    { label: "Import Members", icon: "📥", path: "/admin/import-members", color: "#D97706" },
-    { label: "Ledger", icon: "📖", path: "/admin/ledger", color: "#0891B2" },
-    { label: "Billing Config", icon: "⚙️", path: "/admin/billing-config", color: "#6B7280" },
-    { label: "Bill Template", icon: "📝", path: "/admin/bill-template", color: "#EC4899" },
-    { label: "Society Config", icon: "🏢", path: "/admin/society-config", color: "#14B8A6" },
+    { label: "Generate Bills", icon: "file-text", path: "/admin/generate-bills" },
+    { label: "Record Payment", icon: "credit-card", path: "/admin/payments" },
+    { label: "View Bills", icon: "receipt", path: "/admin/view-bills" },
+    { label: "Import Members", icon: "upload", path: "/admin/import-members" },
+    { label: "Ledger", icon: "book-open", path: "/admin/ledger" },
+    { label: "Billing Config", icon: "settings", path: "/admin/billing-config" },
+    { label: "Bill Template", icon: "layout-template", path: "/admin/bill-template" },
+    { label: "Society Config", icon: "building-2", path: "/admin/society-config" },
   ];
+
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-      {/* ── Header ── */}
-      <div className={styles.pageHeader} style={{ marginBottom: "1.5rem" }}>
-        <div>
-          <h1 className={styles.pageTitle} style={{ margin: 0 }}>Dashboard</h1>
-          <p className={styles.pageSubtitle} style={{ margin: "0.25rem 0 0" }}>
-            Society financial overview
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-          <span style={{ fontSize: "0.75rem", color: "#6B7280", fontWeight: 600 }}>Period:</span>
-          <select
-            value={filterMonth}
-            onChange={(e) => setFilterMonth(Number(e.target.value))}
-            style={{ padding: "0.35rem 0.6rem", borderRadius: 6, border: "1px solid #D1D5DB", fontSize: "0.85rem" }}
-          >
-            {availableMonths.map((m) => (
-              <option key={m.value} value={m.value}>{m.label}</option>
-            ))}
-          </select>
-          <select
-            value={filterYear}
-            onChange={(e) => handleYearChange(Number(e.target.value))}
-            style={{ padding: "0.35rem 0.6rem", borderRadius: 6, border: "1px solid #D1D5DB", fontSize: "0.85rem" }}
-          >
-            {yearOptions.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-          <span style={{ fontSize: "0.75rem", color: "#6B7280", fontWeight: 600, marginLeft: 8 }}>FY:</span>
-          <select
-            value={fyYear}
-            onChange={(e) => setFyYear(Number(e.target.value))}
-            style={{ padding: "0.35rem 0.6rem", borderRadius: 6, border: "1px solid #D1D5DB", fontSize: "0.85rem" }}
-          >
-            {fyYearOptions.map((y) => (
-              <option key={y} value={y}>FY {y}-{String(y + 1).slice(-2)}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+    <div style={{ maxWidth: 1480, margin: "0 auto" }}>
+      <SubscriptionBanner />
+      <HandoverBanner />
+      <PageHeader
+        eyebrow={<><Icon name="calendar" size={11} /> {periodLabel} · {fy.label || `FY ${fyYear}-${String(fyYear + 1).slice(-2)}`}</>}
+        title="Dashboard"
+        sub="Society financial overview — collection, dues and recent activity."
+        right={
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <Select value={filterMonth} onChange={(v) => setFilterMonth(Number(v))} title="Bill month">
+              {availableMonths.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+            </Select>
+            <Select value={filterYear} onChange={(v) => handleYearChange(Number(v))} title="Bill year">
+              {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+            </Select>
+            <Select value={fyYear} onChange={(v) => setFyYear(Number(v))} title="Financial year">
+              {fyYearOptions.map((y) => <option key={y} value={y}>FY {y}-{String(y + 1).slice(-2)}</option>)}
+            </Select>
+          </div>
+        }
+      />
+
       {isLoading && (
-        <div style={{ textAlign: "center", padding: "2rem", color: "#6B7280" }}>Loading...</div>
+        <div style={{ textAlign: "center", padding: "2rem", color: "var(--r-fg-4)", fontSize: 13 }}>Loading…</div>
       )}
-      {/* ── Top KPI Row ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
-        {/* Total Members */}
-        <div
-          style={{ ...cardStyle, padding: "1.25rem", borderLeft: "4px solid #3B82F6", cursor: "pointer" }}
-          onClick={() => router.push("/admin/view-members")}
-        >
-          <div style={{ fontSize: "0.75rem", color: "#6B7280", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Total Members
-          </div>
-          <div style={{ fontSize: "2rem", fontWeight: 800, color: "#1F2937", marginTop: 6 }}>
-            {totalMembers}
-          </div>
-          <div style={{ fontSize: "0.75rem", color: "#9CA3AF", marginTop: 4 }}>Active flats</div>
-        </div>
-        {/* All-time Outstanding */}
-        <div
-          style={{ ...cardStyle, padding: "1.25rem", borderLeft: "4px solid #DC2626", cursor: "pointer" }}
-          onClick={() => router.push("/admin/view-bills")}
-        >
-          <div style={{ fontSize: "0.75rem", color: "#6B7280", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Total Outstanding
-          </div>
-          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#DC2626", marginTop: 6 }}>
-            ₹{fmt(outstanding.total)}
-          </div>
-          <div style={{ fontSize: "0.72rem", color: "#9CA3AF", marginTop: 4 }}>
-            {outstanding.unpaidBillCount || 0} unpaid bills &bull; ₹{fmt(outstanding.interest)} interest
-          </div>
-        </div>
-        {/* Period Collected */}
-        <div
-          style={{ ...cardStyle, padding: "1.25rem", borderLeft: "4px solid #059669", cursor: "pointer" }}
-          onClick={() => router.push("/admin/payments")}
-        >
-          <div style={{ fontSize: "0.75rem", color: "#6B7280", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Collected — {periodLabel}
-          </div>
-          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#059669", marginTop: 6 }}>
-            ₹{fmt(period.totalCollected)}
-          </div>
-          <div style={{ fontSize: "0.72rem", color: "#9CA3AF", marginTop: 4 }}>
-            of ₹{fmt(period.totalBilled)} billed &bull; {collectionRate}% collected
-          </div>
-        </div>
-        {/* FY Progress */}
-        <div
-          style={{ ...cardStyle, padding: "1.25rem", borderLeft: "4px solid #7C3AED" }}
-        >
-          <div style={{ fontSize: "0.75rem", color: "#6B7280", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            {fy.label || `FY ${fyYear}`}
-          </div>
-          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#7C3AED", marginTop: 6 }}>
-            ₹{fmt(fy.totalCollected)}
-          </div>
-          <div style={{ fontSize: "0.72rem", color: "#9CA3AF", marginTop: 4 }}>
-            of ₹{fmt(fy.totalBilled)} billed &bull; {fyCollectionRate}% rate
-          </div>
+
+      {/* ── NEEDS ATTENTION ─────────────────────────────────────────── */}
+      <div style={{ marginBottom: 24 }}>
+        <SectionLabel icon="sparkles">Needs attention</SectionLabel>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+          <ActionTile
+            tone="danger"
+            icon="alert-triangle"
+            headline={`${outstanding.unpaidBillCount || 0} unpaid bills`}
+            sub={`₹${fmt(outstanding.total)} outstanding across all periods`}
+            cta="Open bills"
+            onClick={() => router.push("/admin/view-bills")}
+          />
+          <ActionTile
+            tone="warning"
+            icon="percent"
+            headline={`₹${fmt(outstanding.interest)} interest accrued`}
+            sub={`₹${fmt(period.interestCharged)} charged in ${periodLabel}`}
+            cta="Late payment"
+            onClick={() => router.push("/admin/late-payment")}
+          />
+          <ActionTile
+            tone={collectionRate >= 80 ? "success" : "info"}
+            icon="trending-up"
+            headline={`${collectionRate}% collected — ${periodLabel}`}
+            sub={`${period.paidCount || 0} paid · ${period.unpaidCount || 0} pending of ${period.totalCount || 0} bills`}
+            cta="Record payment"
+            onClick={() => router.push("/admin/payments")}
+          />
         </div>
       </div>
-      {/* ── Second Row: Period Detail + Collection Ring + Bar Chart ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1.5fr", gap: "1rem", marginBottom: "1.5rem" }}>
-        {/* Period Detail Card */}
-        <div style={{ ...cardStyle, padding: "1.25rem" }}>
-          <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "#1F2937", marginBottom: "1rem" }}>
-            {periodLabel} — Bill Summary
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-            {[
-              { label: "Total Billed", value: `₹${fmt(period.totalBilled)}`, color: "#1F2937" },
-              { label: "Collected", value: `₹${fmt(period.totalCollected)}`, color: "#059669" },
-              { label: "Outstanding", value: `₹${fmt(period.totalBalance)}`, color: "#DC2626" },
-              { label: "Interest Charged", value: `₹${fmt(period.interestCharged)}`, color: "#D97706" },
-              { label: "Bills Generated", value: period.totalCount || 0, color: "#1F2937" },
-              { label: "Paid / Unpaid", value: `${period.paidCount || 0} / ${period.unpaidCount || 0}`, color: "#6B7280" },
-            ].map((row) => (
-              <div key={row.label} style={{ background: "#F9FAFB", borderRadius: 8, padding: "0.6rem 0.8rem" }}>
-                <div style={{ fontSize: "0.7rem", color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase" }}>{row.label}</div>
-                <div style={{ fontSize: "1rem", fontWeight: 800, color: row.color, marginTop: 2 }}>{row.value}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-        {/* Collection Rate Ring */}
-        <div style={{ ...cardStyle, padding: "1.25rem", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0.75rem" }}>
-          <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#1F2937", textAlign: "center" }}>
-            Collection Rate
-          </div>
-          <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-            <Ring pct={collectionRate} color={collectionRate >= 80 ? "#059669" : collectionRate >= 50 ? "#D97706" : "#DC2626"} size={100} stroke={10} />
-            <div style={{ position: "absolute", textAlign: "center" }}>
-              <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "#1F2937" }}>{collectionRate}%</div>
-              <div style={{ fontSize: "0.6rem", color: "#9CA3AF" }}>{periodLabel}</div>
+
+      {/* ── BENTO METRICS ───────────────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
+        {/* Collection — hero */}
+        <Card style={{ gridRow: "span 2", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          <div>
+            <CardHead
+              title={`Collection · ${periodLabel}`}
+              sub={`₹${fmt(period.totalBilled)} billed this period`}
+              right={<Pill tone={collectionRate >= 80 ? "paid" : collectionRate >= 50 ? "partial" : "overdue"}>{collectionRate}% collected</Pill>}
+            />
+            <div className="revamp-num" style={{ fontSize: 52, fontWeight: 700, color: "var(--r-fg-1)", letterSpacing: "-0.025em", lineHeight: 1, marginBottom: 10 }}>
+              {compactINR(period.totalCollected)}
+            </div>
+            <div style={{ fontSize: 13, color: "var(--r-fg-3)", marginBottom: 18 }}>
+              <span style={{ color: "var(--r-fg-1)", fontWeight: 600 }}>{period.paidCount || 0}</span> of {period.totalCount || 0} bills paid ·{" "}
+              <span style={{ color: "var(--r-fg-1)", fontWeight: 600 }}>{totalMembers}</span> members
+            </div>
+            <Progress value={collectionRate} total={100} color={rateColor} height={8} />
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 11, color: "var(--r-fg-4)" }}>
+              <span>Outstanding · <span className="revamp-num" style={{ color: "var(--r-danger)", fontWeight: 600 }}>₹{fmt(period.totalBalance)}</span></span>
+              <span>Billed · <span className="revamp-num" style={{ color: "var(--r-fg-2)", fontWeight: 600 }}>₹{fmt(period.totalBilled)}</span></span>
             </div>
           </div>
-          <div style={{ fontSize: "0.72rem", color: "#6B7280", textAlign: "center" }}>
-            FY Rate: <strong style={{ color: "#7C3AED" }}>{fyCollectionRate}%</strong>
-          </div>
-          {/* Payment modes */}
-          <div style={{ width: "100%", marginTop: "0.5rem" }}>
-            {paymentModes.slice(0, 4).map((m) => (
-              <div key={m.mode} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", padding: "3px 0", borderBottom: "1px solid #F3F4F6" }}>
-                <span style={{ color: "#6B7280" }}>{m.mode}</span>
-                <span style={{ fontWeight: 700 }}>₹{fmt(m.total)}</span>
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--r-hairline)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 8 }}>
+              <div style={{ fontSize: 11, color: "var(--r-fg-4)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                {trend.length}-month collection
               </div>
-            ))}
-          </div>
-        </div>
-        {/* 6-Month Bar Chart */}
-        <div style={{ ...cardStyle, padding: "1.25rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-            <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#1F2937" }}>6-Month Trend</div>
-            <div style={{ display: "flex", gap: 8, fontSize: "0.65rem", color: "#9CA3AF" }}>
-              <span><span style={{ display: "inline-block", width: 8, height: 8, background: "#BFDBFE", borderRadius: 2, marginRight: 3 }} />Billed</span>
-              <span><span style={{ display: "inline-block", width: 8, height: 8, background: "#3B82F6", borderRadius: 2, marginRight: 3 }} />Collected</span>
+              <div style={{ fontSize: 11, color: "var(--r-fg-3)" }}>Avg {compactINR(avgCollected)}/mo</div>
             </div>
+            {collectedTrend.length > 1
+              ? <Sparkline data={collectedTrend} w={420} h={50} color="var(--r-brand)" id="collect" />
+              : <div style={{ fontSize: 11, color: "var(--r-fg-5)" }}>Not enough history yet.</div>}
           </div>
-          <BarChart data={trend} height={130} />
-          {trend.length > 0 && (
-            <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: 2 }}>
-              {trend.slice(-3).map((t) => (
-                <div key={t.label} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.7rem" }}>
-                  <span style={{ color: "#6B7280" }}>{t.label}</span>
-                  <span style={{ fontWeight: 700, color: "#059669" }}>₹{fmt(t.totalCollected)}</span>
-                  <span style={{ color: "#DC2626", fontSize: "0.65rem" }}>bal ₹{fmt(t.totalBalance)}</span>
+        </Card>
+
+        {/* Members */}
+        <MiniMetric
+          label="Members" value={totalMembers} icon="users"
+          delta={`${period.totalCount || 0} bills this period`}
+          onClick={() => router.push("/admin/view-members")}
+          extra={
+            <div style={{ display: "flex", gap: 6, marginTop: 14 }}>
+              <Chip label="Paid" value={period.paidCount || 0} tone="success" />
+              <Chip label="Unpaid" value={period.unpaidCount || 0} tone="danger" />
+            </div>
+          }
+        />
+
+        {/* Collection rate ring + payment modes */}
+        <Card>
+          <CardHead title="Collection rate" sub={periodLabel} />
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+              <Ring pct={collectionRate} color={rateColor} size={84} stroke={9} />
+              <div className="revamp-num" style={{ position: "absolute", fontSize: 18, fontWeight: 700, color: "var(--r-fg-1)" }}>{collectionRate}%</div>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 11, color: "var(--r-fg-4)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>By mode</div>
+              {paymentModes.length === 0 && <div style={{ fontSize: 11, color: "var(--r-fg-5)" }}>No payments yet</div>}
+              {paymentModes.slice(0, 4).map((m) => (
+                <div key={m.mode} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", borderBottom: "1px solid var(--r-hairline)" }}>
+                  <span style={{ color: "var(--r-fg-4)" }}>{m.mode}</span>
+                  <span className="revamp-num" style={{ fontWeight: 600, color: "var(--r-fg-2)" }}>₹{fmt(m.total)}</span>
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        </Card>
+
+        {/* Outstanding */}
+        <MiniMetric
+          label="Total outstanding" value={compactINR(outstanding.total)} icon="alert-triangle" tone="danger"
+          delta={`${outstanding.unpaidBillCount || 0} unpaid bills · ₹${fmt(outstanding.interest)} interest`}
+          onClick={() => router.push("/admin/view-bills")}
+          extra={balanceTrend.length > 1 ? (
+            <div style={{ marginTop: 12 }}><Sparkline data={balanceTrend} w={160} h={28} color="var(--r-danger)" id="bal" /></div>
+          ) : null}
+        />
+
+        {/* FY */}
+        <MiniMetric
+          label={fy.label || `FY ${fyYear}`} value={compactINR(fy.totalCollected)} icon="wallet" tone="paid"
+          delta={`of ₹${fmt(fy.totalBilled)} billed · ${fyCollectionRate}% rate`}
+          onClick={() => router.push("/admin/ledger")}
+          extra={<div style={{ marginTop: 12 }}><Progress value={fyCollectionRate} total={100} color="var(--r-accent)" height={5} /></div>}
+        />
       </div>
-      {/* ── Quick Actions ── */}
-      <div style={{ ...cardStyle, padding: "1rem", marginBottom: "1.5rem" }}>
-        <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "#1F2937", marginBottom: "0.75rem" }}>Quick Actions</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "0.75rem" }}>
+
+      {/* ── QUICK ACTIONS ───────────────────────────────────────────── */}
+      <Card style={{ marginBottom: 14 }}>
+        <CardHead title="Quick actions" sub="The eight routes admins reach for most" />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
           {quickLinks.map((link) => (
             <button
               key={link.label}
               onClick={() => router.push(link.path)}
               style={{
-                display: "flex", flexDirection: "column", alignItems: "center", gap: "0.4rem",
-                padding: "0.9rem 0.75rem", background: "#F9FAFB",
-                border: `1px solid #E5E7EB`, borderRadius: 10,
-                cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: "#1F2937",
-                transition: "all 0.2s",
+                display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10,
+                padding: "14px 12px", background: "var(--r-surface-2)",
+                border: "1px solid var(--r-border)", borderRadius: 10,
+                cursor: "pointer", fontSize: 12.5, fontWeight: 600, color: "var(--r-fg-2)",
+                fontFamily: "inherit", textAlign: "left",
+                transition: "border-color 0.15s, background 0.15s, transform 0.15s",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "#EFF6FF";
-                e.currentTarget.style.borderColor = link.color;
-                e.currentTarget.style.color = link.color;
+                e.currentTarget.style.background = "var(--r-brand-soft)";
+                e.currentTarget.style.borderColor = "var(--r-brand)";
+                e.currentTarget.style.transform = "translateY(-1px)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = "#F9FAFB";
-                e.currentTarget.style.borderColor = "#E5E7EB";
-                e.currentTarget.style.color = "#1F2937";
+                e.currentTarget.style.background = "var(--r-surface-2)";
+                e.currentTarget.style.borderColor = "var(--r-border)";
+                e.currentTarget.style.transform = "translateY(0)";
               }}
             >
-              <span style={{ fontSize: "1.5rem" }}>{link.icon}</span>
+              <Icon name={link.icon} size={18} />
               {link.label}
             </button>
           ))}
         </div>
-      </div>
-      {/* ── FY Summary Row ── */}
-      <div style={{ ...cardStyle, padding: "1.25rem", marginBottom: "1.5rem" }}>
-        <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "#1F2937", marginBottom: "1rem" }}>
-          {fy.label || `FY ${fyYear}`} — Full Year Summary
+      </Card>
+
+      {/* ── FY SUMMARY ──────────────────────────────────────────────── */}
+      <Card style={{ marginBottom: 14 }}>
+        <CardHead title={`${fy.label || `FY ${fyYear}`} — full year summary`} sub="Financial year runs April → March" />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 20 }}>
+          <SummaryStat label="Total billed" value={`₹${fmt(fy.totalBilled)}`} />
+          <SummaryStat label="Collected" value={`₹${fmt(fy.totalCollected)}`} tone="paid" />
+          <SummaryStat label="Outstanding" value={`₹${fmt(outstanding.total)}`} tone="overdue" />
+          <SummaryStat label="Prior year dues" value={`₹${fmt(outstanding.total - fy.totalBalance)}`} tone="warning" />
+          <SummaryStat label="FY collection rate" value={`${fyCollectionRate}%`} />
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "1rem" }}>
-          {[
-            { label: "Total Billed", value: `₹${fmt(fy.totalBilled)}`, color: "#1F2937" },
-            { label: "Collected (Bills)", value: `₹${fmt(fy.totalCollected)}`, color: "#059669" },
-            { label: "Outstanding", value: `₹${fmt(outstanding.total)}`, color: "#DC2626" },
-            { label: "Prior Year Dues", value: `₹${fmt(outstanding.total - fy.totalBalance)}`, color: "#D97706" },
-            { label: "FY Collection Rate", value: `${fyCollectionRate}%`, color: "#7C3AED" },
-          ].map((item) => (
-            <div key={item.label} style={{ textAlign: "center", background: "#F9FAFB", borderRadius: 8, padding: "0.75rem" }}>
-              <div style={{ fontSize: "0.7rem", color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", marginBottom: 4 }}>{item.label}</div>
-              <div style={{ fontSize: "1.1rem", fontWeight: 800, color: item.color }}>{item.value}</div>
+      </Card>
+
+      {/* ── RECENT PAYMENTS + MONTHLY BREAKDOWN ─────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 14, marginBottom: 24 }}>
+        <Card padded={false} style={{ overflow: "hidden" }}>
+          <div style={{ padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--r-fg-1)" }}>Latest payments</div>
+              <div style={{ fontSize: 11, color: "var(--r-fg-4)", marginTop: 2 }}>{recentPayments.length} most recent entries</div>
             </div>
-          ))}
-        </div>
-      </div>
-      {/* ── Bottom Row: Recent Payments + Trend Table ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
-        {/* Recent Payments */}
-        <div style={{ ...cardStyle, overflow: "hidden" }}>
-          <div style={{ padding: "1rem 1.25rem", borderBottom: "1px solid #E5E7EB", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>Recent Payments</span>
-            <button
-              onClick={() => router.push("/admin/payments")}
-              style={{ fontSize: "0.75rem", color: "#3B82F6", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}
-            >
-              View All →
-            </button>
+            <Btn variant="ghost" size="sm" iconR="arrow-right" onClick={() => router.push("/admin/payments")}>View all</Btn>
           </div>
-          <div style={{ overflowX: "auto" }}>
-            {recentPayments.length === 0 ? (
-              <div style={{ padding: "2rem", textAlign: "center", color: "#9CA3AF" }}>No payments recorded</div>
-            ) : (
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ background: "#F9FAFB", borderBottom: "1px solid #E5E7EB" }}>
-                    {["Member", "Period", "Amount", "Mode", "Date", "By"].map((h) => (
-                      <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: "11px", color: "#6B7280", fontWeight: 700, textTransform: "uppercase" }}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentPayments.map((p, i) => (
-                    <tr key={p._id || i} style={{ borderBottom: "1px solid #F3F4F6" }}>
-                      <td style={{ padding: "8px 12px", fontSize: "12px", fontWeight: 600 }}>
-                        {p.memberId ? `${p.memberId.wing}-${p.memberId.flatNo}` : "—"}
-                        {p.memberId?.ownerName && (
-                          <div style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: 400 }}>{p.memberId.ownerName}</div>
-                        )}
-                      </td>
-                      <td style={{ padding: "8px 12px", fontSize: "11px", color: "#6B7280" }}>
-                        {p.billPeriodId || "—"}
-                      </td>
-                      <td style={{ padding: "8px 12px", fontSize: "13px", fontWeight: 700, color: "#059669" }}>
-                        ₹{(p.amount || 0).toLocaleString("en-IN")}
-                      </td>
-                      <td style={{ padding: "8px 12px" }}>
-                        <span style={{ background: "#DBEAFE", color: "#1E40AF", padding: "2px 7px", borderRadius: 10, fontSize: "10px", fontWeight: 700 }}>
-                          {p.paymentMode || "Cash"}
-                        </span>
-                      </td>
-                      <td style={{ padding: "8px 12px", fontSize: "11px", color: "#6B7280", whiteSpace: "nowrap" }}>
+          {recentPayments.length === 0 ? (
+            <EmptyState icon="credit-card" title="No payments recorded" sub="Payments appear here as soon as they are entered." />
+          ) : (
+            <div style={{ overflowX: "auto" }} className="revamp-scroll">
+              <MiniTable
+                cols={[
+                  { label: "Member" }, { label: "Period" }, { label: "Mode" },
+                  { label: "Amount", align: "right", num: true }, { label: "Date", align: "right" },
+                ]}
+                rows={recentPayments.map((p, i) => {
+                  const flat = p.memberId ? `${p.memberId.wing || ""}${p.memberId.wing ? "-" : ""}${p.memberId.flatNo || ""}` : "—";
+                  const name = p.memberId?.ownerName || flat;
+                  return {
+                    key: p._id || i,
+                    cells: [
+                      <div key="m" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <Avatar name={name} size={28} />
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--r-fg-1)" }}>{name}</div>
+                          <div style={{ fontSize: 11, color: "var(--r-fg-4)" }}>{flat}</div>
+                        </div>
+                      </div>,
+                      <span key="p" style={{ color: "var(--r-fg-3)", fontSize: 12 }}>{p.billPeriodId || "—"}</span>,
+                      <Pill key="mode" tone="info" dot={false}>{p.paymentMode || "Cash"}</Pill>,
+                      <span key="a" className="revamp-num" style={{ color: "var(--r-success)", fontWeight: 600 }}>
+                        +₹{(p.amount || 0).toLocaleString("en-IN")}
+                      </span>,
+                      <span key="d" style={{ fontSize: 11, color: "var(--r-fg-4)", whiteSpace: "nowrap" }}>
                         {p.date ? new Date(p.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }) : "—"}
-                      </td>
-                      <td style={{ padding: "8px 12px", fontSize: "11px", color: "#9CA3AF" }}>
-                        {p.createdBy || "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                        {p.createdBy ? <div style={{ color: "var(--r-fg-5)" }}>by {p.createdBy}</div> : null}
+                      </span>,
+                    ],
+                  };
+                })}
+              />
+            </div>
+          )}
+        </Card>
+
+        <Card padded={false} style={{ overflow: "hidden" }}>
+          <div style={{ padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--r-fg-1)" }}>Monthly breakdown</div>
+              <div style={{ fontSize: 11, color: "var(--r-fg-4)", marginTop: 2 }}>Click a row to jump to that period</div>
+            </div>
+            <Btn variant="ghost" size="sm" iconR="arrow-right" onClick={() => router.push("/admin/ledger")}>Ledger</Btn>
           </div>
-        </div>
-        {/* 6-Month Trend Table */}
-        <div style={{ ...cardStyle, overflow: "hidden" }}>
-          <div style={{ padding: "1rem 1.25rem", borderBottom: "1px solid #E5E7EB", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>Monthly Breakdown</span>
-            <button
-              onClick={() => router.push("/admin/ledger")}
-              style={{ fontSize: "0.75rem", color: "#3B82F6", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}
-            >
-              Full Ledger →
-            </button>
-          </div>
-          <div style={{ overflowX: "auto" }}>
-            {trend.length === 0 ? (
-              <div style={{ padding: "2rem", textAlign: "center", color: "#9CA3AF" }}>No billing data</div>
-            ) : (
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ background: "#F9FAFB", borderBottom: "1px solid #E5E7EB" }}>
-                    {["Period", "Billed", "Collected", "Balance", "Rate"].map((h) => (
-                      <th key={h} style={{ padding: "8px 10px", textAlign: "left", fontSize: "11px", color: "#6B7280", fontWeight: 700, textTransform: "uppercase" }}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...trend].reverse().map((t, i) => {
-                    const rate = t.totalBilled > 0 ? Math.round((t.totalCollected / t.totalBilled) * 100) : 0;
-                    return (
-                      <tr
-                        key={i}
-                        style={{ borderBottom: "1px solid #F3F4F6", cursor: "pointer" }}
-                        onClick={() => {
-                          setFilterMonth(t.billMonth + 1);
-                          setFilterYear(t.billYear);
-                        }}
-                      >
-                        <td style={{ padding: "8px 10px", fontSize: "12px", fontWeight: 600 }}>{t.label}</td>
-                        <td style={{ padding: "8px 10px", fontSize: "11px" }}>₹{fmt(t.totalBilled)}</td>
-                        <td style={{ padding: "8px 10px", fontSize: "11px", color: "#059669", fontWeight: 600 }}>₹{fmt(t.totalCollected)}</td>
-                        <td style={{ padding: "8px 10px", fontSize: "11px", color: "#DC2626" }}>₹{fmt(t.totalBalance)}</td>
-                        <td style={{ padding: "8px 10px" }}>
-                          <span style={{
-                            fontSize: "10px", fontWeight: 700, padding: "2px 6px", borderRadius: 8,
-                            background: rate >= 80 ? "#D1FAE5" : rate >= 50 ? "#FEF3C7" : "#FEE2E2",
-                            color: rate >= 80 ? "#065F46" : rate >= 50 ? "#92400E" : "#991B1B",
-                          }}>
-                            {rate}%
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
+          {trend.length === 0 ? (
+            <EmptyState icon="bar-chart-3" title="No billing data" sub="Generate a bill cycle to populate the trend." />
+          ) : (
+            <div style={{ overflowX: "auto" }} className="revamp-scroll">
+              <MiniTable
+                cols={[
+                  { label: "Period" }, { label: "Billed", align: "right", num: true },
+                  { label: "Collected", align: "right", num: true }, { label: "Balance", align: "right", num: true },
+                  { label: "Rate", align: "right" },
+                ]}
+                onRowClick={(r) => { setFilterMonth(r.meta.billMonth + 1); setFilterYear(r.meta.billYear); }}
+                rows={[...trend].reverse().map((t, i) => {
+                  const rate = t.totalBilled > 0 ? Math.round((t.totalCollected / t.totalBilled) * 100) : 0;
+                  return {
+                    key: t.label || i,
+                    meta: t,
+                    cells: [
+                      <span key="l" style={{ fontWeight: 600, color: "var(--r-fg-1)", fontSize: 12.5 }}>{t.label}</span>,
+                      <span key="b" style={{ fontSize: 12 }}>₹{fmt(t.totalBilled)}</span>,
+                      <span key="c" style={{ fontSize: 12, color: "var(--r-success)", fontWeight: 600 }}>₹{fmt(t.totalCollected)}</span>,
+                      <span key="x" style={{ fontSize: 12, color: "var(--r-danger)" }}>₹{fmt(t.totalBalance)}</span>,
+                      <Pill key="r" tone={rate >= 80 ? "paid" : rate >= 50 ? "partial" : "overdue"} dot={false}>{rate}%</Pill>,
+                    ],
+                  };
+                })}
+              />
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   );
