@@ -203,6 +203,11 @@ const SocietySchema = new mongoose.Schema(
         default: "Free",
       },
       startDate: { type: Date, default: Date.now },
+      // Chosen once at signup from a fixed set (7/14/21/30) and not adjustable
+      // afterwards. The number is data so the options can change without a
+      // deploy; trialEndsAt is stamped from it and is what enforcement reads.
+      trialDays: { type: Number },
+      trialEndsAt: { type: Date },
       lastPaymentDate: { type: Date },
       nextPaymentDate: { type: Date },
       amountPaid: { type: Number, default: 0 },
@@ -232,6 +237,70 @@ const SocietySchema = new mongoose.Schema(
       adminEmail: { type: String },
       plainPassword: { type: String, select: true }, // explicitly included
     },
+    // LOOP-05: lifecycle state. Pause blocks login/access without touching
+    // data; the delete flow is soft-first (isDeleted + a purge date the admin
+    // chose) so a society can be restored right up until the purge actually
+    // runs, and only "Delete permanently" bypasses that window.
+    lifecycleStatus: { type: String, enum: ["Active", "Paused"], default: "Active", index: true },
+    pausedAt: Date,
+    pausedUntil: Date, // null = paused indefinitely, until manually resumed
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: Date,
+    deletedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    // Set when the admin picks "Delete until <date>": the society is soft
+    // deleted immediately, and a purge is due on this date unless restored
+    // first. Left null for an immediate/manual purge with no schedule.
+    purgeScheduledFor: Date,
+    // Provenance for the scheduled purge. The cron will not delete a society
+    // on `purgeScheduledFor` alone — it also requires proof that a human
+    // took an export and verified it against live state. Without this the
+    // date is just a timer, and a mis-set date silently destroys a society.
+    offboarding: {
+      exportVerifiedAt: Date,
+      exportVerifiedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      // Format version of the bundle that was verified — a purge should not
+      // be authorised by a check run against a format we no longer emit.
+      exportFormatVersion: Number,
+      // Counts as at verification, carried into the purge audit record so the
+      // trail says how much was destroyed even though the data is gone.
+      verifiedCounts: {
+        collections: Number,
+        documents: Number,
+        fields: Number,
+      },
+      // Phase 3/5. The handover is the society's own copy of its records; the
+      // purge will not run until it has actually been collected (see
+      // /v1/cron/society-purge gate 6).
+      handoverId: { type: mongoose.Schema.Types.ObjectId, ref: "SocietyHandover" },
+      // Escape hatch for the case the gate cannot otherwise clear: an
+      // abandoned society whose committee has dissolved and whose registered
+      // address bounces. Purging then is a judgement call, so it is recorded
+      // as one — who made it and on what grounds — rather than made by a flag.
+      handoverWaivedAt: Date,
+      handoverWaivedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      handoverWaivedReason: String,
+      // D5 — a per-society extension to the grace window. Widens the ceiling
+      // only; the floor protects the society and nobody can shorten it. Set by
+      // a break-glass administrator, with a reason, and capped again at
+      // SOCIETY_GRACE_ABSOLUTE_MAX_DAYS.
+      graceDaysOverride: Number,
+      graceOverrideReason: String,
+      graceOverrideByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      graceOverrideAt: Date,
+      // Members told once, at soft-delete, that their data is being erased.
+      membersNotifiedAt: Date,
+      membersNotified: {
+        attempted: Number,
+        sent: Number,
+        failed: Number,
+        skipped: Number,
+      },
+    },
+    // Superadmin-set marker for throwaway test societies — enables the quick
+    // delete button in the superadmin UI, which skips the export/verify
+    // wizard. Never settable to true implicitly; the quick-delete route
+    // refuses to run on any society where this is false.
+    isTestSociety: { type: Boolean, default: false, index: true },
     // Feature flags. Grouped per module instead of loose booleans. Commercial
     // ships OFF for every existing society, and `enabled: false` overrides
     // every child flag, so one switch disables the whole module instantly.
@@ -242,7 +311,22 @@ const SocietySchema = new mongoose.Schema(
         ownerEditingEnabled: { type: Boolean, default: false },
         commercialBillingEnabled: { type: Boolean, default: false },
       },
+      // Add-on modules. Same shape as commercial above, which is why that one
+      // needed no change — see lib/entitlements/modules.js for what each owns.
+      //
+      // Default false everywhere: a new society gets base, and a trial grants
+      // everything through the resolver rather than by writing flags, so a
+      // trial ending needs no cleanup pass.
+      security: { enabled: { type: Boolean, default: false } },
+      amenities: { enabled: { type: Boolean, default: false } },
+      tenancy: { enabled: { type: Boolean, default: false } },
+      rbac: { enabled: { type: Boolean, default: false } },
+      retention: { enabled: { type: Boolean, default: false } },
     },
+    // Bumped on any entitlement change. Forms part of the Redis cache key, so
+    // an increment is an instant, cluster-wide invalidation with nothing to
+    // delete — the same mechanism as rbacVersion above.
+    entitlementVersion: { type: Number, default: 0 },
     // Soft delete support
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date },
