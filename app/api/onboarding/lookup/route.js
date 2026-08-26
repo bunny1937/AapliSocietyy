@@ -34,31 +34,23 @@ import Member from "@/models/Member";
 import Society from "@/models/Society";
 import Shop from "@/models/Shop";
 import { verifyToken } from "@/lib/jwt";
+import { enforceRateLimit } from "@/lib/v1/ratelimit";
+import { ApiError } from "@/lib/v1/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Per-IP throttle. In-memory, matching the pattern already used by
-// /api/auth/login. Resets on cold start, which is acceptable for a
-// low-value-per-attempt enumeration surface.
-const MAX_LOOKUPS = 12;
-const WINDOW_MS = 10 * 60 * 1000;
-const attempts = new Map();
-
-function throttle(ip) {
-  const now = Date.now();
-  const rec = attempts.get(ip);
-  if (!rec || now - rec.first > WINDOW_MS) {
-    attempts.set(ip, { first: now, count: 1 });
-    return true;
-  }
-  rec.count += 1;
-  // Opportunistic sweep so the Map cannot grow without bound on a warm lambda.
-  if (attempts.size > 5000) {
-    for (const [k, v] of attempts) if (now - v.first > WINDOW_MS) attempts.delete(k);
-  }
-  return rec.count <= MAX_LOOKUPS;
-}
+// SEC-06: Redis-backed (falls back to in-memory only if Upstash is
+// unconfigured — see lib/v1/ratelimit.js), so the limit is real across
+// serverless instances and cold starts instead of resetting on every one.
+//
+// Two limiters: per-IP (catches one attacker cycling emails) AND, when a
+// societyCode is supplied, per-societyCode (catches distributed guessing of
+// low-entropy flat numbers across many IPs against one society).
+const IP_MAX_LOOKUPS = 12;
+const IP_WINDOW_MS = 10 * 60 * 1000;
+const SOCIETY_MAX_LOOKUPS = 60;
+const SOCIETY_WINDOW_MS = 10 * 60 * 1000;
 
 function maskEmail(email) {
   const [local, domain] = String(email).split("@");
@@ -68,15 +60,6 @@ function maskEmail(email) {
 }
 
 export async function POST(request) {
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
-  if (!throttle(ip)) {
-    return NextResponse.json(
-      { error: "Too many attempts. Try again in a few minutes." },
-      { status: 429 },
-    );
-  }
-
   let body;
   try {
     body = await request.json();
@@ -88,6 +71,27 @@ export async function POST(request) {
   const token = body.token ? String(body.token) : null;
   const societyCode = String(body.societyCode || "").trim().toUpperCase();
   const flatNo = String(body.flatNo || "").trim().toUpperCase();
+
+  try {
+    await enforceRateLimit(request, "onboarding-lookup-ip", {
+      windowMs: IP_WINDOW_MS,
+      limit: IP_MAX_LOOKUPS,
+      message: "Too many attempts. Try again in a few minutes.",
+    });
+    if (societyCode) {
+      await enforceRateLimit(request, "onboarding-lookup-society", {
+        windowMs: SOCIETY_WINDOW_MS,
+        limit: SOCIETY_MAX_LOOKUPS,
+        key: societyCode,
+        message: "Too many attempts for this society. Try again in a few minutes.",
+      });
+    }
+  } catch (err) {
+    if (err instanceof ApiError) {
+      return NextResponse.json(err.body, { status: err.status });
+    }
+    throw err;
+  }
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
@@ -270,8 +274,9 @@ export async function POST(request) {
     pendingSetupCount: needsSetup.length,
     rules: {
       usernamePattern: "^[a-z0-9_-]{4,30}$",
-      passwordMinLength: 6,
-      passwordNeedsLetterAndDigit: true,
+      // Matches lib/password-policy.js (SEC-07).
+      passwordMinLength: 8,
+      passwordNeedsUpperLowerDigitSymbol: true,
       // The app must make the user retype the email. Same rule as the website:
       // it has to match exactly, no normalisation beyond trim + lowercase.
       requireEmailReentry: true,

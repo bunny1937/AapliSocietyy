@@ -46,7 +46,10 @@ export async function GET(request, { params }) {
         "Content-Type": file.contentType || "application/octet-stream",
         "Content-Length": String(file.size != null ? file.size : file.buffer.length),
         "Content-Disposition": `inline; filename="${file.filename || "file"}"`,
-        "Cache-Control": "public, max-age=31536000, immutable",
+        // SEC-09: this response is per-caller-authorized (tenant-scoped), so
+        // it must never be cached as `public`. A shared/CDN cache serving one
+        // caller's response to another would defeat the check above.
+        "Cache-Control": "private, max-age=300, must-revalidate",
       },
     });
   } catch (error) {

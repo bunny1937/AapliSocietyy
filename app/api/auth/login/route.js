@@ -11,6 +11,7 @@ import { legacyRoleForKey } from "@/lib/rbac/legacy-role-bridge";
 import { loginBlockFor, pauseHasExpired } from "@/lib/auth/login-block";
 import { enforceRateLimit } from "@/lib/v1/ratelimit";
 import { ApiError } from "@/lib/v1/http";
+import { refreshEntitlementSnapshot } from "@/lib/entitlements/resolve";
 const MAX_ATTEMPTS = parseInt(process.env.RATE_LIMIT_LOGIN, 10) || 10;
 const WINDOW_MS = 15 * 60 * 1000;
 export async function POST(request) {
@@ -136,6 +137,12 @@ export async function POST(request) {
     if (totalProfileCount === 1 && staffProfiles.length === 1) {
       commit(true);
       const assignment = staffProfiles[0];
+      // Warm the edge entitlement snapshot while we are already in Mongo, so
+      // the session starts with middleware able to gate correctly on its very
+      // first request. A failure here must never block a login — the snapshot
+      // is a cache, and a cold one simply lets requests through until the next
+      // read repopulates it (see lib/entitlements/snapshot.js).
+      await refreshEntitlementSnapshot(assignment.societyId).catch(() => {});
       const token = signToken({
         userId: user._id,
         activeContext: { societyId: assignment.societyId, hat: "staff" },
@@ -185,6 +192,7 @@ export async function POST(request) {
         { _id: user._id },
         { activeProfileId: profile.profileId },
       );
+      await refreshEntitlementSnapshot(profile.societyId).catch(() => {});
       const token = signToken({
         userId: user._id,
         activeProfileId: profile.profileId,

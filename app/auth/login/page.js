@@ -24,7 +24,33 @@ export default function LoginPage() {
   if (params.get("expired") === "1") {
     setOnboardedMessage("Your session took too long — please sign in again.");
   }
+  // Where to land after signing in, when something sent the user here with a
+  // destination in mind — the "collect your records" email being the case
+  // that exposed this. Without it, following that link dropped people on the
+  // dashboard with no indication of where they were supposed to go.
+  //
+  // Held in sessionStorage rather than carried through the URL because a
+  // multi-profile login detours via /auth/select-society, and the parameter
+  // would be lost on the way.
+  const next = params.get("next");
+  if (isSafeInternalPath(next)) sessionStorage.setItem("postLoginNext", next);
 }, []);
+  // Only ever a path on this site. Rejects "//evil.com" and "https://…" —
+  // an open redirect on a login page is how phishing gets its credibility.
+  function isSafeInternalPath(value) {
+    return typeof value === "string" && value.startsWith("/") && !value.startsWith("//");
+  }
+
+  function consumeNext() {
+    try {
+      const stored = sessionStorage.getItem("postLoginNext");
+      sessionStorage.removeItem("postLoginNext");
+      return isSafeInternalPath(stored) ? stored : null;
+    } catch {
+      return null;
+    }
+  }
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -103,6 +129,11 @@ export default function LoginPage() {
         return;
       }
       const role = data.user?.role;
+      const next = consumeNext();
+      if (next) {
+        router.replace(next);
+        return;
+      }
       if (role === "SuperAdmin") {
         router.replace("/superadmin/dashboard");
       } else if (
@@ -142,8 +173,8 @@ export default function LoginPage() {
             <div
               style={{
                 padding: "12px",
-                backgroundColor: "#dcfce7",
-                color: "#166534",
+                backgroundColor: "var(--success-bg)",
+                color: "var(--success-fg)",
                 borderRadius: "var(--radius-md)",
                 marginBottom: "var(--spacing-lg)",
                 fontSize: "var(--font-sm)",
@@ -157,8 +188,8 @@ export default function LoginPage() {
             <div
               style={{
                 padding: "12px",
-                backgroundColor: "#fee2e2",
-                color: "#991b1b",
+                backgroundColor: "var(--danger-bg)",
+                color: "var(--danger-fg)",
                 borderRadius: "var(--radius-md)",
                 marginBottom: "var(--spacing-lg)",
                 fontSize: "var(--font-sm)",

@@ -5,8 +5,11 @@ import Society from "@/models/Society";
 import { validateAdminRequest } from "@/lib/admin-middleware";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
+import { passwordPolicyProblem } from "@/lib/password-policy";
 function generatePassword() {
-  return randomBytes(8).toString("base64url");
+  // base64url won't reliably contain a symbol; append one so a
+  // freshly-generated password still satisfies the shared policy.
+  return randomBytes(8).toString("base64url") + "!";
 }
 // POST /api/superadmin/reset-admin-password
 // Body: { societyId, newPassword? }
@@ -39,11 +42,9 @@ export async function POST(request) {
       );
     }
     const plain = newPassword?.trim() || generatePassword();
-    if (plain.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters" },
-        { status: 400 },
-      );
+    const pwProblem = passwordPolicyProblem(plain);
+    if (pwProblem) {
+      return NextResponse.json({ error: pwProblem }, { status: 400 });
     }
     const hash = await bcrypt.hash(plain, 10);
     // Update User doc

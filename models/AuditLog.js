@@ -111,6 +111,21 @@ const AuditLogSchema = new mongoose.Schema(
         "SHOP_PRODUCT_DELETED",
         "SHOP_ORDER_PLACED",
         "SHOP_ORDER_TRANSITIONED",
+        // ── society lifecycle (lib/superadmin/societyAudit.js). Written with
+        // societyId: null on purpose so the trail outlives the purge — see
+        // that file for why. ──
+        "SOCIETY_PAUSED",
+        "SOCIETY_RESUMED",
+        "SOCIETY_EXPORT_DOWNLOADED",
+        "SOCIETY_EXPORT_VERIFIED",
+        "SOCIETY_SOFT_DELETED",
+        "SOCIETY_RESTORED",
+        "SOCIETY_PURGED",
+        "SOCIETY_QUICK_DELETED",
+        "SOCIETY_HANDOVER_SENT",
+        "SOCIETY_HANDOVER_DOWNLOADED",
+        "SOCIETY_HANDOVER_CONFIRMED",
+        "SOCIETY_HANDOVER_REMINDED",
       ],
     },
     oldData: { type: mongoose.Schema.Types.Mixed },

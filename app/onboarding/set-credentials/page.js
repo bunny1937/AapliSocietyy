@@ -78,8 +78,8 @@ function SetCredentialsForm() {
           <div
             style={{
               padding: "12px",
-              backgroundColor: "#fee2e2",
-              color: "#991b1b",
+              backgroundColor: "var(--danger-bg)",
+              color: "var(--danger-fg)",
               borderRadius: "var(--radius-md)",
               fontSize: "var(--font-sm)",
               fontWeight: 500,
@@ -94,8 +94,8 @@ function SetCredentialsForm() {
               <div
                 style={{
                   padding: "12px",
-                  backgroundColor: "#fee2e2",
-                  color: "#991b1b",
+                  backgroundColor: "var(--danger-bg)",
+                  color: "var(--danger-fg)",
                   borderRadius: "var(--radius-md)",
                   marginBottom: "var(--spacing-lg)",
                   fontSize: "var(--font-sm)",

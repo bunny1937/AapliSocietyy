@@ -22,12 +22,12 @@ import User from "@/models/User";
 import Society from "@/models/Society";
 import Shop from "@/models/Shop";
 import { verifyToken } from "@/lib/jwt";
+import { passwordPolicyProblem } from "@/lib/password-policy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const USERNAME_RE = /^[a-z0-9_-]{4,30}$/;
-const PASSWORD_MIN = 6;
 
 // Blocked usernames. Someone claiming "admin" or "security" inside a society
 // portal is a social-engineering problem waiting to happen.
@@ -46,12 +46,8 @@ const WEAK_PASSWORDS = new Set([
 ]);
 
 function passwordProblem(pw, { username, email, name, flats }) {
-  if (typeof pw !== "string" || pw.length < PASSWORD_MIN) {
-    return `Password must be at least ${PASSWORD_MIN} characters.`;
-  }
-  if (!/[a-zA-Z]/.test(pw) || !/[0-9]/.test(pw)) {
-    return "Password must contain at least one letter and one number.";
-  }
+  const policyIssue = passwordPolicyProblem(pw);
+  if (policyIssue) return policyIssue;
   const lower = pw.toLowerCase();
   if (WEAK_PASSWORDS.has(lower)) {
     return "That password is too common. Choose something only you would pick.";

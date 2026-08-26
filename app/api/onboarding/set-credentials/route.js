@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import { verifyToken } from "@/lib/jwt";
+import { passwordPolicyProblem } from "@/lib/password-policy";
 const USERNAME_RE = /^[a-z0-9_-]{4,30}$/;
 export async function POST(request) {
   try {
@@ -26,11 +27,9 @@ export async function POST(request) {
         { status: 400 },
       );
     }
-    if (rawPassword.length < 6) {
-      return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
-    }
-    if (!/[a-zA-Z]/.test(rawPassword) || !/[0-9]/.test(rawPassword)) {
-      return NextResponse.json({ error: "Password must include at least one letter and one number" }, { status: 400 });
+    const pwProblem = passwordPolicyProblem(rawPassword);
+    if (pwProblem) {
+      return NextResponse.json({ error: pwProblem }, { status: 400 });
     }
     await connectDB();
     const user = await User.findById(decoded.userId);

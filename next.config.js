@@ -54,24 +54,11 @@ const nextConfig = {
       { key: "X-Frame-Options", value: "DENY" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
-      // Enforcing (was Report-Only during the staged rollout window).
-      // script-src/style-src still carry 'unsafe-inline'/'unsafe-eval' —
-      // tighten those once inline script/style usage is audited and nonced;
-      // loosening them now would have meant CSP blocked nothing meaningful.
-      {
-        key: "Content-Security-Policy",
-        value: [
-          "default-src 'self'",
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-          "style-src 'self' 'unsafe-inline'",
-          "img-src 'self' data: blob: https://*.r2.cloudflarestorage.com https://*.r2.dev",
-          "font-src 'self' data:",
-          "connect-src 'self' https://*.r2.cloudflarestorage.com https://*.r2.dev",
-          "frame-ancestors 'none'",
-          "base-uri 'self'",
-          "form-action 'self'",
-        ].join("; "),
-      },
+      // SEC-11: Content-Security-Policy moved to middleware.js — it needs a
+      // fresh random nonce per request (script-src 'nonce-<value>'
+      // 'strict-dynamic', no more 'unsafe-inline'/'unsafe-eval'), which a
+      // static next.config header can't generate. See middleware.js's
+      // buildCsp() for the actual policy and the reasoning.
     ];
     return [
       { source: "/:path*", headers: securityHeaders },
