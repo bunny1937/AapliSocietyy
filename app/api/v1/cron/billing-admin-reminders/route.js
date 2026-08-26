@@ -9,6 +9,8 @@ import PaymentImport from "@/models/PaymentImport";
 import { cronAuthorized } from "@/lib/v1/config";
 import { sendFcmToUser } from "@/lib/v1/fcm";
 import { sendEmail } from "@/lib/brevo-email";
+import { drainDueScheduledBillRuns } from "@/lib/billing/scheduledBillRuns";
+
 export const runtime = "nodejs"; export const dynamic = "force-dynamic";
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function indiaTomorrow() {
@@ -43,6 +45,7 @@ export async function GET(request) {
   if (!cronAuthorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   await connectDB(); const tomorrow = indiaTomorrow(); const year = tomorrow.getUTCFullYear(); const monthIndex = tomorrow.getUTCMonth(); const day = tomorrow.getUTCDate();
   const monthKey = `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
+  const scheduledRuns = await drainDueScheduledBillRuns();
   const societies = await Society.find({}).select("name config.billGenerationDay config.paymentUploadDay").lean();
   const summary = { checked: societies.length, billCreationReminders: 0, paymentUploadReminders: 0, skippedAlreadyComplete: 0, skippedNoAdmin: 0 };
   for (const society of societies) {
@@ -72,5 +75,5 @@ export async function GET(request) {
     if (shouldRemindCreation && await sendReminder({ society, admins, key: `BILL_CREATE:${monthKey}`, title: "Create monthly bills tomorrow", message: `Tomorrow is the configured bill creation day (${creationDue}). Please review the billing matrix and create the ${monthKey} bills.`, actionUrl: "/admin/generate-bills" })) summary.billCreationReminders += 1;
     if (shouldRemindUpload && await sendReminder({ society, admins, key: `PAYMENT_UPLOAD:${monthKey}`, title: "Upload payments tomorrow", message: `Tomorrow is the configured payment upload day (${uploadDue}). Please upload and confirm the latest payment Excel.`, actionUrl: "/admin/payments" })) summary.paymentUploadReminders += 1;
   }
-  return NextResponse.json({ ok: true, tomorrow: tomorrow.toISOString().slice(0,10), ...summary });
+  return NextResponse.json({ ok: true, tomorrow: tomorrow.toISOString().slice(0,10), scheduledBillRuns: scheduledRuns, ...summary });
 }

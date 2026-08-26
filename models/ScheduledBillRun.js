@@ -18,6 +18,8 @@ const ScheduledBillRunSchema = new mongoose.Schema(
     // YYYY-MM of the period to be generated.
     periodId: { type: String, required: true },
 
+    billSeries: { type: String, enum: ["RESIDENTIAL", "COMMERCIAL"], default: "RESIDENTIAL" },
+
     // When the generation should fire. Stored UTC.
     runAt: { type: Date, required: true, index: true },
 
@@ -45,7 +47,7 @@ const ScheduledBillRunSchema = new mongoose.Schema(
 
 // One schedule per society per period. This is what makes the upsert in
 // commit/route.js safe to call repeatedly.
-ScheduledBillRunSchema.index({ societyId: 1, periodId: 1 }, { unique: true });
+ScheduledBillRunSchema.index({ societyId: 1, periodId: 1, billSeries: 1 }, { unique: true });
 
 // The due-runs query.
 ScheduledBillRunSchema.index({ status: 1, runAt: 1 });
