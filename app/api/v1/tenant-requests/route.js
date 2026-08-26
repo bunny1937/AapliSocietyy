@@ -50,6 +50,12 @@ export const POST = withRoute(async (req) => {
     rentPerMonth: data.rentPerMonth,
     depositAmount: data.depositAmount ?? 0,
     documents: data.documents,
+    acknowledgement: {
+      by: claims.userId,
+      byName: claims.name || null,
+      at: new Date(),
+      ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
+    },
     status: "Pending",
   });
   return json({ request: { ...request.toObject(), _id: String(request._id) } }, { status: 201 });

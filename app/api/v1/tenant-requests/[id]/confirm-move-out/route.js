@@ -2,6 +2,7 @@ import { withRoute, ApiError, json } from "@/lib/v1/http";
 import { getClaims, requireTenant } from "@/lib/v1/auth";
 import { TenantRequest, Member } from "@/lib/v1/models";
 import { SOCIETY_ADMIN_ROLES } from "@/lib/v1/constants";
+import { markDocumentsExpiring } from "@/lib/tenancy/documentRetention";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,6 +32,7 @@ export const POST = withRoute(async (req, ctx) => {
   if (bothConfirmed) {
     request.status = "Closed";
     request.leaseExpiredAt = request.leaseExpiredAt || now;
+    markDocumentsExpiring(request, request.leaseExpiredAt);
     await Member.updateOne(
       { _id: request.memberId },
       {

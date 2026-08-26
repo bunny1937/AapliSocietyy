@@ -9,6 +9,7 @@ import { logAudit } from "@/lib/audit-logger";
 import { buildTenantDecisionNotification } from "@/lib/tenant-notifications";
 import { sendInApp } from "@/lib/visitor-channels";
 import { authorize } from "@/lib/rbac/authorize";
+import { markDocumentsExpiring } from "@/lib/tenancy/documentRetention";
 export async function POST(request, { params }) {
   const gate = await authorize(request, "member.tenantRequest.reject");
   if (!gate.ok) return gate.response;
@@ -28,6 +29,7 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "No pending request found for that id" }, { status: 404 });
     const member = await Member.findOne({ _id: tenantRequest.memberId, societyId: gate.context.societyId }).lean();
     tenantRequest.status = "Rejected";
+    markDocumentsExpiring(tenantRequest);
     tenantRequest.rejectionReason = reason || undefined;
     await tenantRequest.save();
     const notif = buildTenantDecisionNotification({

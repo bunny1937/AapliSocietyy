@@ -18,8 +18,8 @@ export const dynamic = "force-dynamic";
 
 const FIELD_MAP = {
   contract: "contractKey",
-  signature: "signatureKey",
-  aadhaar: "aadhaarKey",
+  // signature removed — replaced by the in-app acknowledgement.
+  // aadhaar removed — no longer collected, and legacy keys are not served (D1).
   policeVerification: "policeVerificationKey",
 };
 

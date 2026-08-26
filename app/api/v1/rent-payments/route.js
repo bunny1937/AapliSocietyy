@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export const GET = withRoute(async (req) => {
   const claims = getClaims(req);
   const societyId = requireTenant(claims);
-  const query = { societyId };
+  const query = { societyId, isDeleted: { $ne: true } };
   if (!SOCIETY_ADMIN_ROLES.includes(claims.role)) {
     if (!claims.memberId) return json({ rentPayments: [] });
     query.memberId = claims.memberId;

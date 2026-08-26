@@ -1,6 +1,7 @@
 import { withRoute, ApiError, json } from "@/lib/v1/http";
 import { getClaims, requireTenant } from "@/lib/v1/auth";
 import { TenantRequest, Member } from "@/lib/v1/models";
+import { markDocumentsExpiring } from "@/lib/tenancy/documentRetention";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,6 +30,7 @@ export const POST = withRoute(async (req, ctx) => {
   const now = new Date();
   request.leaseEndDate = body.leaseEndDate ? new Date(body.leaseEndDate) : request.leaseEndDate || now;
   request.leaseExpiredAt = request.leaseExpiredAt || now;
+  markDocumentsExpiring(request, request.leaseExpiredAt);
   request.ownerConfirmedMoveOutAt = request.ownerConfirmedMoveOutAt || now;
   if (body.note) request.notes = [...(request.notes || []), { text: body.note, at: now, by: "Owner" }];
   await request.save();

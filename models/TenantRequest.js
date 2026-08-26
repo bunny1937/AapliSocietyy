@@ -2,7 +2,14 @@ import mongoose from "mongoose";
 const TenantRequestDocumentsSchema = new mongoose.Schema(
   {
     contractKey: String,
+    // Legacy only: superseded by `acknowledgement` on the request itself.
+    // A scanned signature proved that somebody, somewhere, held a pen; it was
+    // never tied to the account that submitted the request. Nothing writes
+    // this any more.
     signatureKey: String,
+    // Legacy only: declared so rows written before D1 still parse. Nothing
+    // writes it, no route serves it, and scripts/clear-tenant-aadhaar.mjs
+    // removes both the pointer and the stored object.
     aadhaarKey: String,
     policeVerificationKey: String,
   },
@@ -26,6 +33,30 @@ const TenantRequestSchema = new mongoose.Schema(
     rentPerMonth: { type: Number, required: true },
     depositAmount: { type: Number, default: 0 },
     documents: TenantRequestDocumentsSchema,
+    // What replaced the signature image. Tied to a user id and a timestamp, so
+    // it answers "who agreed to this and when" — which the image never could.
+    acknowledgement: new mongoose.Schema(
+      {
+        by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        byName: String,
+        at: { type: Date, default: Date.now },
+        // Best-effort, for a disputed submission. Never used for anything else.
+        ip: String,
+      },
+      { _id: false },
+    ),
+    // ── document retention ──
+    //
+    // Nothing here used to expire. A tenant who left in 2019 still had their
+    // agreement in our bucket, which is the same open-ended retention the
+    // society-offboarding work exists to close — just in a different corner,
+    // and holding a document nobody will ever open again is pure liability.
+    //
+    // Set when the tenancy ends (lease end, rejection, or closure) and read by
+    // /v1/cron/tenant-document-purge. Null while the tenancy is live: an
+    // active tenant's agreement is in use and is not on a clock.
+    documentsExpireAt: { type: Date, default: null, index: true },
+    documentsPurgedAt: Date,
     status: { type: String, enum: ["Pending", "Approved", "Rejected", "Closed"], default: "Pending", index: true },
     // Mirrors the tenant User's isActive flag so GET /v1/tenant-requests can
     // report login state without a join (see [id]/login/route.js). Was never

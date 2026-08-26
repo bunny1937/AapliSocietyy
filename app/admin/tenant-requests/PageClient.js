@@ -4,6 +4,7 @@ import {
   Card, PageHeader, Button, Badge, Spinner, Toast, EmptyState,
   Modal, StatCard, tokens, fmtTime, grid,
 } from "@/components/visitor/ui";
+import notify from "@/lib/notify";
 
 async function api(url, opts) {
   const res = await fetch(url, {
@@ -19,16 +20,14 @@ async function api(url, opts) {
 
 const DOCUMENT_FIELDS = [
   { field: "contract", label: "Lease contract" },
-  { field: "signature", label: "Signature" },
-  { field: "aadhaar", label: "Aadhaar card" },
   { field: "policeVerification", label: "Police verification" },
 ];
 const TABS = ["Requests", "Active", "Inactive", "All"];
-const STATE_COLOR = { Active: "#166534", Requests: "#92400e", Inactive: "#6b7280" };
+const STATE_COLOR = { Active: "var(--success-fg)", Requests: "var(--warning-fg)", Inactive: "var(--fg-4)" };
 const DASH = "\u2014";
 
 const S = {
-  card: { border: `1px solid ${tokens.border}`, borderRadius: 12, padding: 16, display: "grid", gap: 10, background: "#fff" },
+  card: { border: `1px solid ${tokens.border}`, borderRadius: 12, padding: 16, display: "grid", gap: 10, background: "var(--bg-surface)" },
   head: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 },
   flat: { fontWeight: 800, fontSize: 15, color: tokens.text },
   meta: { fontSize: 12.5, color: tokens.sub, marginTop: 3 },
@@ -38,8 +37,8 @@ const S = {
   tab: (on) => ({
     padding: "7px 14px", borderRadius: 20,
     border: `1px solid ${on ? tokens.primary : tokens.border}`,
-    background: on ? tokens.primary : "#fff",
-    color: on ? "#fff" : tokens.sub,
+    background: on ? tokens.primary : "var(--bg-surface)",
+    color: on ? "var(--bg-surface)" : tokens.sub,
     fontWeight: 600, fontSize: 13, cursor: "pointer",
   }),
   search: { marginLeft: "auto", padding: "7px 12px", borderRadius: 8, border: `1px solid ${tokens.border}`, fontSize: 13, minWidth: 240 },
@@ -111,7 +110,7 @@ export default function ManageTenantsPage() {
   }
 
   async function reject(id) {
-    const reason = window.prompt("Reason for rejection (shown to the owner):", "");
+    const reason = await notify.prompt("Reason for rejection (shown to the owner):", "");
     if (reason === null) return;
     setBusyId(id);
     try {
@@ -125,7 +124,7 @@ export default function ManageTenantsPage() {
   // Admin half of the two-party move-out. The owner ends the lease from the
   // app; this closes the tenancy and disables the tenant login.
   async function confirmMoveOut(id) {
-    if (!window.confirm("Close this tenancy and disable the tenant login?")) return;
+    if (!(await notify.confirm("Close this tenancy and disable the tenant login?", { tone: "warning" }))) return;
     setBusyId(id);
     try {
       await api(`/api/admin/tenant-requests/${id}/confirm-move-out`, { method: "POST" });
@@ -144,9 +143,9 @@ export default function ManageTenantsPage() {
       />
 
       <div style={{ ...grid(200), marginBottom: 18 }}>
-        <StatCard label="Active tenancies" value={summary.active} color="#16a34a" />
-        <StatCard label="Awaiting approval" value={summary.requests} color="#d97706" />
-        <StatCard label="Flats without a tenant" value={summary.inactive} color="#6b7280" />
+        <StatCard label="Active tenancies" value={summary.active} color="var(--success)" />
+        <StatCard label="Awaiting approval" value={summary.requests} color="var(--warning)" />
+        <StatCard label="Flats without a tenant" value={summary.inactive} color="var(--fg-4)" />
       </div>
 
       <div style={S.tabs}>
@@ -190,7 +189,7 @@ export default function ManageTenantsPage() {
                 )}
 
                 {pending.length > 0 && (
-                  <div style={{ ...S.meta, color: "#92400e", fontWeight: 700 }}>
+                  <div style={{ ...S.meta, color: "var(--warning-fg)", fontWeight: 700 }}>
                     {pending.length} request{pending.length > 1 ? "s" : ""} awaiting approval
                   </div>
                 )}
@@ -263,7 +262,7 @@ export default function ManageTenantsPage() {
                 </div>
 
                 {detail.request.pendingLeaseChange && detail.request.pendingLeaseChange.status === "Pending" && (
-                  <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: "#fef3c7", color: "#92400e", fontSize: 12.5, fontWeight: 600 }}>
+                  <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: "var(--warning-bg)", color: "var(--warning-fg)", fontSize: 12.5, fontWeight: 600 }}>
                     Owner proposed new lease dates: {d(detail.request.pendingLeaseChange.leaseStartDate)} to {d(detail.request.pendingLeaseChange.leaseEndDate)}
                   </div>
                 )}

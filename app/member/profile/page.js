@@ -73,7 +73,7 @@ export default function MemberProfilePage() {
   const displayEmail = tenantSelf?.email || member?.emailPrimary;
   if (!member)
     return (
-      <div style={{ padding: "2rem", color: "#6B7280", lineHeight: 1.6 }}>
+      <div style={{ padding: "2rem", color: "var(--fg-4)", lineHeight: 1.6 }}>
         {loadError
           ? // The real reason, so "my profile is blank" is answerable.
             `Your profile could not be loaded: ${loadError.message}`
@@ -87,15 +87,15 @@ export default function MemberProfilePage() {
           display: "flex",
           justifyContent: "space-between",
           padding: "10px 0",
-          borderBottom: "1px solid #F3F4F6",
+          borderBottom: "1px solid var(--border)",
           fontSize: "14px",
         }}
       >
-        <span style={{ color: "#6B7280", minWidth: "160px" }}>{label}</span>
+        <span style={{ color: "var(--fg-4)", minWidth: "160px" }}>{label}</span>
         <span
           style={{
             fontWeight: highlight ? "700" : "600",
-            color: highlight ? "#1E40AF" : "#1F2937",
+            color: highlight ? "var(--info)" : "var(--fg-2)",
             textAlign: "right",
           }}
         >
@@ -166,9 +166,9 @@ export default function MemberProfilePage() {
             borderRadius: 8,
             fontSize: 14,
             lineHeight: 1.55,
-            background: banner.tone === "error" ? "#FEF2F2" : "#ECFDF5",
-            border: `1px solid ${banner.tone === "error" ? "#FECACA" : "#A7F3D0"}`,
-            color: banner.tone === "error" ? "#991B1B" : "#065F46",
+            background: banner.tone === "error" ? "var(--danger-bg)" : "var(--success-bg)",
+            border: `1px solid ${banner.tone === "error" ? "var(--danger-bg)" : "var(--success-bg)"}`,
+            color: banner.tone === "error" ? "var(--danger-fg)" : "var(--success-fg)",
           }}
         >
           {banner.text}
@@ -177,7 +177,7 @@ export default function MemberProfilePage() {
       {/* Identity Card */}
       <div
         style={{
-          background: "linear-gradient(135deg, #1e40af, #3b82f6)",
+          background: "linear-gradient(135deg, var(--primary), var(--accent))",
           color: "white",
           borderRadius: "12px",
           padding: "28px 32px",
@@ -259,12 +259,12 @@ export default function MemberProfilePage() {
         {editing ? (
           <>
             <div
-              style={{ padding: "10px 0", borderBottom: "1px solid #F3F4F6" }}
+              style={{ padding: "10px 0", borderBottom: "1px solid var(--border)" }}
             >
               <label
                 style={{
                   fontSize: "13px",
-                  color: "#6B7280",
+                  color: "var(--fg-4)",
                   display: "block",
                   marginBottom: "6px",
                 }}
@@ -281,12 +281,12 @@ export default function MemberProfilePage() {
               />
             </div>
             <div
-              style={{ padding: "10px 0", borderBottom: "1px solid #F3F4F6" }}
+              style={{ padding: "10px 0", borderBottom: "1px solid var(--border)" }}
             >
               <label
                 style={{
                   fontSize: "13px",
-                  color: "#6B7280",
+                  color: "var(--fg-4)",
                   display: "block",
                   marginBottom: "6px",
                 }}
@@ -303,12 +303,12 @@ export default function MemberProfilePage() {
               />
             </div>
             <div
-              style={{ padding: "10px 0", borderBottom: "1px solid #F3F4F6" }}
+              style={{ padding: "10px 0", borderBottom: "1px solid var(--border)" }}
             >
               <label
                 style={{
                   fontSize: "13px",
-                  color: "#6B7280",
+                  color: "var(--fg-4)",
                   display: "block",
                   marginBottom: "6px",
                 }}
@@ -357,7 +357,7 @@ export default function MemberProfilePage() {
           slots still needs to see how to request one. */}
       <Section title="Parking Slots" icon="🚗">
         {(member.parkingSlots?.length ?? 0) === 0 && (
-          <div style={{ padding: "10px 0", fontSize: 14, color: "#6B7280" }}>
+          <div style={{ padding: "10px 0", fontSize: 14, color: "var(--fg-4)" }}>
             No parking slots recorded for this flat yet.
           </div>
         )}
@@ -369,7 +369,7 @@ export default function MemberProfilePage() {
               gap: "16px",
               alignItems: "center",
               padding: "10px 0",
-              borderBottom: "1px solid #F3F4F6",
+              borderBottom: "1px solid var(--border)",
               fontSize: "14px",
               flexWrap: "wrap",
             }}
@@ -377,7 +377,7 @@ export default function MemberProfilePage() {
             <span
               style={{
                 fontWeight: "600",
-                color: "#1F2937",
+                color: "var(--fg-2)",
                 minWidth: "100px",
               }}
             >
@@ -385,8 +385,8 @@ export default function MemberProfilePage() {
             </span>
             <span
               style={{
-                background: "#DBEAFE",
-                color: "#1E40AF",
+                background: "var(--primary-tint)",
+                color: "var(--info)",
                 padding: "2px 10px",
                 borderRadius: "12px",
                 fontSize: "12px",
@@ -396,8 +396,8 @@ export default function MemberProfilePage() {
             </span>
             <span
               style={{
-                background: "#F3F4F6",
-                color: "#374151",
+                background: "var(--bg-muted)",
+                color: "var(--fg-3)",
                 padding: "2px 10px",
                 borderRadius: "12px",
                 fontSize: "12px",
@@ -420,7 +420,7 @@ export default function MemberProfilePage() {
           real empty state, add/remove goes through admin approval. */}
       <Section title="Family Members" icon="👨‍👩‍👧‍👦">
         {(member.familyMembers?.length ?? 0) === 0 && (
-          <div style={{ padding: "10px 0", fontSize: 14, color: "#6B7280" }}>
+          <div style={{ padding: "10px 0", fontSize: 14, color: "var(--fg-4)" }}>
             No family members recorded for this flat yet.
           </div>
         )}
@@ -432,20 +432,20 @@ export default function MemberProfilePage() {
               justifyContent: "space-between",
               alignItems: "center",
               padding: "10px 0",
-              borderBottom: "1px solid #F3F4F6",
+              borderBottom: "1px solid var(--border)",
               fontSize: "14px",
               flexWrap: "wrap",
               gap: "8px",
             }}
           >
             <div>
-              <span style={{ fontWeight: "600", color: "#1F2937" }}>
+              <span style={{ fontWeight: "600", color: "var(--fg-2)" }}>
                 {fm.name}
               </span>
               {fm.relation && (
                 <span
                   style={{
-                    color: "#6B7280",
+                    color: "var(--fg-4)",
                     marginLeft: "8px",
                     fontSize: "13px",
                   }}
@@ -459,7 +459,7 @@ export default function MemberProfilePage() {
                 display: "flex",
                 gap: "12px",
                 fontSize: "13px",
-                color: "#6B7280",
+                color: "var(--fg-4)",
                 alignItems: "center",
               }}
             >

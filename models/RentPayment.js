@@ -18,6 +18,19 @@ const RentPaymentSchema = new mongoose.Schema(
     confirmedAt: Date,
     rejectionReason: String,
     reference: String,
+    // LOOP-03: append-only edit trail. Every field mutation via PATCH pushes
+    // the prior values here before applying the change, so a disputed rent
+    // figure has a record of what it used to be.
+    editHistory: [
+      {
+        editedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        editedAt: { type: Date, default: Date.now },
+        previous: mongoose.Schema.Types.Mixed,
+      },
+    ],
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: Date,
+    deletedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true },
 );

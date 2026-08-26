@@ -15,12 +15,12 @@ import { apiClient } from "@/lib/api-client";
 const PARKING_TYPES = ["Stilt", "Open", "Covered"];
 const VEHICLE_TYPES = ["Two-Wheeler", "Four-Wheeler"];
 
-const box = { padding: "10px 0", borderBottom: "1px solid #F3F4F6" };
-const label = { fontSize: 13, color: "#6B7280", display: "block", marginBottom: 6 };
+const box = { padding: "10px 0", borderBottom: "1px solid var(--border)" };
+const label = { fontSize: 13, color: "var(--fg-4)", display: "block", marginBottom: 6 };
 const btn = {
   fontSize: 13,
   fontWeight: 600,
-  color: "#1E40AF",
+  color: "var(--info)",
   background: "none",
   border: "none",
   cursor: "pointer",
@@ -36,7 +36,7 @@ function PendingNote({ requests, section, familyMemberId }) {
   );
   if (!pending.length) return null;
   return (
-    <div style={{ fontSize: 12.5, color: "#92400E", marginTop: 6 }}>
+    <div style={{ fontSize: 12.5, color: "var(--warning-fg)", marginTop: 6 }}>
       {pending.length === 1
         ? `A ${pending[0].action.toLowerCase()} request is waiting for admin approval.`
         : `${pending.length} requests for this are waiting for admin approval.`}
@@ -89,7 +89,7 @@ export function RequestFamilyMember({ requests, onSent }) {
 
   return (
     <div style={box}>
-      {err && <div style={{ color: "#B91C1C", fontSize: 13, marginBottom: 8 }}>{err}</div>}
+      {err && <div style={{ color: "var(--danger-fg)", fontSize: 13, marginBottom: 8 }}>{err}</div>}
       <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))" }}>
         <div>
           <label style={label}>Name</label>
@@ -162,13 +162,13 @@ export function RequestRemoveFamilyMember({ familyMemberId, requests, onSent }) 
     }
   };
 
-  if (already) return <span style={{ fontSize: 12, color: "#92400E" }}>Removal pending approval</span>;
+  if (already) return <span style={{ fontSize: 12, color: "var(--warning-fg)" }}>Removal pending approval</span>;
   return (
     <>
-      <button style={{ ...btn, color: "#B91C1C" }} onClick={submit} disabled={busy}>
+      <button style={{ ...btn, color: "var(--danger-fg)" }} onClick={submit} disabled={busy}>
         {busy ? "Sending..." : "Request removal"}
       </button>
-      {err && <div style={{ color: "#B91C1C", fontSize: 12 }}>{err}</div>}
+      {err && <div style={{ color: "var(--danger-fg)", fontSize: 12 }}>{err}</div>}
     </>
   );
 }
@@ -210,7 +210,7 @@ export function RequestParkingSlot({ requests, onSent }) {
 
   return (
     <div style={box}>
-      {err && <div style={{ color: "#B91C1C", fontSize: 13, marginBottom: 8 }}>{err}</div>}
+      {err && <div style={{ color: "var(--danger-fg)", fontSize: 13, marginBottom: 8 }}>{err}</div>}
       <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))" }}>
         <div>
           <label style={label}>Slot number</label>
@@ -246,7 +246,7 @@ export function RequestParkingSlot({ requests, onSent }) {
           </select>
         </div>
       </div>
-      <div style={{ fontSize: 12, color: "#6B7280", marginTop: 6 }}>
+      <div style={{ fontSize: 12, color: "var(--fg-4)", marginTop: 6 }}>
         {draft.type === "Stilt" ? "Stilt slots are not billed monthly." : "Non-Stilt slots are billed monthly once approved."}
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
@@ -289,13 +289,13 @@ export function RequestRemoveParkingSlot({ slotNumber, requests, onSent }) {
     }
   };
 
-  if (already) return <span style={{ fontSize: 12, color: "#92400E" }}>Removal pending approval</span>;
+  if (already) return <span style={{ fontSize: 12, color: "var(--warning-fg)" }}>Removal pending approval</span>;
   return (
     <>
-      <button style={{ ...btn, color: "#B91C1C" }} onClick={submit} disabled={busy}>
+      <button style={{ ...btn, color: "var(--danger-fg)" }} onClick={submit} disabled={busy}>
         {busy ? "Sending..." : "Request removal"}
       </button>
-      {err && <div style={{ color: "#B91C1C", fontSize: 12 }}>{err}</div>}
+      {err && <div style={{ color: "var(--danger-fg)", fontSize: 12 }}>{err}</div>}
     </>
   );
 }

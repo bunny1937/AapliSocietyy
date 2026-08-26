@@ -10,6 +10,7 @@ import Member from "@/models/Member";
 import { requireRoles } from "@/lib/authz";
 import { logAudit } from "@/lib/audit-logger";
 import { authorize } from "@/lib/rbac/authorize";
+import { markDocumentsExpiring } from "@/lib/tenancy/documentRetention";
 export async function POST(request, { params }) {
   const gate = await authorize(request, "member.tenantRequest.confirmMoveOut");
   if (!gate.ok) return gate.response;
@@ -28,6 +29,7 @@ export async function POST(request, { params }) {
         await member.save();
       }
       tenantRequest.status = "Closed";
+      markDocumentsExpiring(tenantRequest, tenantRequest.leaseExpiredAt || new Date());
     }
     await tenantRequest.save();
     await logAudit(gate.context.userId, gate.context.societyId, "TENANT_MOVE_OUT_CONFIRMED", null, {

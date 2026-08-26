@@ -12,7 +12,7 @@ import { authorize } from "@/lib/rbac/authorize";
 const FIELD_TO_KEY = {
   contract: "contractKey",
   signature: "signatureKey",
-  aadhaar: "aadhaarKey",
+  // aadhaar removed — no longer collected, and legacy keys are not served (D1).
   policeVerification: "policeVerificationKey",
 };
 export async function GET(request, { params }) {

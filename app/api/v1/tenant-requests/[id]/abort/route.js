@@ -1,6 +1,7 @@
 import { withRoute, ApiError, json } from "@/lib/v1/http";
 import { getClaims, requireTenant } from "@/lib/v1/auth";
 import { TenantRequest, Member } from "@/lib/v1/models";
+import { markDocumentsExpiring } from "@/lib/tenancy/documentRetention";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,6 +24,8 @@ export const POST = withRoute(async (req, ctx) => {
   const { request } = await ownerRequest(req, id);
   if (request.status !== "Pending") throw new ApiError(409, "Only a pending request can be aborted");
   request.status = "Rejected";
+  // Nothing came of this tenancy, so its documents start their clock now.
+  markDocumentsExpiring(request);
   request.rejectionReason = "Withdrawn by the owner";
   await request.save();
   return json({ success: true, message: "Request withdrawn" });
