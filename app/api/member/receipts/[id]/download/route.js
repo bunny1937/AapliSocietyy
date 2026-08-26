@@ -120,13 +120,13 @@ function escapeHtml(value) {
 // a society that never customized its receipt sees no visual change.
 function generateReceiptHtml({ receipt, bill, society, member, design }) {
   const d = design || {};
-  const headerBg = d.headerBg || "linear-gradient(135deg, #059669, #10b981)";
-  const headerColor = d.headerColor || "#ffffff";
-  const tableHeaderBg = d.tableHeaderBg || "#F9FAFB";
-  const tableHeaderColor = d.tableHeaderColor || "#374151";
-  const totalBg = d.totalBg || "#ECFDF5";
-  const totalColor = d.totalColor || "#059669";
-  const totalBorderColor = d.totalColor || "#059669";
+  const headerBg = d.headerBg || "linear-gradient(135deg, var(--success), var(--success))";
+  const headerColor = d.headerColor || "var(--bg-surface)";
+  const tableHeaderBg = d.tableHeaderBg || "var(--bg-sunken)";
+  const tableHeaderColor = d.tableHeaderColor || "var(--fg-3)";
+  const totalBg = d.totalBg || "var(--success-bg)";
+  const totalColor = d.totalColor || "var(--success)";
+  const totalBorderColor = d.totalColor || "var(--success)";
   const footerSize = d.footerSize || 11;
   const footerLines = Array.isArray(d.footerText) && d.footerText.length
     ? d.footerText
@@ -159,7 +159,7 @@ function generateReceiptHtml({ receipt, bill, society, member, design }) {
   <meta charset="UTF-8"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 30px; color: #1a1a1a; }
+    body { font-family: Arial, sans-serif; background: var(--bg-muted); padding: 30px; color: var(--fg-1); }
     .wrapper { max-width: 680px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.1); }
     .header { background: ${headerBg}; color: ${headerColor}; padding: 32px; text-align: center; }
     .logo { max-height: 56px; margin-bottom: 10px; }
@@ -168,17 +168,17 @@ function generateReceiptHtml({ receipt, bill, society, member, design }) {
     .receipt-no { font-size: 13px; opacity: 0.85; margin-top: 6px; }
     .society-name { font-size: 16px; margin-top: 8px; opacity: 0.9; }
     .body { padding: 32px; }
-    .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #F3F4F6; font-size: 14px; }
+    .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--bg-muted); font-size: 14px; }
     .row:last-child { border-bottom: none; }
-    .label { color: #6B7280; }
-    .value { font-weight: 600; color: #1F2937; }
-    .charges-section { background: #F9FAFB; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    .label { color: var(--fg-4); }
+    .value { font-weight: 600; color: var(--fg-2); }
+    .charges-section { background: var(--bg-sunken); border-radius: 8px; padding: 20px; margin: 20px 0; }
     .charges-title { font-size: 13px; font-weight: 700; color: ${tableHeaderColor}; background: ${tableHeaderBg}; text-transform: uppercase; letter-spacing: 0.5px; margin: -20px -20px 14px -20px; padding: 10px 20px; border-radius: 8px 8px 0 0; }
     .charge-row { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; }
     .total-box { background: ${totalBg}; border: 2px solid ${totalBorderColor}; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0; }
     .total-label { font-size: 13px; color: ${totalColor}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
     .total-amount { font-size: 36px; font-weight: 700; color: ${totalColor}; }
-    .footer { background: #F9FAFB; padding: 20px 32px; text-align: center; font-size: ${footerSize}px; color: #9CA3AF; border-top: 1px solid #E5E7EB; }
+    .footer { background: var(--bg-sunken); padding: 20px 32px; text-align: center; font-size: ${footerSize}px; color: var(--fg-5); border-top: 1px solid var(--border); }
     .signature { margin-top: 24px; text-align: right; padding: 0 32px; }
     .signature img { max-height: 48px; }
     @media print {
@@ -230,7 +230,7 @@ function generateReceiptHtml({ receipt, bill, society, member, design }) {
       </div>
       ${
         d.showSignature && d.signatureUrl
-          ? `<div class="signature"><img src="${escapeHtml(d.signatureUrl)}" alt="signature"/><div style="font-size:11px;color:#6B7280;">${escapeHtml(d.signatureLabel || "Authorized Signatory")}</div></div>`
+          ? `<div class="signature"><img src="${escapeHtml(d.signatureUrl)}" alt="signature"/><div style="font-size:11px;color:var(--fg-4);">${escapeHtml(d.signatureLabel || "Authorized Signatory")}</div></div>`
           : ""
       }
     </div>

@@ -19,6 +19,7 @@ import CollectionsPanel from "./CollectionsPanel";
 // NEW 2026-08-07: plain-language "is shop billing actually set up?" check,
 // shown before the admin previews or tries to record collections.
 import CommercialReadyStrip from "./CommercialReadyStrip";
+import notify from "@/lib/notify";
 // ─── Pure billing engine functions (client-safe, no DB/React imports) ────────
 function buildParkingRates(heads) {
   const parkingRates = {};
@@ -181,7 +182,7 @@ export default function BillGenerationFlow({ segment, onSegmentComplete }) {
         setBillGrid({ gridRows: data.gridRows, columns: data.gridColumns });
       }
     } catch (e) {
-      alert("Validation error: " + e.message);
+      notify.error("Validation error: " + e.message);
     } finally {
       setExcelValidating(false);
     }
@@ -462,7 +463,7 @@ if (!latestPeriodId) {
       setPreviewIndex(0);
       setShowPreview(true);
     } catch (err) {
-      alert("Failed to build previews: " + err.message);
+      notify.error("Failed to build previews: " + err.message);
     } finally {
       setIsPreviewing(false);
       setPreviewProgress({ current: 0, total: 0 });
@@ -508,8 +509,9 @@ if (!latestPeriodId) {
         );
       }
       if (nextGenScope === "all") {
-        const ok = window.confirm(
+        const ok = await notify.confirm(
           `You selected ALL ${members.length} ${segment.unitNounPlural || "members"}. This will generate ${nextPeriodLabel} for every one of them. Continue?`,
+          { tone: "warning" },
         );
         if (!ok) { setAutoGenState(null); return; }
       }
@@ -539,10 +541,11 @@ if (!latestPeriodId) {
             return `  • Member has Rs ${b.unpaidBills.reduce((s, u) => s + (u.balanceAmount || 0), 0).toFixed(2)} pending since ${b.unpaidBills.map((u) => u.billPeriodId).join(", ")}`;
           })
           .join("\n");
-        const proceed = window.confirm(
+        const proceed = await notify.confirm(
           `${unpaidCount} member(s) have not fully paid their previous bills:\n\n${memberLines}\n\n` +
             `Their unpaid amount will be carried forward into ${nextPeriodLabel} bills and interest will be added.\n\n` +
             `OK = Generate ${nextPeriodLabel} bills now\nCancel = Go back and collect pending payments first`,
+          { tone: "warning" },
         );
         if (!proceed) {
           setAutoGenState(null);
@@ -693,8 +696,9 @@ if (!latestPeriodId) {
         result = await postNdjson("/api/bills/generate-final", payload, onProgress);
       } catch (err) {
         if (err.message?.includes("already exist")) {
-          const confirmed = window.confirm(
+          const confirmed = await notify.confirm(
             `Bills for ${periodLabel} already exist.\n\nDo you want to DELETE the existing bills and regenerate?\n\nThis cannot be undone. Payments already recorded against these bills will NOT be deleted.`,
+            { tone: "danger" },
           );
           if (!confirmed) throw new Error("Generation cancelled");
           result = await postNdjson("/api/bills/generate-final", {
@@ -718,15 +722,15 @@ if (!latestPeriodId) {
         // Every member in the batch failed — this is not a success, and
         // saying "Generated 0 bills successfully!" (the old message) read as
         // one regardless. Show the actual reason instead.
-        alert(
+        notify.error(
           `No bills were generated.\n\n${data.errors.map((e) => `• ${e.error}`).join("\n")}`,
         );
       } else if (data.failed > 0) {
-        alert(
+        notify.error(
           `Generated ${data.count} bill(s), but ${data.failed} failed:\n\n${data.errors.map((e) => `• ${e.error}`).join("\n")}`,
         );
       } else {
-        alert(`Generated ${data.count} bill(s) successfully!`);
+        notify.success(`Generated ${data.count} bill(s) successfully!`);
       }
       setShowPreview(false);
       setBillsGeneratedForPeriod(periodLabel);
@@ -735,7 +739,7 @@ if (!latestPeriodId) {
       onSegmentComplete?.();
     },
     onError: (error) => {
-      alert("Failed to generate bills: " + error.message);
+      notify.error("Failed to generate bills: " + error.message);
     },
   });
   const renderBillHTML = (billData) => {
@@ -745,11 +749,11 @@ if (!latestPeriodId) {
       const fieldCount = template.detectedFields?.length || 0;
       return `
     <div style="text-align: center;">
-      <div style="background: #f9fafb; padding: 2rem; border-radius: 8px; margin-bottom: 1rem;">
-        <p style="margin: 0 0 1rem 0; font-size: 1.1rem; color: #374151;">
+      <div style="background: var(--bg-sunken); padding: 2rem; border-radius: 8px; margin-bottom: 1rem;">
+        <p style="margin: 0 0 1rem 0; font-size: 1.1rem; color: var(--fg-3);">
           <strong>Bill will be generated using your uploaded PDF template</strong>
         </p>
-        <p style="margin: 0; font-size: 0.95rem; color: #6b7280;">
+        <p style="margin: 0; font-size: 0.95rem; color: var(--fg-4);">
           ${
             hasFormFields
               ? `Auto-detected ${fieldCount} fillable fields`
@@ -757,56 +761,56 @@ if (!latestPeriodId) {
           }
         </p>
       </div>
-      <div style="background: white; padding: 2rem; border-radius: 8px; border: 2px solid #e5e7eb; text-align: left;">
-        <h3 style="margin: 0 0 1.5rem 0; color: #1f2937; border-bottom: 2px solid #4f46e5; padding-bottom: 0.75rem;">
+      <div style="background: white; padding: 2rem; border-radius: 8px; border: 2px solid var(--border); text-align: left;">
+        <h3 style="margin: 0 0 1.5rem 0; color: var(--fg-2); border-bottom: 2px solid var(--primary); padding-bottom: 0.75rem;">
           Data to be filled in PDF:
         </h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
           <div>
-            <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">Member Name</div>
-            <div style="font-size: 1.1rem; font-weight: 600; color: #1f2937;">${billData.memberName}</div>
+            <div style="font-size: 0.875rem; color: var(--fg-4); margin-bottom: 0.25rem;">Member Name</div>
+            <div style="font-size: 1.1rem; font-weight: 600; color: var(--fg-2);">${billData.memberName}</div>
           </div>
           <div>
-            <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">Flat No</div>
-            <div style="font-size: 1.1rem; font-weight: 600; color: #1f2937;">${billData.member}</div>
+            <div style="font-size: 0.875rem; color: var(--fg-4); margin-bottom: 0.25rem;">Flat No</div>
+            <div style="font-size: 1.1rem; font-weight: 600; color: var(--fg-2);">${billData.member}</div>
           </div>
           <div>
-            <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">Area</div>
-            <div style="font-size: 1.1rem; font-weight: 600; color: #1f2937;">${billData.area} sq ft</div>
+            <div style="font-size: 0.875rem; color: var(--fg-4); margin-bottom: 0.25rem;">Area</div>
+            <div style="font-size: 1.1rem; font-weight: 600; color: var(--fg-2);">${billData.area} sq ft</div>
           </div>
           <div>
-            <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">Bill Period</div>
-            <div style="font-size: 1.1rem; font-weight: 600; color: #1f2937;">${billYear}-${String(billMonth + 1).padStart(2, "0")}</div>
+            <div style="font-size: 0.875rem; color: var(--fg-4); margin-bottom: 0.25rem;">Bill Period</div>
+            <div style="font-size: 1.1rem; font-weight: 600; color: var(--fg-2);">${billYear}-${String(billMonth + 1).padStart(2, "0")}</div>
           </div>
         </div>
-        <h4 style="margin: 0 0 1rem 0; color: #374151; font-size: 1rem;">Current Month Charges:</h4>
+        <h4 style="margin: 0 0 1rem 0; color: var(--fg-3); font-size: 1rem;">Current Month Charges:</h4>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.5rem;">
           <thead>
-            <tr style="background: #f3f4f6;">
-              <th style="padding: 0.75rem; text-align: left; border: 1px solid #e5e7eb; font-size: 0.875rem;">Sr.</th>
-              <th style="padding: 0.75rem; text-align: left; border: 1px solid #e5e7eb; font-size: 0.875rem;">Particulars</th>
-              <th style="padding: 0.75rem; text-align: right; border: 1px solid #e5e7eb; font-size: 0.875rem;">Amount (Rs)</th>
+            <tr style="background: var(--bg-muted);">
+              <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border); font-size: 0.875rem;">Sr.</th>
+              <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border); font-size: 0.875rem;">Particulars</th>
+              <th style="padding: 0.75rem; text-align: right; border: 1px solid var(--border); font-size: 0.875rem;">Amount (Rs)</th>
             </tr>
           </thead>
           <tbody>
             ${billData.charges
               .map(
                 (charge, idx) => `
-              <tr style="background: ${idx % 2 === 0 ? "#ffffff" : "#f9fafb"};">
-                <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">${idx + 1}</td>
-                <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">${charge.name}</td>
-                <td style="padding: 0.75rem; text-align: right; border: 1px solid #e5e7eb; font-weight: 600;">
+              <tr style="background: ${idx % 2 === 0 ? "var(--bg-surface)" : "var(--bg-sunken)"};">
+                <td style="padding: 0.75rem; border: 1px solid var(--border);">${idx + 1}</td>
+                <td style="padding: 0.75rem; border: 1px solid var(--border);">${charge.name}</td>
+                <td style="padding: 0.75rem; text-align: right; border: 1px solid var(--border); font-weight: 600;">
                   ${charge.amount.toFixed(2)}
                 </td>
               </tr>
             `,
               )
               .join("")}
-            <tr style="background: #dbeafe; font-weight: 700;">
-              <td colspan="2" style="padding: 1rem; text-align: right; border: 1px solid #e5e7eb; color: #1e40af;">
+            <tr style="background: var(--primary-tint); font-weight: 700;">
+              <td colspan="2" style="padding: 1rem; text-align: right; border: 1px solid var(--border); color: var(--primary-hover);">
                 Current Month Total
               </td>
-              <td style="padding: 1rem; text-align: right; border: 1px solid #e5e7eb; color: #1e40af; font-size: 1.2rem;">
+              <td style="padding: 1rem; text-align: right; border: 1px solid var(--border); color: var(--primary-hover); font-size: 1.2rem;">
                 Rs ${billData.currentBillTotal.toFixed(2)}
               </td>
             </tr>
@@ -815,15 +819,15 @@ if (!latestPeriodId) {
         ${
           (billData.notCharged || []).length
             ? `
-        <div style="border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 1.5rem; overflow: hidden;">
-          <div style="padding: 0.6rem 0.75rem; background: #f9fafb; font-size: 0.8rem; font-weight: 700; color: #374151;">
+        <div style="border: 1px solid var(--border); border-radius: 8px; margin-bottom: 1.5rem; overflow: hidden;">
+          <div style="padding: 0.6rem 0.75rem; background: var(--bg-sunken); font-size: 0.8rem; font-weight: 700; color: var(--fg-3);">
             On the rate card but not charged to this unit
           </div>
           ${billData.notCharged
             .map(
               (n) => `
-            <div style="padding: 0.6rem 0.75rem; border-top: 1px solid #e5e7eb; font-size: 0.8rem; color: #4b5563; line-height: 1.5;">
-              <b style="color: #374151;">${n.name}</b> &mdash; ${n.reason}
+            <div style="padding: 0.6rem 0.75rem; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--fg-3); line-height: 1.5;">
+              <b style="color: var(--fg-3);">${n.name}</b> &mdash; ${n.reason}
             </div>
           `,
             )
@@ -835,16 +839,16 @@ if (!latestPeriodId) {
         ${
           Math.abs(billData.previousBalance) > 0
             ? `
-          <div style="background: ${billData.previousBalance > 0 ? "#fee2e2" : "#d1fae5"}; border-left: 4px solid ${billData.previousBalance > 0 ? "#dc2626" : "#059669"}; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
-            <h4 style="margin: 0 0 1rem 0; color: ${billData.previousBalance > 0 ? "#991b1b" : "#065f46"};">
+          <div style="background: ${billData.previousBalance > 0 ? "var(--danger-bg)" : "var(--success-bg)"}; border-left: 4px solid ${billData.previousBalance > 0 ? "var(--danger)" : "var(--success)"}; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+            <h4 style="margin: 0 0 1rem 0; color: ${billData.previousBalance > 0 ? "var(--danger-fg)" : "var(--success-fg)"};">
               ${billData.previousBalance > 0 ? "Previous Outstanding Balance" : "Opening Balance Credit"}
             </h4>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
               <div>
-                <div style="font-size: 0.875rem; color: ${billData.previousBalance > 0 ? "#7f1d1d" : "#065f46"}; margin-bottom: 0.5rem;">
+                <div style="font-size: 0.875rem; color: ${billData.previousBalance > 0 ? "var(--danger-fg)" : "var(--success-fg)"}; margin-bottom: 0.5rem;">
                   ${billData.previousBalance > 0 ? "Amount Owed" : "Credit Adjustment"}
                 </div>
-                <div style="font-size: 1.75rem; font-weight: 700; color: ${billData.previousBalance > 0 ? "#dc2626" : "#059669"};">
+                <div style="font-size: 1.75rem; font-weight: 700; color: ${billData.previousBalance > 0 ? "var(--danger)" : "var(--success)"};">
                   Rs ${Math.abs(billData.previousBalance).toLocaleString("en-IN")}
                 </div>
                 ${
@@ -858,10 +862,10 @@ if (!latestPeriodId) {
                 }
               </div>
               <div>
-                <div style="font-size: 0.875rem; color: ${billData.previousBalance > 0 ? "#7f1d1d" : "#065f46"}; margin-bottom: 0.5rem;">
+                <div style="font-size: 0.875rem; color: ${billData.previousBalance > 0 ? "var(--danger-fg)" : "var(--success-fg)"}; margin-bottom: 0.5rem;">
                   Days ${billData.previousBalance > 0 ? "Overdue" : "in Credit"}
                 </div>
-                <div style="font-size: 1.75rem; font-weight: 700; color: ${billData.previousBalance > 0 ? "#dc2626" : "#059669"};">
+                <div style="font-size: 1.75rem; font-weight: 700; color: ${billData.previousBalance > 0 ? "var(--danger)" : "var(--success)"};">
                   ${billData.previousBalanceDays} days
                 </div>
               </div>
@@ -869,7 +873,7 @@ if (!latestPeriodId) {
             ${
               billData.interestAmount > 0
                 ? `
-              <div style="background: #7f1d1d; color: white; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+              <div style="background: var(--danger-fg); color: white; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                   <div style="font-size: 0.95rem; font-weight: 600;">Interest Charged</div>
                   <div style="font-size: 1.5rem; font-weight: 700;">Rs ${billData.interestAmount.toLocaleString("en-IN")}</div>
@@ -900,34 +904,34 @@ if (!latestPeriodId) {
         ${
           billData.advanceCredit > 0
             ? `
-        <div style="background:#d1fae5;border:2px solid #059669;border-radius:8px;padding:1rem 1.5rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">
+        <div style="background:var(--success-bg);border:2px solid var(--success);border-radius:8px;padding:1rem 1.5rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">
           <div>
-            <div style="font-weight:700;color:#065f46;font-size:0.95rem;">Advance Credit Applied</div>
-            <div style="font-size:0.8rem;color:#065f46;margin-top:2px;">Overpayment from previous month adjusted</div>
+            <div style="font-weight:700;color:var(--success-fg);font-size:0.95rem;">Advance Credit Applied</div>
+            <div style="font-size:0.8rem;color:var(--success-fg);margin-top:2px;">Overpayment from previous month adjusted</div>
           </div>
-          <div style="font-size:1.5rem;font-weight:700;color:#059669;">- Rs ${billData.advanceCredit.toFixed(2)}</div>
+          <div style="font-size:1.5rem;font-weight:700;color:var(--success);">- Rs ${billData.advanceCredit.toFixed(2)}</div>
         </div>`
             : ""
         }
-        <div style="background: #dbeafe; padding: 1.5rem; border-radius: 8px; border: 3px solid #1e40af; margin-bottom: 1rem;">
+        <div style="background: var(--primary-tint); padding: 1.5rem; border-radius: 8px; border: 3px solid var(--primary-hover); margin-bottom: 1rem;">
          <div style="display: flex; justify-content: space-between; align-items: center;">
-  <div style="font-size: 1.2rem; font-weight: 700; color: ${billData.grandTotal <= 0 ? "#059669" : "#1e40af"};">
+  <div style="font-size: 1.2rem; font-weight: 700; color: ${billData.grandTotal <= 0 ? "var(--success)" : "var(--primary-hover)"};">
     ${billData.grandTotal <= 0 ? "ADVANCE CREDIT BALANCE" : "TOTAL AMOUNT PAYABLE"}
   </div>
-  <div style="font-size: 1.8rem; font-weight: 700; color: ${billData.grandTotal <= 0 ? "#059669" : "#1e40af"};">
+  <div style="font-size: 1.8rem; font-weight: 700; color: ${billData.grandTotal <= 0 ? "var(--success)" : "var(--primary-hover)"};">
     Rs ${Math.abs(billData.grandTotal).toFixed(2)}
   </div>
 </div>
 ${
   billData.grandTotal <= 0
     ? `
-  <div style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; background: #d1fae5; border-radius: 6px; font-size: 0.8rem; color: #065f46;">
+  <div style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; background: var(--success-bg); border-radius: 6px; font-size: 0.8rem; color: var(--success-fg);">
     No payment due. Rs ${Math.abs(billData.grandTotal).toFixed(2)} credit will be adjusted in next bill.
   </div>
 `
     : ""
 }
-          <div style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #1e40af; font-size: 0.85rem; color: #1e40af; line-height: 1.8;">
+          <div style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid var(--primary-hover); font-size: 0.85rem; color: var(--primary-hover); line-height: 1.8;">
             ${billData.previousBalance > 0 ? "Previous Balance: Rs " + billData.previousBalance.toFixed(2) + "<br/>" : ""}
             ${(billData.prevRemPrincipal || 0) > 0 ? "Principal carried: Rs " + billData.prevRemPrincipal.toFixed(2) + "<br/>" : ""}
             ${(billData.currInt || 0) > 0 ? "Interest (Rs " + billData.prevRemPrincipal.toFixed(2) + " × " + billData.interestRate + "% ÷ 12): Rs " + billData.currInt.toFixed(2) + "<br/>" : "No interest (no outstanding principal)<br/>"}
@@ -936,14 +940,14 @@ ${
             <br/><strong>Total: Rs ${Math.abs(billData.grandTotal).toFixed(2)}</strong>
           </div>
         </div>
-        <div style="background: #f9fafb; padding: 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
-          <p style="margin: 0; font-size: 0.875rem; color: #6b7280; text-align: center;">
+        <div style="background: var(--bg-sunken); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+          <p style="margin: 0; font-size: 0.875rem; color: var(--fg-4); text-align: center;">
             Click "Generate All Bills" to create PDF bills using your template
           </p>
         </div>
       </div>
-      <div style="margin-top: 2rem; border: 2px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-        <div style="background: #1f2937; color: white; padding: 1rem; font-weight: 600;">
+      <div style="margin-top: 2rem; border: 2px solid var(--border); border-radius: 8px; overflow: hidden;">
+        <div style="background: var(--fg-2); color: white; padding: 1rem; font-weight: 600;">
           Your PDF Template (data will be filled here)
         </div>
         <iframe
@@ -957,16 +961,16 @@ ${
     if (template?.type === "uploaded-image" && template?.imageUrl) {
       return `
       <div style="text-align: center;">
-        <div style="background: #f9fafb; padding: 2rem; border-radius: 8px; margin-bottom: 1rem;">
-          <p style="margin: 0 0 1rem 0; font-size: 1.1rem; color: #374151;">
+        <div style="background: var(--bg-sunken); padding: 2rem; border-radius: 8px; margin-bottom: 1rem;">
+          <p style="margin: 0 0 1rem 0; font-size: 1.1rem; color: var(--fg-3);">
             <strong>Bill will be generated using your uploaded image template</strong>
           </p>
-          <p style="margin: 0; font-size: 0.95rem; color: #6b7280;">
+          <p style="margin: 0; font-size: 0.95rem; color: var(--fg-4);">
             Data will be overlaid on the image
           </p>
         </div>
-        <div style="margin-top: 2rem; border: 2px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-          <div style="background: #1f2937; color: white; padding: 1rem; font-weight: 600;">
+        <div style="margin-top: 2rem; border: 2px solid var(--border); border-radius: 8px; overflow: hidden;">
+          <div style="background: var(--fg-2); color: white; padding: 1rem; font-weight: 600;">
             Your Image Template (data will be overlaid)
           </div>
           <img src="${template.imageUrl}" style="width: 100%; height: auto;" />
@@ -976,19 +980,20 @@ ${
     }
     const society = societyData?.society || {};
     const design = template?.design || {
-      headerBg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-      headerColor: "#ffffff",
+      /* TODO: unmapped color, needs design review */
+      headerBg: "linear-gradient(135deg, var(--accent) 0%, var(--fg-4) 100%)",
+      headerColor: "var(--bg-surface)",
       societyNameSize: 28,
       addressSize: 14,
       billTitleSize: 22,
       billTitleAlign: "center",
-      tableHeaderBg: "#4f46e5",
-      tableHeaderColor: "#ffffff",
-      tableRowBg1: "#ffffff",
-      tableRowBg2: "#f9fafb",
-      tableBorderColor: "#e5e7eb",
-      totalBg: "#dbeafe",
-      totalColor: "#1e40af",
+      tableHeaderBg: "var(--primary)",
+      tableHeaderColor: "var(--bg-surface)",
+      tableRowBg1: "var(--bg-surface)",
+      tableRowBg2: "var(--bg-sunken)",
+      tableBorderColor: "var(--border)",
+      totalBg: "var(--primary-tint)",
+      totalColor: "var(--primary-hover)",
       totalSize: 20,
       footerSize: 10,
       footerText: [
@@ -1002,16 +1007,16 @@ ${
     const logoUrl = template?.logoUrl || "";
     const signatureUrl = template?.signatureUrl || "";
     return `
-    <div style="max-width: 800px; margin: 0 auto; padding: 40px; font-family: Arial, sans-serif; background: white; border: 1px solid #e5e7eb; border-radius: 8px;">
+    <div style="max-width: 800px; margin: 0 auto; padding: 40px; font-family: Arial, sans-serif; background: white; border: 1px solid var(--border); border-radius: 8px;">
       <div style="background: ${design.headerBg}; color: ${design.headerColor}; padding: 30px; border-radius: 8px; margin-bottom: 30px;">
         ${logoUrl ? `<img src="${logoUrl}" style="width: 80px; margin-bottom: 15px;" />` : ""}
         <h1 style="margin: 0; font-size: ${design.societyNameSize}px;">${society.name || "Society Name"}</h1>
         <p style="margin: 5px 0 0 0; font-size: ${design.addressSize}px; opacity: 0.9;">${society.address || ""}</p>
       </div>
-      <h2 style="text-align: ${design.billTitleAlign}; font-size: ${design.billTitleSize}px; margin: 0 0 20px 0; color: #1f2937;">
+      <h2 style="text-align: ${design.billTitleAlign}; font-size: ${design.billTitleSize}px; margin: 0 0 20px 0; color: var(--fg-2);">
         MAINTENANCE BILL
       </h2>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; padding: 20px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; padding: 20px; background: var(--bg-sunken); border-radius: 8px; border: 1px solid var(--border);">
         <div><strong>Bill Period:</strong> ${billYear}-${String(billMonth + 1).padStart(2, "0")}</div>
         <div><strong>Bill Date:</strong> ${new Date().toLocaleDateString("en-IN")}</div>
         <div><strong>Member:</strong> ${billData.member}</div>
@@ -1022,30 +1027,30 @@ ${
 ${
   Math.abs(billData.previousBalance) > 0
     ? `
-        <div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
-          <h4 style="margin: 0 0 1rem 0; color: #991b1b;">Previous Outstanding Balance</h4>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid #fca5a5;">
+        <div style="background: var(--danger-bg); border-left: 4px solid var(--danger); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+          <h4 style="margin: 0 0 1rem 0; color: var(--danger-fg);">Previous Outstanding Balance</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--danger-bg);">
             <div>
-              <div style="font-size: 0.875rem; color: #7f1d1d; margin-bottom: 0.5rem;">Total Outstanding</div>
-              <div style="font-size: 1.75rem; font-weight: 700; color: #dc2626;">Rs ${billData.previousBalance.toLocaleString("en-IN")}</div>
+              <div style="font-size: 0.875rem; color: var(--danger-fg); margin-bottom: 0.5rem;">Total Outstanding</div>
+              <div style="font-size: 1.75rem; font-weight: 700; color: var(--danger);">Rs ${billData.previousBalance.toLocaleString("en-IN")}</div>
             </div>
             <div>
-              <div style="font-size: 0.875rem; color: #7f1d1d; margin-bottom: 0.5rem;">${billData.previousBalance < 0 ? "Days in Credit" : "Days Overdue"}</div>
-              <div style="font-size: 1.75rem; font-weight: 700; color: #dc2626;">${billData.previousBalanceDays || 0} days</div>
+              <div style="font-size: 0.875rem; color: var(--danger-fg); margin-bottom: 0.5rem;">${billData.previousBalance < 0 ? "Days in Credit" : "Days Overdue"}</div>
+              <div style="font-size: 1.75rem; font-weight: 700; color: var(--danger);">${billData.previousBalanceDays || 0} days</div>
             </div>
           </div>
           ${
             billData.unpaidBills && billData.unpaidBills.length > 0
               ? `
             <div style="margin-bottom: 1.5rem;">
-              <h5 style="margin: 0 0 0.75rem 0; font-size: 0.95rem; color: #7f1d1d; font-weight: 600;">Unpaid Bills:</h5>
+              <h5 style="margin: 0 0 0.75rem 0; font-size: 0.95rem; color: var(--danger-fg); font-weight: 600;">Unpaid Bills:</h5>
               <table style="width: 100%; font-size: 0.875rem; border-collapse: collapse;">
                 <thead>
-                  <tr style="background: #fca5a5;">
-                    <th style="padding: 0.5rem; text-align: left; border: 1px solid #dc2626; color: #7f1d1d;">Period</th>
-                    <th style="padding: 0.5rem; text-align: right; border: 1px solid #dc2626; color: #7f1d1d;">Amount</th>
-                    <th style="padding: 0.5rem; text-align: center; border: 1px solid #dc2626; color: #7f1d1d;">Due Date</th>
-                    <th style="padding: 0.5rem; text-align: center; border: 1px solid #dc2626; color: #7f1d1d;">Status</th>
+                  <tr style="background: var(--danger-bg);">
+                    <th style="padding: 0.5rem; text-align: left; border: 1px solid var(--danger); color: var(--danger-fg);">Period</th>
+                    <th style="padding: 0.5rem; text-align: right; border: 1px solid var(--danger); color: var(--danger-fg);">Amount</th>
+                    <th style="padding: 0.5rem; text-align: center; border: 1px solid var(--danger); color: var(--danger-fg);">Due Date</th>
+                    <th style="padding: 0.5rem; text-align: center; border: 1px solid var(--danger); color: var(--danger-fg);">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1053,11 +1058,11 @@ ${
                     .map(
                       (bill) => `
                     <tr style="background: white;">
-                      <td style="padding: 0.5rem; border: 1px solid #fca5a5; font-weight: 600;">${bill.billPeriodId}</td>
-                      <td style="padding: 0.5rem; text-align: right; border: 1px solid #fca5a5; font-weight: 600; color: #dc2626;">Rs ${(bill.balanceAmount ?? bill.amount ?? 0).toFixed(2)}</td>
-                      <td style="padding: 0.5rem; text-align: center; border: 1px solid #fca5a5; font-size: 0.8rem;">${new Date(bill.dueDate).toLocaleDateString("en-IN")}</td>
-                      <td style="padding: 0.5rem; text-align: center; border: 1px solid #fca5a5;">
-                        <span style="background: #dc2626; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">${bill.status}</span>
+                      <td style="padding: 0.5rem; border: 1px solid var(--danger-bg); font-weight: 600;">${bill.billPeriodId}</td>
+                      <td style="padding: 0.5rem; text-align: right; border: 1px solid var(--danger-bg); font-weight: 600; color: var(--danger);">Rs ${(bill.balanceAmount ?? bill.amount ?? 0).toFixed(2)}</td>
+                      <td style="padding: 0.5rem; text-align: center; border: 1px solid var(--danger-bg); font-size: 0.8rem;">${new Date(bill.dueDate).toLocaleDateString("en-IN")}</td>
+                      <td style="padding: 0.5rem; text-align: center; border: 1px solid var(--danger-bg);">
+                        <span style="background: var(--danger); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">${bill.status}</span>
                       </td>
                     </tr>
                   `,
@@ -1074,15 +1079,15 @@ ${
             billData.recentTransactions.length > 0
               ? `
             <div style="margin-bottom: 1.5rem;">
-              <h5 style="margin: 0 0 0.75rem 0; font-size: 0.95rem; color: #7f1d1d; font-weight: 600;">Recent Transactions:</h5>
+              <h5 style="margin: 0 0 0.75rem 0; font-size: 0.95rem; color: var(--danger-fg); font-weight: 600;">Recent Transactions:</h5>
               <table style="width: 100%; font-size: 0.8rem; border-collapse: collapse;">
                 <thead>
-                  <tr style="background: #fca5a5;">
-                    <th style="padding: 0.5rem; text-align: left; border: 1px solid #dc2626; color: #7f1d1d;">Date</th>
-                    <th style="padding: 0.5rem; text-align: left; border: 1px solid #dc2626; color: #7f1d1d;">Description</th>
-                    <th style="padding: 0.5rem; text-align: right; border: 1px solid #dc2626; color: #7f1d1d;">Debit</th>
-                    <th style="padding: 0.5rem; text-align: right; border: 1px solid #dc2626; color: #7f1d1d;">Credit</th>
-                    <th style="padding: 0.5rem; text-align: right; border: 1px solid #dc2626; color: #7f1d1d;">Balance</th>
+                  <tr style="background: var(--danger-bg);">
+                    <th style="padding: 0.5rem; text-align: left; border: 1px solid var(--danger); color: var(--danger-fg);">Date</th>
+                    <th style="padding: 0.5rem; text-align: left; border: 1px solid var(--danger); color: var(--danger-fg);">Description</th>
+                    <th style="padding: 0.5rem; text-align: right; border: 1px solid var(--danger); color: var(--danger-fg);">Debit</th>
+                    <th style="padding: 0.5rem; text-align: right; border: 1px solid var(--danger); color: var(--danger-fg);">Credit</th>
+                    <th style="padding: 0.5rem; text-align: right; border: 1px solid var(--danger); color: var(--danger-fg);">Balance</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1091,18 +1096,18 @@ ${
                     .map(
                       (txn) => `
                     <tr style="background: white;">
-                      <td style="padding: 0.5rem; border: 1px solid #fca5a5; font-size: 0.75rem;">${new Date(txn.date).toLocaleDateString("en-IN")}</td>
-                      <td style="padding: 0.5rem; border: 1px solid #fca5a5;">
+                      <td style="padding: 0.5rem; border: 1px solid var(--danger-bg); font-size: 0.75rem;">${new Date(txn.date).toLocaleDateString("en-IN")}</td>
+                      <td style="padding: 0.5rem; border: 1px solid var(--danger-bg);">
                         ${txn.description || txn.category}
-                        ${txn.billPeriod ? '<br/><span style="font-size: 0.7rem; color: #7f1d1d;">(' + txn.billPeriod + ")</span>" : ""}
+                        ${txn.billPeriod ? '<br/><span style="font-size: 0.7rem; color: var(--danger-fg);">(' + txn.billPeriod + ")</span>" : ""}
                       </td>
-                      <td style="padding: 0.5rem; text-align: right; border: 1px solid #fca5a5; color: ${txn.type === "Debit" ? "#dc2626" : "#9ca3af"}; font-weight: ${txn.type === "Debit" ? "600" : "400"};">
+                      <td style="padding: 0.5rem; text-align: right; border: 1px solid var(--danger-bg); color: ${txn.type === "Debit" ? "var(--danger)" : "var(--fg-5)"}; font-weight: ${txn.type === "Debit" ? "600" : "400"};">
                         ${txn.type === "Debit" ? "Rs " + txn.amount.toFixed(2) : "-"}
                       </td>
-                      <td style="padding: 0.5rem; text-align: right; border: 1px solid #fca5a5; color: ${txn.type === "Credit" ? "#059669" : "#9ca3af"}; font-weight: ${txn.type === "Credit" ? "600" : "400"};">
+                      <td style="padding: 0.5rem; text-align: right; border: 1px solid var(--danger-bg); color: ${txn.type === "Credit" ? "var(--success)" : "var(--fg-5)"}; font-weight: ${txn.type === "Credit" ? "600" : "400"};">
                         ${txn.type === "Credit" ? "Rs " + txn.amount.toFixed(2) : "-"}
                       </td>
-                      <td style="padding: 0.5rem; text-align: right; border: 1px solid #fca5a5; font-weight: 600; color: ${txn.balance >= 0 ? "#059669" : "#dc2626"};">
+                      <td style="padding: 0.5rem; text-align: right; border: 1px solid var(--danger-bg); font-weight: 600; color: ${txn.balance >= 0 ? "var(--success)" : "var(--danger)"};">
                         Rs ${txn.balance.toFixed(2)}
                       </td>
                     </tr>
@@ -1118,7 +1123,7 @@ ${
           ${
             billData.interestAmount > 0
               ? `
-            <div style="background: #7f1d1d; color: white; padding: 1rem; border-radius: 8px;">
+            <div style="background: var(--danger-fg); color: white; padding: 1rem; border-radius: 8px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                 <div style="font-size: 0.95rem; font-weight: 600;">Interest Charged</div>
                 <div style="font-size: 1.5rem; font-weight: 700;">Rs ${billData.interestAmount.toLocaleString("en-IN")}</div>
@@ -1135,7 +1140,7 @@ ${
       `
     : ""
 }
-      <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #374151; font-weight: 600;">Current Month Charges</h3>
+      <h3 style="margin: 0 0 15px 0; font-size: 16px; color: var(--fg-3); font-weight: 600;">Current Month Charges</h3>
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
         <thead>
           <tr style="background: ${design.tableHeaderBg}; color: ${design.tableHeaderColor};">
@@ -1154,7 +1159,7 @@ ${
               <td style="padding: 10px; border: 1px solid ${design.tableBorderColor}; font-size: 13px;">
                 <strong>${charge.name}</strong>
               </td>
-              <td style="padding: 10px; text-align: center; border: 1px solid ${design.tableBorderColor}; font-size: 12px; color: #6b7280;">
+              <td style="padding: 10px; text-align: center; border: 1px solid ${design.tableBorderColor}; font-size: 12px; color: var(--fg-4);">
                 ${charge.calculation || (charge.fixed ? "Fixed" : "-")}
               </td>
               <td style="padding: 10px; text-align: right; border: 1px solid ${design.tableBorderColor}; font-weight: 600; font-size: 13px;">
@@ -1164,7 +1169,7 @@ ${
           `,
             )
             .join("")}
-          <tr style="background: #f9fafb;">
+          <tr style="background: var(--bg-sunken);">
             <td colspan="3" style="padding: 12px; text-align: right; border: 1px solid ${design.tableBorderColor}; font-weight: 600; font-size: 14px;">Subtotal</td>
             <td style="padding: 12px; text-align: right; border: 1px solid ${design.tableBorderColor}; font-weight: 700; font-size: 14px;">
               ${billData.subtotal.toFixed(2)}
@@ -1173,7 +1178,7 @@ ${
           ${
             billData.serviceTax > 0
               ? `
-            <tr style="background: #f9fafb;">
+            <tr style="background: var(--bg-sunken);">
               <td colspan="3" style="padding: 10px; text-align: right; border: 1px solid ${design.tableBorderColor}; font-size: 13px;">Service Tax (${billData.serviceTaxRate}%)</td>
               <td style="padding: 10px; text-align: right; border: 1px solid ${design.tableBorderColor}; font-weight: 600; font-size: 13px;">
                 ${billData.serviceTax.toFixed(2)}
@@ -1194,8 +1199,8 @@ ${
       </table>
       <div style="background: ${design.totalBg}; padding: 25px; border-radius: 8px; margin-bottom: 30px; border: 3px solid ${design.totalColor};">
         <div style="margin-bottom: 15px;">
-          <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">Calculation:</div>
-          <div style="font-size: 13px; color: #374151; line-height: 1.6;">
+          <div style="font-size: 12px; color: var(--fg-4); margin-bottom: 8px;">Calculation:</div>
+          <div style="font-size: 13px; color: var(--fg-3); line-height: 1.6;">
 ${
   Math.abs(billData.previousBalance) > 0
     ? `
@@ -1213,18 +1218,18 @@ ${
             <div>Current Bill: <strong>+Rs ${billData.currentBillTotal.toFixed(2)}</strong></div>
           </div>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 15px; border-top: 2px solid ${billData.grandTotal <= 0 ? "#059669" : design.totalColor};">
-  <div style="font-size: 16px; font-weight: 700; color: ${billData.grandTotal <= 0 ? "#059669" : design.totalColor};">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 15px; border-top: 2px solid ${billData.grandTotal <= 0 ? "var(--success)" : design.totalColor};">
+  <div style="font-size: 16px; font-weight: 700; color: ${billData.grandTotal <= 0 ? "var(--success)" : design.totalColor};">
     ${billData.grandTotal <= 0 ? "ADVANCE CREDIT BALANCE" : "TOTAL AMOUNT PAYABLE"}
   </div>
-  <div style="font-size: ${design.totalSize}px; font-weight: 700; color: ${billData.grandTotal <= 0 ? "#059669" : design.totalColor};">
+  <div style="font-size: ${design.totalSize}px; font-weight: 700; color: ${billData.grandTotal <= 0 ? "var(--success)" : design.totalColor};">
     Rs ${Math.abs(billData.grandTotal).toFixed(2)}
   </div>
 </div>
 ${
   billData.grandTotal <= 0
     ? `
-  <div style="margin-top: 10px; padding: 8px 12px; background: #d1fae5; border-radius: 6px; font-size: 11px; color: #065f46;">
+  <div style="margin-top: 10px; padding: 8px 12px; background: var(--success-bg); border-radius: 6px; font-size: 11px; color: var(--success-fg);">
     No payment due. Rs ${Math.abs(billData.grandTotal).toFixed(2)} credit will be adjusted in next bill.
   </div>
 `
@@ -1234,9 +1239,9 @@ ${
       ${
         design.footerText && design.footerText.length > 0
           ? `
-        <div style="border-top: 2px solid #e5e7eb; padding-top: 20px; margin-bottom: 30px;">
-          <strong style="display: block; margin-bottom: 10px; color: #1f2937;">Terms & Conditions:</strong>
-          <ol style="margin: 0; padding-left: 20px; font-size: ${design.footerSize}px; color: #6b7280; line-height: 1.8;">
+        <div style="border-top: 2px solid var(--border); padding-top: 20px; margin-bottom: 30px;">
+          <strong style="display: block; margin-bottom: 10px; color: var(--fg-2);">Terms & Conditions:</strong>
+          <ol style="margin: 0; padding-left: 20px; font-size: ${design.footerSize}px; color: var(--fg-4); line-height: 1.8;">
             ${design.footerText.map((text) => `<li style="margin-bottom: 5px;">${text}</li>`).join("")}
           </ol>
         </div>
@@ -1253,48 +1258,21 @@ ${
             <img src="${signatureUrl}" style="width: 150px; height: auto; margin-bottom: 10px;" />
           `
               : `
-            <div style="height: 60px; border-bottom: 2px solid #000; width: 200px; margin-left: auto; margin-bottom: 10px;"></div>
+            <div style="height: 60px; border-bottom: 2px solid var(--fg-1); width: 200px; margin-left: auto; margin-bottom: 10px;"></div>
           `
           }
-          <div style="font-size: 12px; color: #6b7280; font-weight: 600;">${design.signatureLabel || "Authorized Signatory"}</div>
+          <div style="font-size: 12px; color: var(--fg-4); font-weight: 600;">${design.signatureLabel || "Authorized Signatory"}</div>
         </div>
       `
           : ""
       }
-      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 10px; color: #9ca3af;">
+      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); text-align: center; font-size: 10px; color: var(--fg-5);">
         Generated on ${new Date().toLocaleString("en-IN")} | Computer Generated Bill
       </div>
     </div>
   `;
   };
   const currentBill = previewData?.[previewIndex];
-  const billTemplateDisabled =
-    billMonth === null ||
-    billYear === null;
-  const downloadBillTemplate = async () => {
-    if (billMonth === null || billYear === null) return;
-    try {
-      const memberIdsParam = allMembers.map((m) => m._id).join(",");
-      const res = await fetch(
-        `/api/billing/excel-template?month=${billMonth + 1}&year=${billYear}&memberIds=${encodeURIComponent(memberIdsParam)}`,
-        { credentials: "include" },
-      );
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        alert(e.error || "Download failed");
-        return;
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `BillTemplate_${periodLabel}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      alert("Download failed: " + e.message);
-    }
-  };
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -1358,41 +1336,12 @@ ${
       {segment.supportsExcelUpload && (
       <ExcelBillUploadFlow
         periodLabel={periodLabel}
-        billingHeadsData={billingHeadsData}
         hasValidPeriodLabel={hasValidPeriodLabel}
         isPreviewing={isPreviewing}
         previewProgress={previewProgress}
         generatePreview={generatePreview}
-        excelFile={excelFile}
-        setExcelFile={setExcelFile}
-        excelValidating={excelValidating}
-        billGrid={billGrid}
-        setBillGrid={setBillGrid}
-        excelValidation={excelValidation}
-        setExcelValidation={setExcelValidation}
-        diffIssues={diffIssues}
-        approvedDiffs={approvedDiffs}
-        setApprovedDiffs={setApprovedDiffs}
-        allDiffsApproved={allDiffsApproved}
         billMonth={billMonth}
         billYear={billYear}
-        queryClient={queryClient}
-        excelImporting={excelImporting}
-        setExcelImporting={setExcelImporting}
-        canGenerate={canGenerate}
-        setBillsGeneratedForPeriod={setBillsGeneratedForPeriod}
-        payGrid={payGrid}
-        setPayGrid={setPayGrid}
-        payPreview={payPreview}
-        setPayPreview={setPayPreview}
-        payBatchKey={payBatchKey}
-        setPayBatchKey={setPayBatchKey}
-        payConfirming={payConfirming}
-        setPayConfirming={setPayConfirming}
-        payConfirmProgress={payConfirmProgress}
-        setPayConfirmProgress={setPayConfirmProgress}
-        payResults={payResults}
-        setPayResults={setPayResults}
         nextGenScope={nextGenScope}
         setNextGenScope={setNextGenScope}
         nextPushMode={nextPushMode}
@@ -1402,7 +1351,6 @@ ${
         autoGenState={autoGenState}
         setAutoGenState={setAutoGenState}
         autoGenerateNextMonth={autoGenerateNextMonth}
-        runValidation={runValidation}
       />
       )}
       {/* ── Commercial wizard body ───────────────────────────────────────────
@@ -1413,8 +1361,8 @@ ${
       {!segment.supportsExcelUpload && (
         <div
           style={{
-            background: "#fff",
-            border: "2px solid #c7d2fe",
+            background: "var(--bg-surface)",
+            border: "2px solid var(--primary-tint)",
             borderRadius: "12px",
             marginBottom: "1.5rem",
             // Was `overflow: "hidden"`, which clipped the 1380px collections
@@ -1426,16 +1374,16 @@ ${
         >
           <div
             style={{
-              background: "#eef2ff",
+              background: "var(--accent-tint)",
               padding: "1rem 1.5rem",
-              borderBottom: "1px solid #c7d2fe",
+              borderBottom: "1px solid var(--primary-tint)",
             }}
           >
-            <h2 style={{ margin: 0, fontSize: "1.1rem", color: "#3730a3" }}>
+            <h2 style={{ margin: 0, fontSize: "1.1rem", color: "var(--primary)" }}>
               {segment.label} Bill Generation &amp; Payment Collection
             </h2>
             <p
-              style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "#6366f1" }}
+              style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "var(--accent)" }}
             >
               Charges come straight from the{" "}
               <a href="/admin/commercial/rate-card">Commercial Rate Card</a> —
@@ -1453,14 +1401,14 @@ ${
             {previewSkipped.length > 0 && (
               <div
                 style={{
-                  border: "1px solid #fcd34d",
-                  background: "#fffbeb",
+                  border: "1px solid var(--warning)",
+                  background: "var(--warning-bg)",
                   borderRadius: 10,
                   padding: "11px 13px",
                   marginBottom: 12,
                   fontSize: 13,
                   lineHeight: 1.55,
-                  color: "#92400e",
+                  color: "var(--warning-fg)",
                 }}
               >
                 <b>
@@ -1476,7 +1424,7 @@ ${
                       {sk.fixHref ? (
                         <>
                           {" "}
-                          <a href={sk.fixHref} style={{ fontWeight: 700, color: "#b45309" }}>
+                          <a href={sk.fixHref} style={{ fontWeight: 700, color: "var(--warning-fg)" }}>
                             Fix
                           </a>
                         </>
@@ -1506,11 +1454,11 @@ ${
                 <div
                   style={{
                     fontSize: "0.82rem",
-                    color: "#92400e",
+                    color: "var(--warning-fg)",
                     padding: "0.6rem 0.9rem",
-                    border: "1px solid #fcd34d",
+                    border: "1px solid var(--warning)",
                     borderRadius: "8px",
-                    background: "#fffbeb",
+                    background: "var(--warning-bg)",
                     maxWidth: 470,
                     lineHeight: 1.5,
                   }}
@@ -1528,11 +1476,11 @@ ${
                 <div
                   style={{
                     fontSize: "0.82rem",
-                    color: "#6b7280",
+                    color: "var(--fg-4)",
                     padding: "0.6rem 0.9rem",
-                    border: "1px dashed #d1d5db",
+                    border: "1px dashed var(--border-strong)",
                     borderRadius: "8px",
-                    background: "#f9fafb",
+                    background: "var(--bg-sunken)",
                   }}
                 >
                   Preparing billing period…
@@ -1580,7 +1528,7 @@ ${
                 <p
                   style={{
                     margin: "5px 0 0 0",
-                    color: "#6b7280",
+                    color: "var(--fg-4)",
                     fontSize: "0.95rem",
                   }}
                 >
@@ -1588,7 +1536,7 @@ ${
                   {currentBill.previousBalance > 0 && (
                     <span
                       style={{
-                        color: "#dc2626",
+                        color: "var(--danger)",
                         fontWeight: "600",
                         marginLeft: "15px",
                       }}
@@ -1652,7 +1600,7 @@ ${
                       style={{
                         marginTop: 6,
                         height: 4,
-                        background: "#dbeafe",
+                        background: "var(--primary-tint)",
                         borderRadius: 4,
                       }}
                     >
@@ -1660,7 +1608,7 @@ ${
                         style={{
                           width: `${genProgress.total ? (genProgress.current / genProgress.total) * 100 : 0}%`,
                           height: "100%",
-                          background: "#1e40af",
+                          background: "var(--primary-hover)",
                           borderRadius: 4,
                           transition: "width 0.3s ease",
                         }}

@@ -194,6 +194,16 @@ engineVersion: { type: String, default: "Ledger V2" },
 billPdfUrl: String,
     billHtml: String, // Stored HTML for preview and print
     renderedHtml: { type: String, select: false }, // stored but not returned by default
+    // Set true when the admin commits the collection sheet for this bill's
+    // own period (see collection-sheet/commit/route.js). Payability on the
+    // member side keys off THIS, not off whether a later bill happens to
+    // exist yet — a period the admin has processed is done, whether the
+    // next bill gets generated tomorrow or a year from now. Any balance
+    // still owed after closing keeps accruing as real debt (it is folded
+    // into whatever bill comes next, whenever that is), it just stops being
+    // shown as an urgent "pay this now" bill with its own due date.
+    periodClosed: { type: Boolean, default: false },
+
     // Soft delete - NO INDEX HERE
     isDeleted: { type: Boolean, default: false }, // ❌ REMOVED: index: true
     deletedAt: { type: Date },

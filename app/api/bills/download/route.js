@@ -171,10 +171,16 @@ export async function GET(request) {
     })
       .sort({ billYear: -1, billMonth: -1 })
       .lean();
+    // NOTE: colors below (and in printButton/htmlWrapper) are intentionally
+    // left as literal hex/rgb — this HTML is served as a standalone
+    // text/html document (opened in its own window/blob, printed to PDF) and
+    // never loads the app's globals.css, so var(--token) would not resolve
+    // here. The printed bill must render identically regardless of the
+    // viewer's app-side light/dark toggle.
     const prevBillPage = prevBill?.billHtml
-      ? `<div style="page-break-before:always; padding:40px; background:#fff;">
-          <div style="border-bottom:2px solid #e5e7eb; padding-bottom:12px; margin-bottom:24px;">
-            <h2 style="margin:0; font-size:16px; color:#6b7280;">
+      ? `<div style="page-break-before:always; padding:40px; background:var(--bg-surface);">
+          <div style="border-bottom:2px solid var(--border); padding-bottom:12px; margin-bottom:24px;">
+            <h2 style="margin:0; font-size:16px; color:var(--fg-4);">
               📎 Previous Month's Bill — ${prevBill.billPeriodId} (Reference Copy)
             </h2>
           </div>
@@ -193,7 +199,7 @@ export async function GET(request) {
         .replace(/\s+/g, "_")
         .replace(/[^a-zA-Z0-9_\-\.]/g, "");
     const printButton = `<div style="text-align:center; margin: 24px 0; padding-bottom: 16px;">
-      <button onclick="window.print()" style="background:#0c4e54;color:white;border:none;padding:10px 32px;border-radius:6px;font-size:15px;font-weight:600;cursor:pointer;">
+      <button onclick="window.print()" style="background:var(--success-fg);color:white;border:none;padding:10px 32px;border-radius:6px;font-size:15px;font-weight:600;cursor:pointer;">
         🖨️ Print / Save as PDF
       </button>
     </div>`;
@@ -203,7 +209,7 @@ export async function GET(request) {
   <meta charset="UTF-8"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 30px; color: #1a1a1a; }
+    body { font-family: Arial, sans-serif; background: var(--bg-muted); padding: 30px; color: var(--fg-1); }
     @media print {
       body { background: white; padding: 0; }
       .bill-wrapper { box-shadow: none !important; border-radius: 0 !important; }

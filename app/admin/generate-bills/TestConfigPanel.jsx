@@ -87,8 +87,8 @@ export default function TestConfigPanel({ members, periodLabel, onSaved }) {
   return (
     <div
       style={{
-        background: "#fffbeb",
-        border: "2px dashed #f59e0b",
+        background: "var(--warning-bg)",
+        border: "2px dashed var(--warning)",
         borderRadius: "12px",
         marginBottom: "1.5rem",
         overflow: "hidden",
@@ -107,7 +107,7 @@ export default function TestConfigPanel({ members, periodLabel, onSaved }) {
           gap: "0.5rem",
           fontSize: "0.9rem",
           fontWeight: 600,
-          color: "#92400e",
+          color: "var(--warning-fg)",
         }}
       >
         <span>{open ? "▼" : "▶"}</span>
@@ -115,7 +115,7 @@ export default function TestConfigPanel({ members, periodLabel, onSaved }) {
       </button>
       {open && (
         <div
-          style={{ padding: "1rem 1.25rem", borderTop: "1px dashed #f59e0b" }}
+          style={{ padding: "1rem 1.25rem", borderTop: "1px dashed var(--warning)" }}
         >
           <div
             style={{
@@ -143,7 +143,7 @@ export default function TestConfigPanel({ members, periodLabel, onSaved }) {
                 style={{
                   padding: "6px 10px",
                   borderRadius: 6,
-                  border: "1px solid #d97706",
+                  border: "1px solid var(--warning)",
                   minWidth: 180,
                 }}
               >
@@ -174,7 +174,7 @@ export default function TestConfigPanel({ members, periodLabel, onSaved }) {
                   style={{
                     padding: "6px 10px",
                     borderRadius: 6,
-                    border: "1px solid #d97706",
+                    border: "1px solid var(--warning)",
                     width: 120,
                   }}
                 />
@@ -188,7 +188,7 @@ export default function TestConfigPanel({ members, periodLabel, onSaved }) {
                   marginBottom: "0.5rem",
                   fontWeight: 600,
                   fontSize: "0.85rem",
-                  color: "#78350f",
+                  color: "var(--warning-fg)",
                 }}
               >
                 Parking Slots
@@ -197,7 +197,7 @@ export default function TestConfigPanel({ members, periodLabel, onSaved }) {
                 <div
                   style={{
                     fontSize: "0.8rem",
-                    color: "#92400e",
+                    color: "var(--warning-fg)",
                     marginBottom: "0.5rem",
                   }}
                 >
@@ -213,7 +213,7 @@ export default function TestConfigPanel({ members, periodLabel, onSaved }) {
                     alignItems: "center",
                     marginBottom: "0.4rem",
                     flexWrap: "wrap",
-                    background: "#fef3c7",
+                    background: "var(--warning-bg)",
                     padding: "0.4rem 0.6rem",
                     borderRadius: 6,
                   }}
@@ -226,7 +226,7 @@ export default function TestConfigPanel({ members, periodLabel, onSaved }) {
                       width: 70,
                       padding: "4px 6px",
                       borderRadius: 4,
-                      border: "1px solid #d97706",
+                      border: "1px solid var(--warning)",
                     }}
                   />
                   <select
@@ -235,7 +235,7 @@ export default function TestConfigPanel({ members, periodLabel, onSaved }) {
                     style={{
                       padding: "4px 6px",
                       borderRadius: 4,
-                      border: "1px solid #d97706",
+                      border: "1px solid var(--warning)",
                     }}
                   >
                     {SLOT_TYPES.map((t) => (
@@ -250,7 +250,7 @@ export default function TestConfigPanel({ members, periodLabel, onSaved }) {
                     style={{
                       padding: "4px 6px",
                       borderRadius: 4,
-                      border: "1px solid #d97706",
+                      border: "1px solid var(--warning)",
                     }}
                   >
                     {VEHICLE_TYPES.map((t) => (
@@ -277,7 +277,7 @@ export default function TestConfigPanel({ members, periodLabel, onSaved }) {
                   <button
                     onClick={() => removeSlot(i)}
                     style={{
-                      background: "#ef4444",
+                      background: "var(--danger)",
                       color: "#fff",
                       border: "none",
                       borderRadius: 4,
@@ -301,7 +301,7 @@ export default function TestConfigPanel({ members, periodLabel, onSaved }) {
                 <button
                   onClick={addSlot}
                   style={{
-                    background: "#f59e0b",
+                    background: "var(--warning)",
                     color: "#fff",
                     border: "none",
                     borderRadius: 6,
@@ -314,7 +314,7 @@ export default function TestConfigPanel({ members, periodLabel, onSaved }) {
                   + Add Slot
                 </button>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <div style={{ display: "flex", gap: 8, fontSize: "0.8rem", color: "#92400e" }}>
+                  <div style={{ display: "flex", gap: 8, fontSize: "0.8rem", color: "var(--warning-fg)" }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
                       <input type="radio" name="applyTo" value="next" checked={applyTo === "next"} onChange={() => setApplyTo("next")} />
                       Apply from next month
@@ -328,7 +328,7 @@ export default function TestConfigPanel({ members, periodLabel, onSaved }) {
                     onClick={save}
                     disabled={saving}
                     style={{
-                      background: "#059669",
+                      background: "var(--success)",
                       color: "#fff",
                       border: "none",
                       borderRadius: 6,
@@ -345,7 +345,7 @@ export default function TestConfigPanel({ members, periodLabel, onSaved }) {
                   <span
                     style={{
                       fontSize: "0.85rem",
-                      color: msg.startsWith("✅") ? "#065f46" : "#991b1b",
+                      color: msg.startsWith("✅") ? "var(--success-fg)" : "var(--danger-fg)",
                     }}
                   >
                     {msg}

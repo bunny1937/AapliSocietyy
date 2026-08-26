@@ -36,10 +36,13 @@ export async function POST(request) {
     const member = await Member.findOne({ _id: memberId, societyId: decoded.societyId }).select("_id ownerName wing flatNo");
     if (!member) return NextResponse.json({ error: "Member not found" }, { status: 404 });
 
+    // LOOP-04: "PaymentDone" is deliberately excluded here — a bill already
+    // carrying an unreconciled pendingPayment must not be re-selected and
+    // silently overwritten by a retried or duplicate request.
     const bill = await Bill.findOne({
       memberId,
       societyId: decoded.societyId,
-      status: { $in: ["Unpaid", "Partial", "Overdue", "PaymentDone"] },
+      status: { $in: ["Unpaid", "Partial", "Overdue"] },
       isHistoricalArchive: { $ne: true },
       isDeleted: { $ne: true },
     })
@@ -58,10 +61,15 @@ export async function POST(request) {
       recordedAt: new Date(),
     };
 
-    await Bill.updateOne(
-      { _id: bill._id },
+    // Compare-and-set: only transitions a bill that is still in the status we
+    // just read it in. A concurrent/duplicate call loses this race and 409s.
+    const result = await Bill.updateOne(
+      { _id: bill._id, status: bill.status },
       { $set: { status: "PaymentDone", pendingPayment } },
     );
+    if (result.matchedCount === 0) {
+      return NextResponse.json({ error: "Payment already recorded for this bill" }, { status: 409 });
+    }
 
     await AuditLog.create({
       userId: decoded.userId,

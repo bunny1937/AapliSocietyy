@@ -300,6 +300,16 @@ export async function POST(request) {
     await Promise.all(billsToSave.map((b) => b.save()));
     if (memberAdvanceOps.length) await Member.bulkWrite(memberAdvanceOps, { ordered: false });
 
+    // Close the WHOLE period, not just the bills that got paid this round.
+    // A flat marked "unpaid" on the collection sheet was still processed —
+    // its balance simply carries forward as a normal debt from here, same
+    // as a paid one, it just doesn't stay pinned to the app's home screen
+    // as this period's own urgent bill once the admin has moved on.
+    await Bill.updateMany(
+      { societyId, billPeriodId: periodId, billSeries, isDeleted: { $ne: true } },
+      { $set: { periodClosed: true } },
+    );
+
     // Nobody was ever told their payment landed via this route — the same
     // gap fixed on the single-payment /api/payments/record path.
     await Promise.all(
@@ -320,11 +330,12 @@ export async function POST(request) {
       const runAt = new Date(`${scheduleFor}T02:00:00.000Z`);
       if (!Number.isNaN(runAt.getTime())) {
         await ScheduledBillRun.findOneAndUpdate(
-          { societyId, periodId: nextPeriodId },
+          { societyId, periodId: nextPeriodId, billSeries },
           {
             $set: {
               societyId,
               periodId: nextPeriodId,
+              billSeries,
               runAt,
               status: "SCHEDULED",
               createdBy: userId,
