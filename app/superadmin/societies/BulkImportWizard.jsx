@@ -26,11 +26,12 @@ import {
   Download,
 } from "lucide-react";
 import styles from "@/styles/BulkImportWizard.module.css";
+import notify from "@/lib/notify";
 
 const ROW_COLOR = {
-  ok: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
+  ok: "var(--success)",
+  warning: "var(--warning)",
+  error: "var(--danger)",
 };
 const ROW_BG = {
   ok: "rgba(16, 185, 129, 0.08)",
@@ -291,41 +292,41 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
               {/* Society */}
               <div
                 style={{
-                  border: `1.5px solid ${societyHasErrors ? "#ef4444" : "#10b981"}`,
+                  border: `1.5px solid ${societyHasErrors ? "var(--danger)" : "var(--success)"}`,
                   background: societyHasErrors ? ROW_BG.error : ROW_BG.ok,
                   borderRadius: 10,
                   padding: "1rem 1.1rem",
                   marginBottom: 14,
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 13.5, color: "#e5e7eb", marginBottom: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 13.5, color: "var(--border)", marginBottom: 6 }}>
                   {societyHasErrors ? <AlertTriangle size={15} color={ROW_COLOR.error} /> : <CheckCircle2 size={15} color={ROW_COLOR.ok} />}
                   Society — {previewResult.society?.name || "(unnamed)"}
                 </div>
-                <div style={{ fontSize: 12.5, color: "#c7d2fe" }}>
+                <div style={{ fontSize: 12.5, color: "var(--primary-tint)" }}>
                   Admin: {previewResult.society?.adminName} · {previewResult.society?.adminEmail}
                 </div>
                 {previewResult.society?.errors?.map((e, i) => (
-                  <div key={i} style={{ fontSize: 12, color: "#fca5a5", marginTop: 4 }}>✕ {e}</div>
+                  <div key={i} style={{ fontSize: 12, color: "var(--danger)", marginTop: 4 }}>✕ {e}</div>
                 ))}
                 {previewResult.society?.advisories?.map((a, i) => (
-                  <div key={i} style={{ fontSize: 12, color: "#fcd34d", marginTop: 4 }}>⚠ {a}</div>
+                  <div key={i} style={{ fontSize: 12, color: "var(--warning)", marginTop: 4 }}>⚠ {a}</div>
                 ))}
               </div>
 
               {previewResult.warnings?.length > 0 && (
-                <div style={{ background: "#451a03", borderRadius: 8, padding: "0.75rem 1rem", marginBottom: 14 }}>
+                <div style={{ background: "var(--warning)", borderRadius: 8, padding: "0.75rem 1rem", marginBottom: 14 }}>
                   {previewResult.warnings.map((w, i) => (
-                    <div key={i} style={{ fontSize: 12, color: "#fde68a" }}>⚠ {w}</div>
+                    <div key={i} style={{ fontSize: 12, color: "var(--warning)" }}>⚠ {w}</div>
                   ))}
                 </div>
               )}
 
               {/* Member rows — staged reveal, colored by status */}
-              <div style={{ fontWeight: 700, fontSize: 13, color: "#a5b4fc", marginBottom: 8 }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: "var(--accent)", marginBottom: 8 }}>
                 Flats ({summary.total}) — {summary.ok} ready, {summary.warning} note{summary.warning === 1 ? "" : "s"}, {summary.error} need fixing
               </div>
-              <div style={{ maxHeight: 340, overflowY: "auto", border: "1px solid #1f2937", borderRadius: 10 }}>
+              <div style={{ maxHeight: 340, overflowY: "auto", border: "1px solid var(--fg-2)", borderRadius: 10 }}>
                 {(previewResult.memberRows || []).slice(0, revealedCount).map((r, i) => (
                   <div
                     key={i}
@@ -334,9 +335,9 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
                       gap: 10,
                       alignItems: "flex-start",
                       padding: "8px 12px",
-                      borderLeft: `3px solid ${ROW_COLOR[r.status] || "#6b7280"}`,
+                      borderLeft: `3px solid ${ROW_COLOR[r.status] || "var(--fg-4)"}`,
                       background: ROW_BG[r.status] || "transparent",
-                      borderTop: i === 0 ? "none" : "1px solid #1f2937",
+                      borderTop: i === 0 ? "none" : "1px solid var(--fg-2)",
                       animation: "bulkImportRowIn 0.22s ease both",
                     }}
                   >
@@ -344,12 +345,12 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
                     {r.status === "warning" && <AlertTriangle size={14} color={ROW_COLOR.warning} style={{ marginTop: 1, flexShrink: 0 }} />}
                     {r.status === "error" && <AlertTriangle size={14} color={ROW_COLOR.error} style={{ marginTop: 1, flexShrink: 0 }} />}
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <span style={{ fontSize: 12.5, fontWeight: 700, color: "#e5e7eb" }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--border)" }}>
                         {r.wing ? `${r.wing}-${r.flatNo}` : r.flatNo || `Row ${r.rowNum}`}
                       </span>
-                      {r.ownerName && <span style={{ fontSize: 12, color: "#9ca3af" }}> · {r.ownerName}</span>}
+                      {r.ownerName && <span style={{ fontSize: 12, color: "var(--fg-5)" }}> · {r.ownerName}</span>}
                       {r.messages?.length > 0 && (
-                        <div style={{ fontSize: 11.5, color: r.status === "error" ? "#fca5a5" : "#fcd34d", marginTop: 2 }}>
+                        <div style={{ fontSize: 11.5, color: r.status === "error" ? "var(--danger)" : "var(--warning)", marginTop: 2 }}>
                           {r.messages.join("; ")}
                         </div>
                       )}
@@ -357,7 +358,7 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
                   </div>
                 ))}
                 {!revealDone && (
-                  <div style={{ padding: "8px 12px", fontSize: 12, color: "#6b7280" }}>
+                  <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--fg-4)" }}>
                     checking… {revealedCount}/{summary.total}
                   </div>
                 )}
@@ -365,7 +366,7 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
 
               <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
                 {!canImport && revealDone && (
-                  <span style={{ fontSize: 12, color: "#fca5a5" }}>
+                  <span style={{ fontSize: 12, color: "var(--danger)" }}>
                     Fix the errors above (in Excel) and upload again to import.
                   </span>
                 )}
@@ -373,7 +374,7 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
                   onClick={commitPreview}
                   disabled={!canImport}
                   style={{
-                    background: canImport ? "#4f46e5" : "#374151",
+                    background: canImport ? "var(--accent)" : "var(--fg-3)",
                     color: "#fff",
                     border: "none",
                     padding: "0.6rem 1.4rem",
@@ -392,7 +393,7 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
           {/* Live progress — real server stages, polled from BulkImportRun */}
           {stage === "importing" && (
             <div style={{ padding: "1.5rem 0.5rem" }}>
-              <div style={{ marginBottom: "1.25rem", fontWeight: 600, color: "#a5b4fc", fontSize: "0.9rem" }}>
+              <div style={{ marginBottom: "1.25rem", fontWeight: 600, color: "var(--accent)", fontSize: "0.9rem" }}>
                 Importing {progress?.totalCount ? `${progress.processedCount ?? 0} / ${progress.totalCount} flats` : "…"}
               </div>
               {[
@@ -410,17 +411,17 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
                   <div key={s.key} style={{
                     display: "flex", alignItems: "center", gap: "0.75rem",
                     padding: "0.6rem 0.75rem", marginBottom: "0.5rem", borderRadius: 8,
-                    background: done ? "#064e3b" : active ? "#1e3a5f" : "#1f2937",
-                    border: `1px solid ${done ? "#10b981" : active ? "#3b82f6" : "#374151"}`,
+                    background: done ? "var(--success)" : active ? "var(--primary)" : "var(--fg-2)",
+                    border: `1px solid ${done ? "var(--success)" : active ? "var(--accent)" : "var(--fg-3)"}`,
                     opacity: done || active ? 1 : 0.45, transition: "all 0.3s ease",
                   }}>
                     <div style={{ fontSize: "1.1rem", minWidth: 24 }}>{done ? "✓" : s.icon}</div>
                     <div style={{ flex: 1, fontSize: "0.83rem", fontWeight: done || active ? 600 : 400,
-                      color: done ? "#4ade80" : active ? "#93c5fd" : "#6b7280" }}>
+                      color: done ? "var(--success)" : active ? "var(--accent)" : "var(--fg-4)" }}>
                       {progress?.stage && active ? progress.stage : s.label}
                     </div>
-                    {active && <div style={{ fontSize: "0.7rem", color: "#60a5fa" }}>●●●</div>}
-                    {done && <div style={{ fontSize: "0.75rem", color: "#4ade80", fontWeight: 700 }}>Done</div>}
+                    {active && <div style={{ fontSize: "0.7rem", color: "var(--accent)" }}>●●●</div>}
+                    {done && <div style={{ fontSize: "0.75rem", color: "var(--success)", fontWeight: 700 }}>Done</div>}
                   </div>
                 );
               })}
@@ -443,7 +444,7 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
                 {serverResult.code !== "PREVIEW_NOT_FOUND" && serverResult.code !== "PREVIEW_ALREADY_USED" && previewResult?.previewId && (
                   <button
                     onClick={commitPreview}
-                    style={{ marginTop: 10, background: "#4f46e5", color: "#fff", border: "none", padding: "0.5rem 1rem", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: 12.5 }}
+                    style={{ marginTop: 10, background: "var(--accent)", color: "#fff", border: "none", padding: "0.5rem 1rem", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: 12.5 }}
                   >
                     Retry import (uses the same reviewed data — nothing re-checked)
                   </button>
@@ -455,51 +456,51 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
           {/* Success */}
           {serverResult?.success && (
             <div style={{ padding: "0.5rem" }}>
-              <div style={{ background: "#064e3b", borderRadius: 8, padding: "1.25rem", marginBottom: "1rem" }}>
-                <div style={{ color: "#4ade80", fontWeight: 700, fontSize: "1rem", marginBottom: "0.75rem" }}>
+              <div style={{ background: "var(--success)", borderRadius: 8, padding: "1.25rem", marginBottom: "1rem" }}>
+                <div style={{ color: "var(--success)", fontWeight: 700, fontSize: "1rem", marginBottom: "0.75rem" }}>
                   ✅ Import Successful
                 </div>
-                <div style={{ fontSize: "0.85rem", color: "#a7f3d0", lineHeight: 1.8 }}>
+                <div style={{ fontSize: "0.85rem", color: "var(--success)", lineHeight: 1.8 }}>
                   <div><strong>Society:</strong> {serverResult.society?.name} ({serverResult.society?.societyId})</div>
                   <div><strong>Members imported:</strong> {serverResult.membersCreated} / {serverResult.totalMemberRows}</div>
                   <div>
                     <strong>Billing heads:</strong>{" "}
                     {serverResult.billingHeadsCreated > 0
                       ? `${serverResult.billingHeadsCreated} heads created`
-                      : <span style={{ color: "#fbbf24" }}>⚠ None — rates were 0</span>}
+                      : <span style={{ color: "var(--warning)" }}>⚠ None — rates were 0</span>}
                   </div>
                   <div>
                     <strong>Bills generated:</strong>{" "}
                     {serverResult.billsGenerated > 0
                       ? `${serverResult.billsGenerated} bills for ${serverResult.billPeriod}`
-                      : <span style={{ color: "#fbbf24" }}>⚠ 0</span>}
+                      : <span style={{ color: "var(--warning)" }}>⚠ 0</span>}
                   </div>
                   {serverResult.society?.chargesSummary?.length > 0 && (
-                    <div style={{ marginTop: 4, paddingLeft: 8, borderLeft: "2px solid #10b981" }}>
+                    <div style={{ marginTop: 4, paddingLeft: 8, borderLeft: "2px solid var(--success)" }}>
                       {serverResult.society.chargesSummary.map((c, i) => (
-                        <div key={i} style={{ fontSize: "0.75rem", color: "#6ee7b7" }}>{c}</div>
+                        <div key={i} style={{ fontSize: "0.75rem", color: "var(--success)" }}>{c}</div>
                       ))}
                     </div>
                   )}
                 </div>
               </div>
 
-              <div style={{ background: "#1e1b4b", borderRadius: 8, padding: "1.25rem", marginBottom: "1rem" }}>
-                <div style={{ color: "#a5b4fc", fontWeight: 700, marginBottom: "0.5rem" }}>Admin Credentials</div>
-                <div style={{ fontSize: "0.85rem", color: "#c7d2fe", lineHeight: 1.8 }}>
+              <div style={{ background: "var(--primary)", borderRadius: 8, padding: "1.25rem", marginBottom: "1rem" }}>
+                <div style={{ color: "var(--accent)", fontWeight: 700, marginBottom: "0.5rem" }}>Admin Credentials</div>
+                <div style={{ fontSize: "0.85rem", color: "var(--primary-tint)", lineHeight: 1.8 }}>
                   <div><strong>Name:</strong> {serverResult.admin?.name}</div>
                   <div><strong>Email:</strong> {serverResult.admin?.email}</div>
                   {serverResult.admin?.reusedExistingAccount ? (
-                    <div style={{ color: "#fbbf24", marginTop: 4 }}>
+                    <div style={{ color: "var(--warning)", marginTop: 4 }}>
                       ⚠ {serverResult.admin.note || "This email already had a login — no new password was created. They sign in as before; this society now appears in their profile picker."}
                     </div>
                   ) : (
                     <div>
                       <strong>Password:</strong>{" "}
-                      <code style={{ background: "#312e81", padding: "2px 6px", borderRadius: 4 }}>
+                      <code style={{ background: "var(--primary)", padding: "2px 6px", borderRadius: 4 }}>
                         {serverResult.admin?.password}
                       </code>
-                      <span style={{ color: "#fca5a5", marginLeft: 8 }}>
+                      <span style={{ color: "var(--danger)", marginLeft: 8 }}>
                         Not emailed — copy this now, it isn't shown again.
                       </span>
                     </div>
@@ -508,14 +509,14 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
               </div>
 
               {serverResult.memberCredentials?.length > 0 && (
-                <div style={{ background: "#1e1b4b", borderRadius: 8, padding: "1.25rem", marginBottom: "1rem" }}>
-                  <div style={{ color: "#a5b4fc", fontWeight: 700, marginBottom: "0.5rem" }}>
+                <div style={{ background: "var(--primary)", borderRadius: 8, padding: "1.25rem", marginBottom: "1rem" }}>
+                  <div style={{ color: "var(--accent)", fontWeight: 700, marginBottom: "0.5rem" }}>
                     Members ({serverResult.memberCredentials.length})
                   </div>
                   <div style={{ overflowX: "auto", maxHeight: 320 }}>
-                    <table style={{ width: "100%", fontSize: "0.8rem", color: "#c7d2fe", borderCollapse: "collapse" }}>
+                    <table style={{ width: "100%", fontSize: "0.8rem", color: "var(--primary-tint)", borderCollapse: "collapse" }}>
                       <thead>
-                        <tr style={{ textAlign: "left", color: "#a5b4fc" }}>
+                        <tr style={{ textAlign: "left", color: "var(--accent)" }}>
                           <th style={{ padding: "4px 8px" }}>Flat</th>
                           <th style={{ padding: "4px 8px" }}>Name</th>
                           <th style={{ padding: "4px 8px" }}>Email</th>
@@ -525,22 +526,22 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
                       </thead>
                       <tbody>
                         {serverResult.memberCredentials.map((c, i) => (
-                          <tr key={i} style={{ borderTop: "1px solid #312e81" }}>
+                          <tr key={i} style={{ borderTop: "1px solid var(--primary)" }}>
                             <td style={{ padding: "4px 8px" }}>{c.wing}-{c.flatNo}</td>
                             <td style={{ padding: "4px 8px" }}>{c.ownerName}</td>
-                            <td style={{ padding: "4px 8px" }}>{c.email || <span style={{ color: "#6b7280" }}>none</span>}</td>
+                            <td style={{ padding: "4px 8px" }}>{c.email || <span style={{ color: "var(--fg-4)" }}>none</span>}</td>
                             <td style={{ padding: "4px 8px" }}>
                               {c.isNewUser
-                                ? <span style={{ color: "#4ade80" }}>new login created</span>
-                                : <span style={{ color: "#fbbf24" }}>existing account linked</span>}
+                                ? <span style={{ color: "var(--success)" }}>new login created</span>
+                                : <span style={{ color: "var(--warning)" }}>existing account linked</span>}
                             </td>
                             <td style={{ padding: "4px 8px" }}>
                               {c.setCredentialsUrl ? (
                                 <button
                                   onClick={() => navigator.clipboard.writeText(c.setCredentialsUrl)}
-                                  style={{ background: "none", border: "none", color: "#a5b4fc", textDecoration: "underline", cursor: "pointer", padding: 0, fontSize: "0.78rem" }}
+                                  style={{ background: "none", border: "none", color: "var(--accent)", textDecoration: "underline", cursor: "pointer", padding: 0, fontSize: "0.78rem" }}
                                 >Copy link</button>
-                              ) : <span style={{ color: "#6b7280" }}>—</span>}
+                              ) : <span style={{ color: "var(--fg-4)" }}>—</span>}
                             </td>
                           </tr>
                         ))}
@@ -551,48 +552,48 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
               )}
 
               {serverResult.warnings?.length > 0 && (
-                <div style={{ background: "#451a03", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
-                  <div style={{ color: "#fbbf24", fontWeight: 600, marginBottom: "0.5rem" }}>
+                <div style={{ background: "var(--warning)", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
+                  <div style={{ color: "var(--warning)", fontWeight: 600, marginBottom: "0.5rem" }}>
                     ⚠ {serverResult.warnings.length} Warning{serverResult.warnings.length > 1 ? "s" : ""}
                   </div>
                   {serverResult.warnings.map((w, i) => (
-                    <div key={i} style={{ fontSize: "0.8rem", color: "#fde68a", marginBottom: 4 }}>• {w}</div>
+                    <div key={i} style={{ fontSize: "0.8rem", color: "var(--warning)", marginBottom: 4 }}>• {w}</div>
                   ))}
                 </div>
               )}
 
               {serverResult.billErrors?.length > 0 && (
-                <div style={{ background: "#1c1917", border: "1px solid #b45309", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
-                  <div style={{ color: "#fbbf24", fontWeight: 600, marginBottom: "0.5rem", fontSize: "0.85rem" }}>
+                <div style={{ background: "var(--fg-1)", border: "1px solid var(--warning)", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
+                  <div style={{ color: "var(--warning)", fontWeight: 600, marginBottom: "0.5rem", fontSize: "0.85rem" }}>
                     ⚠ {serverResult.billErrors.length} bill(s) failed to generate:
                   </div>
                   {serverResult.billErrors.map((e, i) => (
-                    <div key={i} style={{ fontSize: "0.78rem", color: "#fde68a" }}>• {e}</div>
+                    <div key={i} style={{ fontSize: "0.78rem", color: "var(--warning)" }}>• {e}</div>
                   ))}
                 </div>
               )}
 
               {serverResult.memberCreateErrors?.length > 0 && (
-                <div style={{ background: "#450a0a", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
-                  <div style={{ color: "#fca5a5", fontWeight: 600, marginBottom: "0.5rem" }}>
+                <div style={{ background: "var(--danger)", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
+                  <div style={{ color: "var(--danger)", fontWeight: 600, marginBottom: "0.5rem" }}>
                     {serverResult.memberCreateErrors.length} member(s) failed:
                   </div>
                   {serverResult.memberCreateErrors.map((e, i) => (
-                    <div key={i} style={{ fontSize: "0.8rem", color: "#fca5a5" }}>{e.flat}: {e.error}</div>
+                    <div key={i} style={{ fontSize: "0.8rem", color: "var(--danger)" }}>{e.flat}: {e.error}</div>
                   ))}
                 </div>
               )}
 
               {serverResult.onboardingEmailErrors?.length > 0 && (
-                <div style={{ background: "#450a0a", border: "1px solid #ef4444", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
-                  <div style={{ color: "#fca5a5", fontWeight: 700, marginBottom: "0.5rem" }}>
+                <div style={{ background: "var(--danger)", border: "1px solid var(--danger)", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
+                  <div style={{ color: "var(--danger)", fontWeight: 700, marginBottom: "0.5rem" }}>
                     ⚠ {serverResult.onboardingEmailErrors.length} onboarding email(s) failed to send
                   </div>
-                  <div style={{ fontSize: "0.78rem", color: "#fca5a5", marginBottom: 8 }}>
+                  <div style={{ fontSize: "0.78rem", color: "var(--danger)", marginBottom: 8 }}>
                     Everything was created, but these members won't get their link by mail — use the Copy link column or the export below.
                   </div>
                   {serverResult.onboardingEmailErrors.map((e, i) => (
-                    <div key={i} style={{ fontSize: "0.8rem", color: "#fca5a5" }}>• {e}</div>
+                    <div key={i} style={{ fontSize: "0.8rem", color: "var(--danger)" }}>• {e}</div>
                   ))}
                 </div>
               )}
@@ -606,7 +607,7 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
                       credentials: "include",
                       body: JSON.stringify({ credentials: serverResult.memberCredentials }),
                     });
-                    if (!res.ok) return alert("Download failed");
+                    if (!res.ok) { notify.error("Download failed"); return; }
                     const url = URL.createObjectURL(await res.blob());
                     const a = document.createElement("a");
                     a.href = url;
@@ -614,29 +615,29 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
                     a.click();
                     URL.revokeObjectURL(url);
                   }}
-                  style={{ width: "100%", background: "#059669", color: "#fff", border: "none", padding: "0.75rem", borderRadius: 8, cursor: "pointer", fontWeight: 600, marginBottom: "0.75rem" }}
+                  style={{ width: "100%", background: "var(--success)", color: "#fff", border: "none", padding: "0.75rem", borderRadius: 8, cursor: "pointer", fontWeight: 600, marginBottom: "0.75rem" }}
                 >
                   📥 Download Member Credentials ({serverResult.memberCredentials.length} members)
                 </button>
               )}
 
               {BillHistoryStep && !showBillHistory && !billHistoryDone && (
-                <div style={{ background: "#1e1b4b", border: "1px solid #4f46e5", borderRadius: 8, padding: "1rem", marginBottom: "0.75rem" }}>
-                  <div style={{ color: "#a5b4fc", fontWeight: 700, marginBottom: "0.4rem", fontSize: "0.9rem" }}>
+                <div style={{ background: "var(--primary)", border: "1px solid var(--accent)", borderRadius: 8, padding: "1rem", marginBottom: "0.75rem" }}>
+                  <div style={{ color: "var(--accent)", fontWeight: 700, marginBottom: "0.4rem", fontSize: "0.9rem" }}>
                     📜 Step 4: Import Bill History (Recommended)
                   </div>
-                  <div style={{ color: "#9ca3af", fontSize: "0.8rem", marginBottom: "0.75rem" }}>
+                  <div style={{ color: "var(--fg-5)", fontSize: "0.8rem", marginBottom: "0.75rem" }}>
                     Historical bills from the previous April up to the month before {serverResult.society?.name} joined. Required for correct opening balances and audit reports.
                   </div>
                   <button
                     onClick={() => setShowBillHistory(true)}
-                    style={{ background: "#4f46e5", color: "#fff", border: "none", padding: "0.55rem 1.25rem", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
+                    style={{ background: "var(--accent)", color: "#fff", border: "none", padding: "0.55rem 1.25rem", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
                   >Start Bill History Import →</button>
                 </div>
               )}
 
               {BillHistoryStep && showBillHistory && !billHistoryDone && (
-                <div style={{ background: "#111827", border: "1px solid #374151", borderRadius: 8, padding: "1.25rem", marginBottom: "0.75rem" }}>
+                <div style={{ background: "var(--fg-1)", border: "1px solid var(--fg-3)", borderRadius: 8, padding: "1.25rem", marginBottom: "0.75rem" }}>
                   <BillHistoryStep
                     societyId={serverResult.society?.id}
                     societyName={serverResult.society?.name || ""}
@@ -649,14 +650,14 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
               )}
 
               {billHistoryDone && (
-                <div style={{ background: "#064e3b22", border: "1px solid #10b981", borderRadius: 8, padding: "0.75rem", marginBottom: "0.75rem", color: "#4ade80", fontSize: "0.85rem", fontWeight: 600 }}>
+                <div style={{ background: "var(--success)22", border: "1px solid var(--success)", borderRadius: 8, padding: "0.75rem", marginBottom: "0.75rem", color: "var(--success)", fontSize: "0.85rem", fontWeight: 600 }}>
                   ✓ Bill History step complete
                 </div>
               )}
 
               <button
                 onClick={onClose}
-                style={{ width: "100%", background: "#6366f1", color: "#fff", border: "none", padding: "0.75rem", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}
+                style={{ width: "100%", background: "var(--accent)", color: "#fff", border: "none", padding: "0.75rem", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}
               >Close</button>
             </div>
           )}

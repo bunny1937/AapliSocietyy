@@ -88,7 +88,11 @@ export async function GET(request) {
   ];
   // Sheet 3: Additional Details
   const additionalRows = [
-    ["flatNo*", "panCard", "aadhaar", "alternateContact", "whatsappNumber", "emailSecondary", "builtUpAreaSqft", "possessionDate"],
+    // The Aadhaar column is kept in place, and only in place: removing it would
+    // shift every column after it and silently corrupt older files that people
+    // have already filled in. Renaming it says what happened; the importer
+    // reads the cell and drops the value (D1).
+    ["flatNo*", "panCard", "aadhaar (not collected — leave blank)", "alternateContact", "whatsappNumber", "emailSecondary", "builtUpAreaSqft", "possessionDate"],
     ["1310", "ABCDE1234F", "123456789012", "9123456789", "9876543210", "arjun.alt@example.com", 2000, "2024-01-15"],
   ];
   // Sheet 4: Parking Slots

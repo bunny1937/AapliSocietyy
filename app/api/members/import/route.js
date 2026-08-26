@@ -186,7 +186,8 @@ async function validateImportData(workbook, societyId, isEnhanced) {
   const existingEmails = new Set(existingMembers.map((m) => m.emailPrimary));
   const existingPhones = new Set(existingMembers.map((m) => String(m.contactNumber || "")));
   const existingPANOwner = new Map(existingMembers.filter(m => m.panCard).map((m) => [m.panCard, m.ownerName]));
-  const existingAadhaarOwner = new Map(existingMembers.filter(m => m.aadhaar).map((m) => [m.aadhaar, m.ownerName]));
+  // existingAadhaarOwner is gone with D1 — Aadhaar is no longer a
+  // de-duplication key, because it is no longer stored.
   // Build parking slots lookup
   const existingParkingSlots = new Set();
   existingMembers.forEach((m) => {
@@ -259,7 +260,6 @@ async function validateImportData(workbook, societyId, isEnhanced) {
   const fileEmailOwnerFile = new Map();
   const filePhoneOwnerFile = new Map();
   const filePANs = new Map(); // panCard → ownerName
-  const fileAadhaars = new Map(); // aadhaar → ownerName
   const flatOwnerMap = new Map(); // flatNo → ownerName (populated in sheet 1, used in sheet 2)
   const fileParkingSlots = new Set();
   const fileFamilyMembers = new Set();
@@ -581,31 +581,35 @@ async function validateImportData(workbook, societyId, isEnhanced) {
             filePANs.set(panCard, rowOwnerName);
           }
         }
-        // 2. Aadhaar validation
+        // 2. Aadhaar — no longer collected (D1)
+        //
+        // This used to validate the 12 digits and enforce uniqueness across
+        // members, which made Aadhaar a de-duplication key in the member
+        // master. That is the sharpest possible use of it: it means the number
+        // is stored, indexed, compared, and present in every backup, in a
+        // system whose actual job is maintenance billing.
+        //
+        // The Aadhaar Act s.29 restricts sharing an Aadhaar number and forbids
+        // publishing it, and a society has no statutory need for a member's
+        // Aadhaar to raise a bill. Holding it turns any breach into a
+        // reportable Aadhaar breach for no operational gain.
+        //
+        // The column is still read so that an older template does not fail to
+        // parse — but the value is dropped here and never written. The row is
+        // flagged as a notice, not an error: the import should succeed, and
+        // the person running it should be told why one of their columns was
+        // ignored.
+        //
+        // NOTE: this is about the member master only. Tenant police
+        // verification (models/TenantRequest.js) is a separate flow with a
+        // separate legal basis and is deliberately untouched.
         if (aadhaar) {
-          const aadhaarClean = aadhaar.replace(/\s/g, "");
-          if (!/^\d{12}$/.test(aadhaarClean)) {
-            cellIssues["aadhaar"] = {
-              type: "ERROR",
-              message: "Aadhaar must be exactly 12 digits",
-            };
-            validCount.errors++;
-          } else if (existingAadhaarOwner.has(aadhaarClean) && existingAadhaarOwner.get(aadhaarClean) !== rowOwnerName) {
-            cellIssues["aadhaar"] = {
-              type: "DUPLICATE_DB",
-              message: "Aadhaar already exists in database for a different person",
-            };
-            validCount.duplicates++;
-          } else if (fileAadhaars.has(aadhaarClean) && fileAadhaars.get(aadhaarClean) !== rowOwnerName) {
-            cellIssues["aadhaar"] = {
-              type: "DUPLICATE_FILE",
-              message: "Duplicate Aadhaar in file for a different person",
-            };
-            validCount.duplicates++;
-          } else {
-            fileAadhaars.set(aadhaarClean, rowOwnerName);
-          }
+          cellIssues["aadhaar"] = {
+            type: "IGNORED",
+            message: "Aadhaar is no longer collected and will not be imported. Leave this column blank.",
+          };
         }
+
         // 3. alternateContact validation
         if (alternateContact) {
           const altPhoneDigits = alternateContact.replace(/\D/g, "");
@@ -1299,7 +1303,7 @@ async function handleEnhancedImport(workbook, decoded) {
         societyId: decoded.societyId,
         membershipNumber: `MEM-${String(nextNumber).padStart(4, "0")}`, // ✅ MANUAL
         panCard: additional.panCard,
-        aadhaar: additional.aadhaar,
+        // aadhaar deliberately not carried across — see the D1 note above.
         alternateContact: additional.alternateContact,
         whatsappNumber: additional.whatsappNumber,
         emailSecondary: additional.emailSecondary,

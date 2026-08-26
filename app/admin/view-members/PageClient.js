@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import styles from '@/styles/ViewMembers.module.css';
 import MemberEditor from './_MemberEditor';
+import { PageHeader, SmallStat, Segmented, SearchInput, Select, Card, Avatar, Pill, Icon, EmptyState, RevampSkeleton } from '@/components/revamp';
 
 /** The period a parking change should re-bill: the current calendar month. */
 function currentBillPeriodId() {
@@ -50,103 +51,150 @@ export default function ViewMembersPage() {
     const matchesOwnership = filterOwnership === 'all' || member.ownershipType === filterOwnership;
     return matchesSearch && matchesStatus && matchesOwnership;
   });
+  // ── Wing filter + the counts behind the stat strip ──────────────────
+  // Declared here (still unconditionally, above every early return) so the
+  // revamped filter row has a wing segmented control like the design kit's
+  // Members screen, layered on top of the existing search/status/ownership
+  // filtering above.
+  const [filterWing, setFilterWing] = useState('all');
+  const wings = [...new Set(members.map((m) => String(m.wing || '').trim()).filter(Boolean))].sort();
+  const visibleMembers = filteredMembers.filter(
+    (m) => filterWing === 'all' || String(m.wing || '').trim() === filterWing,
+  );
+  const countBy = (fn) => members.filter(fn).length;
+  const ownerCount = countBy((m) => m.ownershipType === 'Owner-Occupied');
+  const rentedCount = countBy((m) => m.ownershipType === 'Rented');
+  const activeCount = countBy((m) => m.membershipStatus === 'Active');
+
+  const statusTone = (s) =>
+    s === 'Active' ? 'active' : s === 'Inactive' ? 'expired' : s === 'Suspended' ? 'partial' : 'unpaid';
+
   if (isLoading) {
     return (
       <div className={styles.container}>
-        <div className={styles.loader}>
-          <div className={styles.spinner}></div>
-          <p>Loading members...</p>
+        <PageHeader title="Members" sub="Loading the member directory…" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+          {Array.from({ length: 8 }).map((_, i) => <RevampSkeleton key={i} h={150} />)}
         </div>
       </div>
     );
   }
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>👥 View All Members</h1>
-        <p className={styles.subtitle}>Complete member directory with detailed information</p>
-      </div>
-      {/* Filters */}
-      <div className={styles.filters}>
-        <input
-          type="text"
-          placeholder="🔍 Search by flat, name, phone, email..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className={styles.searchInput}
-        />
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className={styles.select}
-        >
-          <option value="all">All Status</option>
-          <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
-          <option value="Suspended">Suspended</option>
-          <option value="Blocked">Blocked</option>
-        </select>
-        <select
-          value={filterOwnership}
-          onChange={(e) => setFilterOwnership(e.target.value)}
-          className={styles.select}
-        >
-          <option value="all">All Ownership</option>
-          <option value="Owner-Occupied">Owner-Occupied</option>
-          <option value="Rented">Rented</option>
-          <option value="Vacant">Vacant</option>
-          <option value="Under-Dispute">Under-Dispute</option>
-        </select>
-        <div className={styles.resultCount}>
-          {filteredMembers.length} of {members.length} members
-        </div>
-      </div>
-      {/* Members Grid */}
-      <div className={styles.membersGrid}>
-        {filteredMembers.map(member => (
-          <div
-            key={member._id}
-            className={styles.memberCard}
-            onClick={() => setSelectedMember(member)}
-          >
-            <div className={styles.cardHeader}>
-              <div className={styles.flatNumber}>
-                {member.wing ? `${member.wing}-` : ''}{member.flatNo}
-              </div>
-              <div className={`${styles.badge} ${styles[`badge${member.membershipStatus}`]}`}>
-                {member.membershipStatus}
-              </div>
-            </div>
-            <h3 className={styles.memberName}>{member.ownerName}</h3>
-            <div className={styles.cardDetails}>
-              <div className={styles.detailRow}>
-                <span className={styles.icon}>📞</span>
-                <span>{member.contactNumber}</span>
-              </div>
-              <div className={styles.detailRow}>
-                <span className={styles.icon}>📧</span>
-                <span className={styles.email}>{member.emailPrimary}</span>
-              </div>
-              <div className={styles.detailRow}>
-                <span className={styles.icon}>🏠</span>
-                <span>{member.flatType} • {member.carpetAreaSqft} sq.ft</span>
-              </div>
-              <div className={styles.detailRow}>
-                <span className={styles.icon}>👤</span>
-                <span>{member.ownershipType}</span>
-              </div>
-            </div>
-            <button className={styles.viewButton}>
-              View Full Details →
-            </button>
+      <PageHeader
+        eyebrow={<><Icon name="users" size={11} /> {members.length} residents on record</>}
+        title="Members"
+        sub="Everyone living in or owning a flat in the society."
+        right={
+          <div style={{ width: 300 }}>
+            <SearchInput
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="Search flat, name, phone, email…"
+              size="sm"
+            />
           </div>
-        ))}
+        }
+      />
+
+      {/* ── Stat strip ────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 18 }}>
+        <SmallStat icon="users" label="Total members" value={members.length} />
+        <SmallStat icon="circle-check" label="Active" value={activeCount} tone="success" />
+        <SmallStat icon="user-circle" label="Owner-occupied" value={ownerCount} />
+        <SmallStat icon="key-round" label="Rented" value={rentedCount} />
       </div>
-      {filteredMembers.length === 0 && (
-        <div className={styles.emptyState}>
-          <p>No members found matching your filters</p>
+
+      {/* ── Filters ───────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 12, flexWrap: 'wrap' }}>
+        <Segmented
+          value={filterWing}
+          onChange={setFilterWing}
+          options={[
+            { value: 'all', label: 'All wings', count: filteredMembers.length },
+            ...wings.map((w) => ({
+              value: w,
+              label: `Wing ${w}`,
+              count: filteredMembers.filter((m) => String(m.wing || '').trim() === w).length,
+            })),
+          ]}
+        />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Select value={filterStatus} onChange={setFilterStatus} title="Membership status">
+            <option value="all">All status</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="Suspended">Suspended</option>
+            <option value="Blocked">Blocked</option>
+          </Select>
+          <Select value={filterOwnership} onChange={setFilterOwnership} title="Ownership type">
+            <option value="all">All ownership</option>
+            <option value="Owner-Occupied">Owner-Occupied</option>
+            <option value="Rented">Rented</option>
+            <option value="Vacant">Vacant</option>
+            <option value="Under-Dispute">Under-Dispute</option>
+          </Select>
+          <span style={{ fontSize: 12, color: 'var(--r-fg-4)', fontWeight: 500, whiteSpace: 'nowrap' }}>
+            {visibleMembers.length} of {members.length}
+          </span>
         </div>
+      </div>
+
+      {/* ── Member cards ──────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+        {visibleMembers.map((member) => {
+          const flat = `${member.wing ? `${member.wing}-` : ''}${member.flatNo || ''}`;
+          return (
+            <Card
+              key={member._id}
+              hover
+              onClick={() => setSelectedMember(member)}
+              style={{ padding: 14, cursor: 'pointer' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <Avatar name={member.ownerName || flat} size={42} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--r-fg-1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {member.ownerName || '—'}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--r-fg-4)' }}>
+                    {flat}{member.flatType ? ` · ${member.flatType}` : ''}
+                  </div>
+                </div>
+                <Pill tone={statusTone(member.membershipStatus)}>{member.membershipStatus || 'Active'}</Pill>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 11, marginBottom: 12 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ color: 'var(--r-fg-4)', marginBottom: 2 }}>Phone</div>
+                  <div className="revamp-num" style={{ color: 'var(--r-fg-2)', fontWeight: 500 }}>{member.contactNumber || '—'}</div>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ color: 'var(--r-fg-4)', marginBottom: 2 }}>Ownership</div>
+                  <div style={{ color: 'var(--r-fg-2)', fontWeight: 500 }}>{member.ownershipType || '—'}</div>
+                </div>
+                <div style={{ gridColumn: '1 / -1', minWidth: 0 }}>
+                  <div style={{ color: 'var(--r-fg-4)', marginBottom: 2 }}>Email</div>
+                  <div style={{ color: 'var(--r-fg-2)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {member.emailPrimary || '—'}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTop: '1px solid var(--r-hairline)' }}>
+                <span style={{ fontSize: 11, color: 'var(--r-fg-4)' }}>
+                  {member.carpetAreaSqft ? `${member.carpetAreaSqft} sq.ft` : '—'}
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: 'var(--r-brand)' }}>
+                  Full details <Icon name="arrow-right" size={13} />
+                </span>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+      {visibleMembers.length === 0 && (
+        <EmptyState icon="users" title="No members found" sub="No one matches the current search and filters." />
       )}
+
       {/* Detailed Dialog */}
       {selectedMember && (
         <div className={styles.dialogOverlay} onClick={() => setSelectedMember(null)}>
@@ -182,7 +230,7 @@ export default function ViewMembersPage() {
           Blocked or Exited. Derived from the flat's real status now. */}
       <span style={{
         marginLeft: '1rem',
-        color: (selectedMember.membershipStatus || 'Active') === 'Active' ? '#10B981' : '#B45309',
+        color: (selectedMember.membershipStatus || 'Active') === 'Active' ? 'var(--success)' : 'var(--warning-fg)',
         fontWeight: 600
       }}>
         ● {selectedMember.membershipStatus || 'Active'}
@@ -193,8 +241,8 @@ export default function ViewMembersPage() {
         <h4 style={{ 
           marginTop: '1.5rem', 
           marginBottom: '1rem', 
-          fontSize: '0.9rem', 
-          color: '#6B7280',
+          fontSize: '0.9rem',
+          color: 'var(--fg-4)',
           fontWeight: 600,
           textTransform: 'uppercase',
           letterSpacing: '0.5px'
@@ -230,7 +278,7 @@ export default function ViewMembersPage() {
                     )}
                     {owner.ownershipEndDate && (
                       <>
-                        <span style={{ margin: '0 0.75rem', color: '#9CA3AF' }}>→</span>
+                        <span style={{ margin: '0 0.75rem', color: 'var(--fg-5)' }}>→</span>
                         <span style={{ fontWeight: 500 }}>
                           {new Date(owner.ownershipEndDate).toLocaleDateString('en-IN', { 
                             year: 'numeric', 
@@ -244,9 +292,9 @@ export default function ViewMembersPage() {
                       <span style={{ 
                         marginLeft: '1rem', 
                         padding: '0.25rem 0.5rem',
-                        backgroundColor: '#F3F4F6',
+                        backgroundColor: 'var(--bg-muted)',
                         borderRadius: '6px',
-                        color: '#4B5563', 
+                        color: 'var(--fg-3)',
                         fontSize: '0.85rem',
                         fontWeight: 500
                       }}>
@@ -282,7 +330,7 @@ export default function ViewMembersPage() {
                     <div style={{
                       marginTop: '1rem',
                       padding: '1rem',
-                      backgroundColor: '#FEF3C7',
+                      backgroundColor: 'var(--warning-bg)',
                       borderRadius: '8px',
                       border: '1px solid #FCD34D'
                     }}>
@@ -295,7 +343,7 @@ export default function ViewMembersPage() {
                           <div>
                             <div style={{ 
                               fontSize: '0.75rem', 
-                              color: '#92400E', 
+                              color: 'var(--warning-fg)',
                               marginBottom: '0.25rem',
                               fontWeight: 600
                             }}>
@@ -303,7 +351,7 @@ export default function ViewMembersPage() {
                             </div>
                             <div style={{ 
                               fontWeight: 700, 
-                              color: '#78350F', 
+                              color: 'var(--warning-fg)',
                               fontSize: '1rem' 
                             }}>
                               ₹{Number(owner.purchaseAmount).toLocaleString('en-IN')}
@@ -314,7 +362,7 @@ export default function ViewMembersPage() {
                           <div>
                             <div style={{ 
                               fontSize: '0.75rem', 
-                              color: '#92400E', 
+                              color: 'var(--warning-fg)',
                               marginBottom: '0.25rem',
                               fontWeight: 600
                             }}>
@@ -322,7 +370,7 @@ export default function ViewMembersPage() {
                             </div>
                             <div style={{ 
                               fontWeight: 700, 
-                              color: '#78350F', 
+                              color: 'var(--warning-fg)',
                               fontSize: '1rem' 
                             }}>
                               ₹{Number(owner.saleAmount).toLocaleString('en-IN')}
@@ -333,7 +381,7 @@ export default function ViewMembersPage() {
                           <div>
                             <div style={{ 
                               fontSize: '0.75rem', 
-                              color: '#92400E', 
+                              color: 'var(--warning-fg)',
                               marginBottom: '0.25rem',
                               fontWeight: 600
                             }}>
@@ -342,7 +390,7 @@ export default function ViewMembersPage() {
                             <div style={{ 
                               fontWeight: 700, 
                               fontSize: '1rem',
-                              color: owner.saleAmount >= owner.purchaseAmount ? '#059669' : '#DC2626'
+                              color: owner.saleAmount >= owner.purchaseAmount ? 'var(--success)' : 'var(--danger)'
                             }}>
                               {owner.saleAmount >= owner.purchaseAmount ? '+' : ''}
                               ₹{Math.abs(Number(owner.saleAmount) - Number(owner.purchaseAmount)).toLocaleString('en-IN')}
@@ -375,7 +423,7 @@ export default function ViewMembersPage() {
             <div 
               className={styles.timelineDot} 
               style={{ 
-                backgroundColor: tenant.isCurrent ? '#10B981' : '#6B7280',
+                backgroundColor: tenant.isCurrent ? 'var(--success)' : 'var(--fg-4)',
                 boxShadow: tenant.isCurrent ? '0 0 0 4px rgba(16, 185, 129, 0.2)' : 'none'
               }}
             />
@@ -390,7 +438,7 @@ export default function ViewMembersPage() {
                     className={styles.currentBadge}
                     style={{
                       marginLeft: 'auto',
-                      background: '#10B981',
+                      background: 'var(--success)',
                       color: 'white',
                       padding: '0.25rem 0.75rem',
                       borderRadius: '12px',
@@ -420,7 +468,7 @@ export default function ViewMembersPage() {
                     })}
                   </span>
                 ) : (
-                  <span style={{ color: '#10B981', fontWeight: '600' }}>Present</span>
+                  <span style={{ color: 'var(--success)', fontWeight: '600' }}>Present</span>
                 )}
               </div>
               <div className={styles.ownerDetails}>

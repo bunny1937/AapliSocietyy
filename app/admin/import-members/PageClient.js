@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import styles from "@/styles/ImportMembers.module.css";
+import notify from "@/lib/notify";
 export default function ImportMembersPage() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
@@ -41,7 +42,7 @@ export default function ImportMembersPage() {
     },
     onError: (error) => {
       setUploadProgress(null);
-      alert(`Preview failed: ${error.message}`);
+      notify.error(`Preview failed: ${error.message}`);
     },
   });
   // CONFIRM MUTATION (confirmImport=true)
@@ -74,7 +75,7 @@ export default function ImportMembersPage() {
     },
     onError: (error) => {
       setUploadProgress(null);
-      alert(`Import failed: ${error.message}`);
+      notify.error(`Import failed: ${error.message}`);
     },
   });
   const handleDrag = (e) => {
@@ -97,7 +98,7 @@ export default function ImportMembersPage() {
   };
   const handleFile = async (file) => {
     if (!file.name.endsWith(".xlsx")) {
-      alert("Please upload a valid .xlsx file");
+      notify.warning("Please upload a valid .xlsx file");
       return;
     }
     setCurrentFile(file); // ← STORE FOR LATER
@@ -105,7 +106,7 @@ export default function ImportMembersPage() {
   };
   const handleConfirm = () => {
     if (!currentFile) {
-      alert("File not found. Please re-upload.");
+      notify.warning("File not found. Please re-upload.");
       return;
     }
     confirmMutation.mutate(currentFile); // ← USE STORED FILE
@@ -139,19 +140,19 @@ export default function ImportMembersPage() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Download error:", error);
-      alert("Failed to download credentials");
+      notify.error("Failed to download credentials");
     }
   };
   const getCellStyle = (sheetName, rowIndex, colIndex) => {
     if (!previewData?.validation?.issues || rowIndex === 0) {
       if (rowIndex === 0)
-        return { backgroundColor: "#F3F4F6", fontWeight: 700 };
-      return { backgroundColor: "#D1FAE5" };
+        return { backgroundColor: "var(--bg-muted)", fontWeight: 700 };
+      return { backgroundColor: "var(--success-bg)" };
     }
     const issue = previewData.validation.issues.find(
       (i) => i.sheet === sheetName && i.row === rowIndex + 1,
     );
-    if (!issue) return { backgroundColor: "#D1FAE5" };
+    if (!issue) return { backgroundColor: "var(--success-bg)" };
     const headers = previewData.sheets[sheetName][0];
     const header = headers[colIndex]?.value;
     // ✅ STEP 1: If THIS SPECIFIC CELL has an issue, show STRONG styling
@@ -160,20 +161,20 @@ export default function ImportMembersPage() {
       switch (issueType) {
         case "ERROR":
           return {
-            backgroundColor: "#FEE2E2",
-            color: "#991B1B",
+            backgroundColor: "var(--danger-bg)",
+            color: "var(--danger-fg)",
             fontWeight: 600,
           };
         case "DUPLICATE_DB":
         case "DUPLICATE_FILE":
           return {
-            backgroundColor: "#FFFFFF",
-            border: "2px solid #DC2626",
-            color: "#DC2626",
+            backgroundColor: "var(--bg-surface)",
+            border: "2px solid var(--danger)",
+            color: "var(--danger)",
             fontWeight: 600,
           };
         case "WARNING":
-          return { backgroundColor: "#FEF3C7", color: "#92400E" };
+          return { backgroundColor: "var(--warning-bg)", color: "var(--warning-fg)" };
         default:
           return {};
       }
@@ -181,16 +182,16 @@ export default function ImportMembersPage() {
     // ✅ STEP 2: If THIS ROW has ANY issues, make whole row LIGHT RED/YELLOW
     const issueTypes = Object.values(issue.cellIssues).map((ci) => ci.type);
     if (issueTypes.includes("ERROR")) {
-      return { backgroundColor: "#FEE2E2", fontStyle: "italic" }; // Light pink for error rows
+      return { backgroundColor: "var(--danger-bg)", fontStyle: "italic" }; // Light pink for error rows
     }
     if (
       issueTypes.includes("DUPLICATE_DB") ||
       issueTypes.includes("DUPLICATE_FILE")
     ) {
-      return { backgroundColor: "#FFE5E5", fontStyle: "italic" }; // Very light red for duplicate rows
+      return { backgroundColor: "var(--danger-bg)", fontStyle: "italic" }; // Very light red for duplicate rows
     }
     if (issueTypes.includes("WARNING")) {
-      return { backgroundColor: "#FFF9E6", fontStyle: "italic" }; // Very light yellow for warning rows
+      return { backgroundColor: "var(--warning-bg)", fontStyle: "italic" }; // Very light yellow for warning rows
     }
     return {};
   };
@@ -247,7 +248,7 @@ export default function ImportMembersPage() {
               <div className={styles.summaryStats}>
                 <div
                   className={styles.stat}
-                  style={{ backgroundColor: "#D1FAE5" }}
+                  style={{ backgroundColor: "var(--success-bg)" }}
                 >
                   <span className={styles.statNumber}>
                     {previewData.validation.summary.valid}
@@ -256,7 +257,7 @@ export default function ImportMembersPage() {
                 </div>
                 <div
                   className={styles.stat}
-                  style={{ backgroundColor: "#FEE2E2" }}
+                  style={{ backgroundColor: "var(--danger-bg)" }}
                 >
                   <span className={styles.statNumber}>
                     {previewData.validation.summary.errors}
@@ -266,8 +267,8 @@ export default function ImportMembersPage() {
                 <div
                   className={styles.stat}
                   style={{
-                    backgroundColor: "#FFFFFF",
-                    border: "2px solid #DC2626",
+                    backgroundColor: "var(--bg-surface)",
+                    border: "2px solid var(--danger)",
                   }}
                 >
                   <span className={styles.statNumber}>
@@ -277,7 +278,7 @@ export default function ImportMembersPage() {
                 </div>
                 <div
                   className={styles.stat}
-                  style={{ backgroundColor: "#FEF3C7" }}
+                  style={{ backgroundColor: "var(--warning-bg)" }}
                 >
                   <span className={styles.statNumber}>
                     {previewData.validation.summary.warnings}
@@ -305,14 +306,14 @@ export default function ImportMembersPage() {
                 <div className={styles.legendItem}>
                   <span
                     className={styles.legendColor}
-                    style={{ backgroundColor: "#D1FAE5" }}
+                    style={{ backgroundColor: "var(--success-bg)" }}
                   ></span>
                   <span>✅ Valid Data</span>
                 </div>
                 <div className={styles.legendItem}>
                   <span
                     className={styles.legendColor}
-                    style={{ backgroundColor: "#FEE2E2" }}
+                    style={{ backgroundColor: "var(--danger-bg)" }}
                   ></span>
                   <span>❌ Error (missing/invalid)</span>
                 </div>
@@ -320,8 +321,8 @@ export default function ImportMembersPage() {
                   <span
                     className={styles.legendColor}
                     style={{
-                      backgroundColor: "#FFFFFF",
-                      border: "2px solid #DC2626",
+                      backgroundColor: "var(--bg-surface)",
+                      border: "2px solid var(--danger)",
                     }}
                   ></span>
                   <span>⚪ Duplicate (in DB or file)</span>
@@ -329,7 +330,7 @@ export default function ImportMembersPage() {
                 <div className={styles.legendItem}>
                   <span
                     className={styles.legendColor}
-                    style={{ backgroundColor: "#FEF3C7" }}
+                    style={{ backgroundColor: "var(--warning-bg)" }}
                   ></span>
                   <span>⚠️ Warning (optional field)</span>
                 </div>
@@ -610,7 +611,7 @@ export default function ImportMembersPage() {
             <div className={styles.featureCard}>
               <div className={styles.featureIcon}>👤</div>
               <h4>Owner Details</h4>
-              <p>Full contact info, PAN, Aadhaar</p>
+              <p>Full contact info and PAN (Aadhaar is no longer collected)</p>
             </div>
             <div className={styles.featureCard}>
               <div className={styles.featureIcon}>📜</div>

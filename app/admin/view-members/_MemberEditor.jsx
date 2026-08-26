@@ -145,7 +145,6 @@ function DetailsSection({ member, onSaved }) {
       emailPrimary: member.emailPrimary ?? "",
       emailSecondary: member.emailSecondary ?? "",
       panCard: member.panCard ?? "",
-      aadhaar: member.aadhaar ?? "",
       internalNotes: member.internalNotes ?? "",
     });
     setError(null);
@@ -395,17 +394,16 @@ function DetailsSection({ member, onSaved }) {
               ro(member.panCard)
             )}
           </Field>
-          <Field label="Aadhaar">
-            {editing ? (
-              <input
-                className={f.input}
-                value={draft.aadhaar}
-                onChange={(e) => set("aadhaar", e.target.value)}
-              />
-            ) : (
-              ro(member.aadhaar)
-            )}
-          </Field>
+          {/* D1: Aadhaar is no longer collected. The field stays visible ONLY
+              where a value already exists, masked, so an admin can see that
+              legacy data is there and that it is on its way out — hiding it
+              would leave people believing it was already gone. There is no
+              input: nothing new can be entered. */}
+          {member.aadhaar ? (
+            <Field label="Aadhaar" hint="No longer collected. This legacy value will be cleared.">
+              {ro(`XXXX XXXX ${String(member.aadhaar).slice(-4)}`)}
+            </Field>
+          ) : null}
         </div>
 
         <div style={{ marginTop: "0.8rem" }}>
