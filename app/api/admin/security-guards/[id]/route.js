@@ -12,6 +12,7 @@ import bcrypt from "bcryptjs";
 import { requireRoles } from "@/lib/authz";
 import { logAudit } from "@/lib/audit-logger";
 import { authorize } from "@/lib/rbac/authorize";
+import { passwordPolicyProblem } from "@/lib/password-policy";
 function isPlausiblePhone(phone) {
   const digits = String(phone || "").replace(/\D/g, "");
   return digits.length >= 10 && digits.length <= 13;
@@ -98,15 +99,9 @@ export async function POST(request, { params }) {
     if (!newPassword) {
       newPassword = generatePassword();
       generated = true;
-    } else if (
-      newPassword.length < 8 ||
-      !/[a-zA-Z]/.test(newPassword) ||
-      !/[0-9]/.test(newPassword)
-    ) {
-      return NextResponse.json(
-        { error: "Password must be 8+ chars with a letter and a number" },
-        { status: 400 },
-      );
+    } else {
+      const pwProblem = passwordPolicyProblem(newPassword);
+      if (pwProblem) return NextResponse.json({ error: pwProblem }, { status: 400 });
     }
     guard.password = await bcrypt.hash(newPassword, 10);
     await guard.save();
@@ -148,12 +143,19 @@ export async function DELETE(request, { params }) {
   }
 }
 function generatePassword() {
-  // 10-char temp password guaranteed to contain a letter and a digit.
-  const letters = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
+  // 10-char temp password guaranteed to contain lower+upper+digit+symbol
+  // (matches lib/password-policy.js).
+  const lower = "abcdefghijkmnpqrstuvwxyz";
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
   const digits = "23456789";
-  const all = letters + digits;
-  let out = letters[crypto.randomInt(letters.length)] + digits[crypto.randomInt(digits.length)];
-  for (let i = 0; i < 8; i++) out += all[crypto.randomInt(all.length)];
+  const symbols = "!@#$%&*";
+  const all = lower + upper + digits + symbols;
+  let out =
+    lower[crypto.randomInt(lower.length)] +
+    upper[crypto.randomInt(upper.length)] +
+    digits[crypto.randomInt(digits.length)] +
+    symbols[crypto.randomInt(symbols.length)];
+  for (let i = 0; i < 6; i++) out += all[crypto.randomInt(all.length)];
   return out
     .split("")
     .sort(() => crypto.randomInt(3) - 1)

@@ -1,5 +1,5 @@
 "use client";
-import DashboardLayout from "@/lib/notify";
+import DashboardLayout from "components/DashboardLayout";
 const navigation = [
   {
     title: "Gate",

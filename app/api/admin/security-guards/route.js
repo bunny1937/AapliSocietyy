@@ -9,6 +9,7 @@ import { requireRoles } from "@/lib/authz";
 import { logAudit } from "@/lib/audit-logger";
 import { authorize } from "@/lib/rbac/authorize";
 import { ensureAdminAssignment } from "@/lib/rbac/ensure-admin-assignment";
+import { passwordPolicyProblem } from "@/lib/password-policy";
 function isPlausiblePhone(phone) {
   const digits = String(phone || "").replace(/\D/g, "");
   return digits.length >= 10 && digits.length <= 13;
@@ -59,16 +60,9 @@ export async function POST(request) {
         { error: "Enter a valid contact number for the guard" },
         { status: 400 },
       );
-    if (password.length < 8)
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters" },
-        { status: 400 },
-      );
-    if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password))
-      return NextResponse.json(
-        { error: "Password must include at least one letter and one number" },
-        { status: 400 },
-      );
+    const pwProblem = passwordPolicyProblem(password);
+    if (pwProblem)
+      return NextResponse.json({ error: pwProblem }, { status: 400 });
     if (!/^[a-z0-9_]{4,30}$/.test(username))
       return NextResponse.json(
         { error: "Username: 4-30 chars, letters/numbers/underscore only" },

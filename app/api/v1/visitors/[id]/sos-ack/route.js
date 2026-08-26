@@ -2,6 +2,7 @@ import { withRoute, ApiError, json } from "@/lib/v1/http";
 import { getClaims, requireTenant } from "@/lib/v1/auth";
 import { Visitor } from "@/lib/v1/models";
 import { notifySosAcknowledged } from "@/lib/v1/notify";
+import { VISITOR_ACCESS_ROLES } from "@/lib/v1/constants";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,12 +28,16 @@ export const POST = withRoute(async (req, ctx) => {
   if (!visitor) throw new ApiError(404, "SOS not found");
   if (visitor.entryMethod !== "SOS") throw new ApiError(400, "Not an SOS alert");
 
-  // Residents may only acknowledge their own flat's SOS. Guards/admins carry no
-  // memberId in their claims and may acknowledge any SOS in their society.
-  const isResident = Boolean(claims.memberId);
-  if (isResident && String(visitor.memberId) !== String(claims.memberId)) {
-    throw new ApiError(403, "Not your flat");
+  // Positive check: staff roles may acknowledge any SOS in their society;
+  // everyone else may only acknowledge their own flat's SOS. Negative
+  // inference on memberId is wrong for profile kinds (e.g. Commercial) that
+  // carry neither memberId nor a staff role (LOOP-02).
+  const isStaff = VISITOR_ACCESS_ROLES.includes(claims.role);
+  const isOwnFlat = Boolean(claims.memberId) && String(visitor.memberId) === String(claims.memberId);
+  if (!isStaff && !isOwnFlat) {
+    throw new ApiError(403, "Not authorised");
   }
+  const isResident = !isStaff && isOwnFlat;
 
   // Idempotent: two guards tapping at once must not fan out two pushes.
   const existing = visitor.sosAck;
