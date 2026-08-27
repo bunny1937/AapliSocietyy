@@ -229,7 +229,17 @@ function withCsp(response, nonce) {
 }
 
 export async function middleware(request) {
-  const { pathname } = request.nextUrl;
+  // The Flutter app talks to /v1/*, which next.config.js and vercel.json
+  // rewrite to /api/v1/*. Those rewrites run AFTER middleware, so as far as
+  // this file is concerned the path is still /v1/... — and once the CSP
+  // matcher was broadened to "every page", that fell through the API block
+  // below into the cookie-gated page rules and 307'd every mobile API call
+  // to the HTML login page. Normalize first so all the /api/v1 handling
+  // (CSRF skip, revocation, module gates) sees the path it expects.
+  const rawPathname = request.nextUrl.pathname;
+  const pathname = rawPathname.startsWith("/v1/")
+    ? `/api${rawPathname}`
+    : rawPathname;
   const method = request.method;
   const nonce = btoa(crypto.randomUUID());
 
