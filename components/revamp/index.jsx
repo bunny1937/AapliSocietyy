@@ -9,7 +9,7 @@
  * defines for both themes — so these render correctly in light and dark
  * without any per-component theme branching.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as Lucide from "lucide-react";
 
 /* ------------------------------------------------------------------ *
@@ -261,6 +261,75 @@ export function Select({ value, onChange, children, size = "sm", style, title })
 }
 
 /* ------------------------------------------------------------------ *
+ * Accordion — inline expandable section. Built for the accounting revamp:
+ * "all these small things must be in one configuration kind of page" — a
+ * drawer opens an overlay away from the page; an accordion keeps the
+ * content on the same page, just collapsed until asked for. Uncontrolled
+ * (owns its own open state) so a page can stack several without wiring
+ * open/close state for each one itself.
+ * ------------------------------------------------------------------ */
+export function Accordion({ icon, title, sub, defaultOpen = false, badge, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div style={{ border: "1px solid var(--r-hairline)", borderRadius: 12, background: "var(--r-surface)", marginBottom: 12, overflow: "hidden" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "14px 16px",
+          background: "none", border: "none", cursor: "pointer", textAlign: "left", fontFamily: "inherit",
+        }}
+      >
+        {icon ? (
+          <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--r-brand-soft, var(--r-surface-2))", color: "var(--r-brand)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Icon name={icon} size={15} />
+          </div>
+        ) : null}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--r-fg-1)" }}>{title}</div>
+          {sub ? <div style={{ fontSize: 12, color: "var(--r-fg-4)", marginTop: 2 }}>{sub}</div> : null}
+        </div>
+        {badge}
+        <Icon name={open ? "chevron-up" : "chevron-down"} size={16} color="var(--r-fg-4)" />
+      </button>
+      {open ? (
+        <div style={{ padding: "0 16px 16px" }}>
+          {children}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * ToggleSwitch — real on/off pill, adopted from the Pulse design-kit
+ * import (D:\projects\AapliSociety_Design_System\ui_kits\revamp\
+ * AccountingShared.jsx). Replaces plain on/off Btns wherever a state is
+ * genuinely binary (posting rule enabled, account mapped, etc.) — a
+ * switch reads as "flip a setting", a button reads as "do a thing",
+ * and conflating them was the mockup's one real UI fix worth adopting.
+ * ------------------------------------------------------------------ */
+export function ToggleSwitch({ on, onChange, disabled, title }) {
+  return (
+    <button
+      type="button"
+      title={title}
+      disabled={disabled}
+      onClick={() => !disabled && onChange(!on)}
+      style={{
+        width: 36, height: 21, borderRadius: 999, border: "none", padding: 2,
+        cursor: disabled ? "not-allowed" : "pointer",
+        background: on ? "var(--r-brand)" : "var(--r-surface-3)",
+        display: "flex", alignItems: "center", justifyContent: on ? "flex-end" : "flex-start",
+        transition: "background 0.15s", flexShrink: 0, opacity: disabled ? 0.5 : 1,
+      }}
+    >
+      <span style={{ width: 15, height: 15, borderRadius: 999, background: "#fff", boxShadow: "0 1px 2px rgba(0,0,0,0.25)" }} />
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ *
  * Segmented
  * ------------------------------------------------------------------ */
 export function Segmented({ value, onChange, options }) {
@@ -469,6 +538,474 @@ export function EmptyState({ icon = "inbox", title, sub }) {
  * ------------------------------------------------------------------ */
 export function RevampSkeleton({ h = 96, style }) {
   return <div className="skeleton" style={{ height: h, borderRadius: "var(--r-radius-lg)", ...style }} />;
+}
+
+/* ------------------------------------------------------------------ *
+ * DiffPreview — the PLAN phase of Plan -> Stream -> Receipt (design doc
+ * §6/§9). "will create 57 / skip 0 / change 0", expandable to the named
+ * list. Pure display — the caller owns fetching the dryRun plan and the
+ * Cancel/Confirm actions either side of it.
+ * ------------------------------------------------------------------ */
+export function DiffPreview({ willCreate = [], willSkip = [], willUpdate = [], expanded, onToggle }) {
+  const counts = [
+    willCreate.length ? { label: "create", n: willCreate.length, color: "var(--r-success)" } : null,
+    willUpdate.length ? { label: "update", n: willUpdate.length, color: "var(--r-warning)" } : null,
+    willSkip.length ? { label: "skip", n: willSkip.length, color: "var(--r-fg-4)" } : null,
+  ].filter(Boolean);
+  const nothingToDo = counts.length === 0;
+
+  return (
+    <div style={{
+      padding: "10px 12px", borderRadius: 8, background: "var(--r-surface-2)",
+      border: "1px solid var(--r-hairline)", fontSize: 12.5, lineHeight: 1.6,
+    }}>
+      {nothingToDo ? (
+        <span style={{ color: "var(--r-fg-3)" }}>Nothing to do — already up to date.</span>
+      ) : (
+        <>
+          <span style={{ color: "var(--r-fg-1)", fontWeight: 600 }}>About to </span>
+          {counts.map((c, i) => (
+            <span key={c.label}>
+              {i > 0 ? ", " : ""}
+              <strong style={{ color: c.color }}>{c.n}</strong> {c.label}
+            </span>
+          ))}
+          {onToggle && (willCreate.length || willUpdate.length || willSkip.length) ? (
+            <button type="button" onClick={onToggle} style={{
+              marginLeft: 8, border: "none", background: "none", cursor: "pointer",
+              color: "var(--r-fg-4)", fontSize: 11.5, textDecoration: "underline",
+            }}>
+              {expanded ? "hide" : "see all"}
+            </button>
+          ) : null}
+          {expanded ? (
+            <div style={{ marginTop: 6 }}>
+              {willCreate.length ? <div><strong style={{ color: "var(--r-success)" }}>Create:</strong> {willCreate.join(", ")}</div> : null}
+              {willUpdate.length ? <div style={{ marginTop: 3 }}><strong style={{ color: "var(--r-warning)" }}>Update:</strong> {willUpdate.join(", ")}</div> : null}
+              {willSkip.length ? <div style={{ marginTop: 3, color: "var(--r-fg-4)" }}><strong>Skip (already there):</strong> {willSkip.join(", ")}</div> : null}
+            </div>
+          ) : null}
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * RunLog — the STREAM phase. Consumes an array of SetupEvent (design doc
+ * §6 event contract) already accumulated by the caller and renders them as
+ * a terminal-style log, newest at the bottom, auto-scrolling. The caller
+ * owns the actual NDJSON fetch/reader loop (it differs per endpoint); this
+ * only renders what's been received so far.
+ * `aria-live="polite"` per the doc's accessibility primitive requirements.
+ * ------------------------------------------------------------------ */
+export function RunLog({ events = [], height = 180 }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
+  }, [events.length]);
+
+  const lineFor = (e) => {
+    const t = e.at ? new Date(e.at).toLocaleTimeString("en-IN", { hour12: false }) : "";
+    switch (e.t) {
+      case "start": return `${t}  Starting…`;
+      case "item": return `${t}  ${e.action === "skipped" ? "·" : "✓"}  ${e.label}  ${e.action}`;
+      case "verify": return `${t}  ${e.ok ? "✓" : "✗"}  ${e.detail || e.check}`;
+      case "done": return `${t}  ✓  ${e.created} created · ${e.skipped} skipped · ${e.updated} changed · ${((e.ms || 0) / 1000).toFixed(1)}s`;
+      case "error": return `${t}  ✗  ${e.message}`;
+      default: return `${t}  ${e.t}`;
+    }
+  };
+
+  return (
+    <div
+      ref={ref}
+      role="log"
+      aria-live="polite"
+      style={{
+        height, overflowY: "auto", padding: "10px 12px", borderRadius: 8,
+        background: "var(--r-code-bg, #0b0f14)", color: "var(--r-code-fg, #c8d3df)",
+        fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 11.5, lineHeight: 1.7,
+      }}
+    >
+      {events.map((e, i) => (
+        <div key={i} style={{ color: e.t === "error" ? "#ff6b6b" : e.t === "done" ? "#5fd97a" : "inherit", whiteSpace: "pre-wrap" }}>
+          {lineFor(e)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Receipt — one-line collapsed result (timestamp + actor), expandable to
+ * the created/skipped detail. The RECEIPT phase, factored out of the
+ * setup wizard's StepCard so any Plan -> Stream -> Receipt screen can
+ * reuse the same collapsed shape instead of re-inventing it.
+ * ------------------------------------------------------------------ */
+export function Receipt({ status = "ok", at, actorName, created = [], skipped = [], expanded, onToggle }) {
+  const when = at ? new Date(at).toLocaleString("en-IN", {
+    day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit",
+  }) : "";
+  const failed = status === "failed";
+  return (
+    <div style={{ fontSize: 12.5 }}>
+      <span style={{ color: failed ? "var(--r-danger)" : "var(--r-success)", fontWeight: 600 }}>
+        {failed ? "Did not complete" : "Done"}
+      </span>
+      <span style={{ color: "var(--r-fg-4)", marginLeft: 6 }}>
+        {when}{actorName ? ` by ${actorName}` : ""}
+      </span>
+      {(created.length || skipped.length) && onToggle ? (
+        <button type="button" onClick={onToggle} style={{
+          marginLeft: 8, border: "none", background: "none", cursor: "pointer",
+          color: "var(--r-fg-4)", fontSize: 11.5, textDecoration: "underline",
+        }}>
+          {expanded ? "hide" : "receipt"}
+        </button>
+      ) : null}
+      {expanded ? (
+        <div style={{ marginTop: 6, color: "var(--r-fg-2)" }}>
+          {created.length ? <div><strong style={{ color: "var(--r-success)" }}>Created:</strong> {created.join(", ")}</div> : null}
+          {skipped.length ? <div style={{ marginTop: 3, color: "var(--r-fg-4)" }}><strong>Already there:</strong> {skipped.join(", ")}</div> : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * GuardedAction — one prop (`tier`) picks the confirm UX (design doc §7,
+ * §9). Renders as a trigger button; the actual T1/T2/T3 UI is an inline
+ * popover anchored under it so it works inside a table row with no modal
+ * plumbing.
+ *
+ *   T0  calls onConfirm() immediately, no UI
+ *   T1  inline "Are you sure?" — one Confirm click
+ *   T2  inline typed-name confirmation + mandatory reason, then Confirm
+ *   T3  refuses outright — renders `refusal` (title/reason/remedy) instead
+ *       of any control; onConfirm is never reachable
+ *
+ * Caller owns fetching whichever tier applies to this instance (the lock
+ * matrix decides that server-side; the client mirrors it so a T3 renders as
+ * a refusal instead of a button that would just 423 on click).
+ * ------------------------------------------------------------------ */
+export function GuardedAction({
+  tier = "T0", label = "Delete", confirmLabel, typedName, refusal,
+  onConfirm, disabled, size = "sm", danger = true,
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [typed, setTyped] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  // T3 — a disabled button, reason on hover. Used to render as a full
+  // always-visible red card (title + reason + remedy text) repeated on
+  // every locked row in a list; scanning 20 rows meant reading the same
+  // block 20 times. Same information, now on hover instead of on the page.
+  if (tier === "T3" && refusal) {
+    const tip = [refusal.title, refusal.reason, refusal.remedy].filter(Boolean).join(" — ");
+    return (
+      <button
+        type="button"
+        disabled
+        title={tip}
+        style={{
+          padding: size === "sm" ? "5px 10px" : "7px 12px", borderRadius: 7, fontSize: size === "sm" ? 12 : 13,
+          border: "1px solid var(--r-hairline)", background: "var(--r-surface-2)", color: "var(--r-fg-5)",
+          cursor: "not-allowed", fontWeight: 600,
+        }}
+      >
+        {label}
+      </button>
+    );
+  }
+
+  const run = async () => {
+    setBusy(true);
+    try {
+      await onConfirm(tier === "T2" ? { reason } : undefined);
+      setOpen(false);
+      setReason("");
+      setTyped("");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (tier === "T0") {
+    return (
+      <Btn size={size} variant={danger ? "danger" : "secondary"} disabled={disabled || busy} onClick={run}>
+        {busy ? "…" : label}
+      </Btn>
+    );
+  }
+
+  if (!open) {
+    return (
+      <Btn size={size} variant={danger ? "danger" : "secondary"} disabled={disabled} onClick={() => setOpen(true)}>
+        {label}
+      </Btn>
+    );
+  }
+
+  const typedOk = tier !== "T2" || (typedName && typed.trim() === typedName && reason.trim().length > 0);
+
+  return (
+    <div style={{
+      padding: "10px 12px", borderRadius: 8, background: "var(--r-surface-2)",
+      border: "1px solid var(--r-hairline)", fontSize: 12, minWidth: 240,
+    }}>
+      {tier === "T2" ? (
+        <>
+          <div style={{ marginBottom: 6, color: "var(--r-fg-2)" }}>
+            Type <strong>{typedName}</strong> to confirm, and say why:
+          </div>
+          <input
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            placeholder={typedName}
+            style={{
+              width: "100%", marginBottom: 6, padding: "6px 8px", borderRadius: 6,
+              border: "1px solid var(--r-hairline)", background: "var(--r-surface-1)",
+              color: "var(--r-fg-1)", fontSize: 12,
+            }}
+          />
+          <input
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Reason (required)"
+            style={{
+              width: "100%", marginBottom: 8, padding: "6px 8px", borderRadius: 6,
+              border: "1px solid var(--r-hairline)", background: "var(--r-surface-1)",
+              color: "var(--r-fg-1)", fontSize: 12,
+            }}
+          />
+        </>
+      ) : (
+        <div style={{ marginBottom: 8, color: "var(--r-fg-2)" }}>Are you sure?</div>
+      )}
+      <div style={{ display: "flex", gap: 6 }}>
+        <Btn size="sm" onClick={() => setOpen(false)} disabled={busy}>Cancel</Btn>
+        <Btn size="sm" variant="danger" disabled={busy || !typedOk} onClick={run}>
+          {busy ? "…" : (confirmLabel || label)}
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Modal — centered dialog, not a side sheet. "Tap to open a dialog
+ * container" for the Configuration page: click a card, its full content
+ * opens centered over a dim backdrop, close returns to the card grid. A
+ * Drawer answers "here's this section, off to one side while you keep
+ * working" — a Modal answers "you're doing this one thing now," which is
+ * what a one-time setup step (Financial Years, Posting Rules, Book Checks)
+ * actually is.
+ * ------------------------------------------------------------------ */
+export function Modal({ open, onClose, title, sub, width = 720, children }) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div
+        onClick={onClose}
+        style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        style={{
+          position: "relative", width: `min(${width}px, 100%)`, maxHeight: "88vh",
+          background: "var(--r-surface)", border: "1px solid var(--r-hairline)", borderRadius: 16,
+          boxShadow: "0 24px 64px rgba(0,0,0,0.35)", display: "flex", flexDirection: "column", overflow: "hidden",
+        }}
+      >
+        <div style={{
+          display: "flex", alignItems: "flex-start", justifyContent: "space-between",
+          padding: "18px 22px", borderBottom: "1px solid var(--r-hairline)", flexShrink: 0,
+        }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--r-fg-1)" }}>{title}</div>
+            {sub ? <div style={{ fontSize: 12.5, color: "var(--r-fg-4)", marginTop: 3 }}>{sub}</div> : null}
+          </div>
+          <button
+            type="button" onClick={onClose} aria-label="Close"
+            style={{
+              border: "none", background: "var(--r-surface-2)", borderRadius: 8, width: 30, height: 30,
+              display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0,
+            }}
+          >
+            <Icon name="x" size={16} color="var(--r-fg-3)" />
+          </button>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", padding: 22 }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Drawer — right-side sheet, the thing design doc §9/§12 Phase 4 uses to
+ * replace a standalone page: "financial-years", "posting-rules" etc. render
+ * inside this instead of their own /admin/accounting/<x> route. URL-
+ * addressable is the caller's job (read/write `?drawer=` in the parent page)
+ * so old bookmarked links keep working as a redirect into the right drawer.
+ * ------------------------------------------------------------------ */
+export function Drawer({ open, onClose, title, sub, width = 560, children }) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200 }}>
+      <div
+        onClick={onClose}
+        style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)" }}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        style={{
+          position: "absolute", top: 0, right: 0, bottom: 0, width: `min(${width}px, 100vw)`,
+          background: "var(--r-surface)", borderLeft: "1px solid var(--r-hairline)",
+          boxShadow: "-8px 0 24px rgba(0,0,0,0.18)", display: "flex", flexDirection: "column",
+        }}
+      >
+        <div style={{
+          display: "flex", alignItems: "flex-start", justifyContent: "space-between",
+          padding: "16px 18px", borderBottom: "1px solid var(--r-hairline)", flexShrink: 0,
+        }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--r-fg-1)" }}>{title}</div>
+            {sub ? <div style={{ fontSize: 12, color: "var(--r-fg-4)", marginTop: 3 }}>{sub}</div> : null}
+          </div>
+          <button
+            type="button" onClick={onClose} aria-label="Close"
+            style={{
+              border: "none", background: "var(--r-surface-2)", borderRadius: 8, width: 28, height: 28,
+              display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0,
+            }}
+          >
+            <Icon name="x" size={15} color="var(--r-fg-3)" />
+          </button>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", padding: 18 }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Tabs — used everywhere Books / Statements / Money / Billing setup need
+ * a switcher (design doc §9). Controlled: caller owns `value`.
+ * ------------------------------------------------------------------ */
+export function Tabs({ value, onChange, tabs, style }) {
+  return (
+    <div role="tablist" style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--r-hairline)", marginBottom: 16, ...style }}>
+      {tabs.map((t) => {
+        const active = t.key === value;
+        return (
+          <button
+            key={t.key}
+            role="tab"
+            aria-selected={active}
+            type="button"
+            onClick={() => onChange(t.key)}
+            style={{
+              border: "none", background: "none", cursor: "pointer", fontFamily: "inherit",
+              padding: "9px 14px", fontSize: 13, fontWeight: 600,
+              color: active ? "var(--r-brand)" : "var(--r-fg-3)",
+              borderBottom: active ? "2px solid var(--r-brand)" : "2px solid transparent",
+              marginBottom: -1, display: "flex", alignItems: "center", gap: 6,
+            }}
+          >
+            {t.icon ? <Icon name={t.icon} size={14} /> : null}
+            {t.label}
+            {t.badge != null ? (
+              <span style={{
+                fontSize: 10.5, fontWeight: 700, color: active ? "var(--r-brand)" : "var(--r-fg-4)",
+                background: "var(--r-surface-2)", borderRadius: 999, padding: "1px 6px",
+              }}>{t.badge}</span>
+            ) : null}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * DataTable — sort, sticky header, empty state, row click. Not a
+ * virtualized grid (the pages that need this kit are hundreds, not tens of
+ * thousands, of rows) — sortable + sticky + a real empty state replaces most
+ * of what the ~10 hand-rolled tables in the accounting pages do today.
+ * `cols`: [{key, label, width, render?(row), align?}]
+ * ------------------------------------------------------------------ */
+export function DataTable({ cols, rows, rowKey = "_id", onRowClick, emptyIcon = "inbox", emptyTitle = "Nothing here", emptySub, sort, onSort }) {
+  if (!rows?.length) {
+    return <Card><EmptyState icon={emptyIcon} title={emptyTitle} sub={emptySub} /></Card>;
+  }
+  return (
+    <Card padded={false} style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <thead>
+          <tr style={{ position: "sticky", top: 0, background: "var(--r-surface)", zIndex: 1 }}>
+            {cols.map((c) => (
+              <th
+                key={c.key}
+                onClick={() => onSort && onSort(c.key)}
+                style={{
+                  textAlign: c.align || "left", padding: "10px 14px", fontSize: 11.5, fontWeight: 700,
+                  color: "var(--r-fg-4)", textTransform: "uppercase", letterSpacing: 0.3,
+                  borderBottom: "1px solid var(--r-hairline)", cursor: onSort ? "pointer" : "default",
+                  width: c.width, whiteSpace: "nowrap",
+                }}
+              >
+                {c.label}
+                {sort?.key === c.key ? (sort.dir === "asc" ? " ↑" : " ↓") : ""}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr
+              key={row[rowKey] ?? i}
+              onClick={() => onRowClick?.(row)}
+              style={{
+                borderBottom: i === rows.length - 1 ? "none" : "1px solid var(--r-hairline)",
+                cursor: onRowClick ? "pointer" : "default",
+              }}
+              onMouseEnter={(e) => { if (onRowClick) e.currentTarget.style.background = "var(--r-surface-2)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            >
+              {cols.map((c) => (
+                <td key={c.key} style={{ padding: "10px 14px", textAlign: c.align || "left", color: "var(--r-fg-2)" }}>
+                  {c.render ? c.render(row) : row[c.key]}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Card>
+  );
 }
 
 /* ------------------------------------------------------------------ *
