@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Icon from "../../../components/accounting/generate/Icon";
 import { PageHeader, FySelect, Btn, EmptyState } from "../../../components/accounting/generate/PageHeader";
+import { NoFinancialYear, SetupAdvisory } from "@/components/accounting/SetupGate";
 import { useFinancialYears } from "../../../components/accounting/generate/useFinancialYears";
 import { Banner } from "../../../components/accounting/generate/Primitives";
 import { PrintArea } from "../../../components/accounting/generate/PrintArea";
@@ -63,12 +64,16 @@ export default function IncomeExpenditureScreen() {
         }
       />
 
+      {/* Financial Year exists, but something further down the checklist
+          does not — and the output of this page gets signed. */}
+      <SetupAdvisory />
+
       {fyLoading || fetching ? (
         <EmptyState text="Loading ledger data…" />
       ) : error ? (
         <Banner tone="danger" icon="alert-triangle">{error}</Banner>
       ) : !ie ? (
-        <EmptyState text="No Financial Year found" hint="Create a Financial Year under Accounting first." />
+        <NoFinancialYear what="the Income &amp; Expenditure statement" />
       ) : (
         <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 12, padding: 20 }}>
           <PrintArea>
@@ -78,6 +83,7 @@ export default function IncomeExpenditureScreen() {
               societyName={society.name}
               societyAddress={society.address}
               societyRegistrationNo={society.registrationNo}
+              onAccountClick={(id) => router.push(`/admin/accounting/chart-of-accounts?openLedger=${id}`)}
             />
           </PrintArea>
         </div>

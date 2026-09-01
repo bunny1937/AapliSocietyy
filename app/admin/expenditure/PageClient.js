@@ -113,8 +113,26 @@ export default function ExpenditurePage() {
     }
     setSaving(true);
     try {
-      await api("/api/expenses", { method: "POST", body: JSON.stringify(form) });
-      setToast({ type: "success", message: "Expense added" });
+      const res = await api("/api/expenses", { method: "POST", body: JSON.stringify(form) });
+      // Recording an expense now also writes it into the double-entry books.
+      // Say which head it landed on — an admin who never sees where the money
+      // was filed cannot tell a right entry from a wrong one. And when it did
+      // NOT reach the books, say that instead of a bare "Expense added": the
+      // row exists, the statement will not show it, and only the reason makes
+      // that recoverable.
+      const acc = res?.accounting;
+      if (acc?.posted) {
+        setToast({
+          type: "success",
+          // Head names are abbreviated the way the statutory statement prints
+          // them ("Rep. & Maint."), so a blind full stop yields "Maint..".
+          message: `Expense added and posted to the books under ${String(acc.debitAccount).replace(/\.\s*$/, "")}.`,
+        });
+      } else if (acc?.reason) {
+        setToast({ type: "error", message: acc.reason });
+      } else {
+        setToast({ type: "success", message: "Expense added" });
+      }
       setForm(emptyForm());
       load();
     } catch (err) {
@@ -209,6 +227,12 @@ export default function ExpenditurePage() {
       <div style={{ height: 16 }} />
 
       <Card>
+        {loading ? (
+          <div style={S.center}>
+            <Spinner />
+          </div>
+        ) : (
+          <>
         <div style={S.summary}>
           <div style={S.stat}>
             <div style={{ fontSize: 12, color: tokens.sub }}>Total spent (FY)</div>
@@ -225,11 +249,7 @@ export default function ExpenditurePage() {
             ))}
         </div>
 
-        {loading ? (
-          <div style={S.center}>
-            <Spinner />
-          </div>
-        ) : items.length === 0 ? (
+        {items.length === 0 ? (
           <EmptyState icon="\uD83D\uDCB8" title="No expenses recorded" subtitle="Add your first expense above to start building the balance sheet's outflow side." />
         ) : (
           items.map((it) => (
@@ -245,6 +265,20 @@ export default function ExpenditurePage() {
                     {it.referenceNo ? ` · Ref ${it.referenceNo}` : ""}
                     {it.description ? ` — ${it.description}` : ""}
                   </div>
+                  {/* Whether this row reached the double-entry books. A row
+                      that did not is invisible on every statement built from
+                      the ledger, and nothing else on this page would say so.
+                      Rows recorded before the bridge existed have neither
+                      field and are left unmarked rather than accused. */}
+                  {it.notPostedReason ? (
+                    <div style={{ ...S.meta, color: tokens.danger, marginTop: 4 }}>
+                      Not in the books — {it.notPostedReason}
+                    </div>
+                  ) : it.postedToBooksAt ? (
+                    <div style={{ ...S.meta, color: tokens.success, marginTop: 4 }}>
+                      In the books
+                    </div>
+                  ) : null}
                 </div>
                 <Button variant="danger" onClick={() => remove(it._id)}>
                   Delete
@@ -252,6 +286,8 @@ export default function ExpenditurePage() {
               </div>
             </div>
           ))
+        )}
+          </>
         )}
       </Card>
 

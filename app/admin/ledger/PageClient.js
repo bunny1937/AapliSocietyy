@@ -35,6 +35,14 @@ export default function UltraAdvancedLedgerPage() {
   const [savedViews, setSavedViews] = useState([]);
   const [newViewName, setNewViewName] = useState("");
   const [showColumnToggle, setShowColumnToggle] = useState(false);
+  // Deep-link support: a universal-search "View Ledger" result opens this
+  // page pre-filtered to the member it was searched for, e.g.
+  // /admin/ledger?memberId=<id> — read once on mount via window.location so
+  // this doesn't need a Suspense boundary just for one query param.
+  useEffect(() => {
+    const mid = new URLSearchParams(window.location.search).get("memberId");
+    if (mid) setFilters((f) => ({ ...f, memberId: mid }));
+  }, []);
   const [visibleColumns, setVisibleColumns] = useState({
     date: true,
     txnId: true,
@@ -333,6 +341,18 @@ export default function UltraAdvancedLedgerPage() {
         </div>
       </div>
       {/* ========== ANALYTICS DASHBOARD ========== */}
+      {isLoading ? (
+        <div className={styles.contentCard} style={{ padding: "4rem", textAlign: "center", marginBottom: "1.5rem" }}>
+          <div
+            className="loading-spinner"
+            style={{ margin: "0 auto 1.5rem", width: "48px", height: "48px" }}
+          ></div>
+          <p style={{ fontSize: "1rem", color: "var(--fg-4)" }}>
+            Loading ledger analytics...
+          </p>
+        </div>
+      ) : (
+        <>
       <div className={ledgerStyles.summaryBar}>
         <div
           className={ledgerStyles.summaryCard}
@@ -827,6 +847,8 @@ export default function UltraAdvancedLedgerPage() {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
       {/* ========== SAVED VIEWS ========== */}
       {savedViews.length > 0 && (

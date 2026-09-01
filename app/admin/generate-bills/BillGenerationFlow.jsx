@@ -148,12 +148,6 @@ export default function BillGenerationFlow({ segment, onSegmentComplete }) {
   const [payConfirming, setPayConfirming] = useState(false);
   const [payConfirmProgress, setPayConfirmProgress] = useState({ current: 0, total: 0 });
   const [payResults, setPayResults] = useState(null);
-  const [autoGenState, setAutoGenState] = useState(null); // null | { status: "running"|"done"|"error", label, count, error }
-  // Safe default after payment upload: generate only for successfully paid members.
-  // Full-society generation remains available, but must be explicitly selected.
-  const [nextGenScope, setNextGenScope] = useState("paid");
-  const [nextPushMode, setNextPushMode] = useState("schedule");
-  const [nextPushDate, setNextPushDate] = useState("");
   const diffIssues =
     excelValidation?.issues?.filter((i) => i.type === "diff") || [];
   // Conflicts can no longer be "approved" — they must be fixed in the Excel and
@@ -306,13 +300,23 @@ if (!latestPeriodId) {
     return members
       .map((m) => previews[m._id || m.memberId || m.id])
       .filter(Boolean)
-      .map((p) => ({
+      .map((p) => {
+      // Advance credit reduces what the member still owes, applied as a real
+      // payment right after generation (generate-final/route.js), never as
+      // part of computeBill()'s own totals — so it has to be subtracted here
+      // for the preview to show the same net-due figure the old client-side
+      // math showed. Commercial has no advance-credit concept (p.advanceCredit
+      // is undefined there), so this is a no-op on that path — min(0, x) = 0.
+      const advanceCredit = p.advanceCredit ?? 0;
+      const totalBillDue = p.totalBillDue ?? 0;
+      const advApplied = Math.min(advanceCredit, totalBillDue);
+      return {
         memberId: p.memberId,
         member: p.flat, // "Wing-FlatNo" — the key the modal header + sort read
         memberName: p.memberName,
         memberContact: "",
         area: p.area ?? 0,
-        advanceCredit: 0, // commercial engine settles advances at generation time
+        advanceCredit,
         parkingCharges: 0, // residential-only concept
         // Field names below follow the server's computeBill() output
         // (lib/billing/generationService.js), not the client-side residential
@@ -336,10 +340,14 @@ if (!latestPeriodId) {
         subtotal: p.currentCharges ?? 0,
         serviceTax: 0, // commercial heads carry their own tax treatment
         serviceTaxRate: 0,
-        currentBillTotal: p.totalBillDue ?? 0,
-        grandTotal: p.totalBillDue ?? 0,
+        currentBillTotal: totalBillDue,
+        // Client display only — generate-final ignores every client-supplied
+        // amount and recomputes from scratch server-side (see its own
+        // comment), so this never affects what the actual bill records.
+        grandTotal: Math.max(0, totalBillDue - advApplied),
         unitClass: p.unitClass,
-      }));
+      };
+      });
   };
   const generatePreview = async () => {
     if (billMonth === null || billYear === null) return;
@@ -467,196 +475,6 @@ if (!latestPeriodId) {
     } finally {
       setIsPreviewing(false);
       setPreviewProgress({ current: 0, total: 0 });
-    }
-  };
-  const autoGenerateNextMonth = async () => {
-    const nextDate = new Date(billYear, billMonth + 1, 1);
-    const nextMonth = nextDate.getMonth(); // 0-indexed
-    const nextYear = nextDate.getFullYear();
-    const nextPeriodLabel = `${nextYear}-${String(nextMonth + 1).padStart(2, "0")}`;
-    const currentPeriodLabel = `${billYear}-${String(billMonth + 1).padStart(2, "0")}`;
-    const interestAfterDays = societyData?.society?.config?.interestAfterDays || 15;
-    const dueDateObj = new Date(nextYear, nextMonth, 1 + interestAfterDays);
-    const nextDueDate = `${dueDateObj.getFullYear()}-${String(dueDateObj.getMonth() + 1).padStart(2, "0")}-${String(dueDateObj.getDate()).padStart(2, "0")}`;
-    setAutoGenState({
-      status: "running",
-      label: nextPeriodLabel,
-      count: 0,
-      error: null,
-    });
-    try {
-      // Fetch fresh member data — user may have changed carpetArea/parking after page load
-      const freshMembersRes = await apiClient.get(segment.membersUrl);
-      queryClient.setQueryData(segment.membersQueryKey, freshMembersRes);
-      const allMembers = (
-        freshMembersRes?.[segment.membersResponseKey || "members"] ||
-        freshMembersRes?.members ||
-        []
-      ).filter(segment.memberFilter);
-      const successfulPaymentMemberIds = new Set(
-        (payResults?.results || [])
-          .filter((r) => r.status === "Success")
-          .map((r) => String(r.memberId)),
-      );
-      const members = nextGenScope === "paid"
-        ? allMembers.filter((m) => successfulPaymentMemberIds.has(String(m._id)))
-        : allMembers;
-      if (!members.length) {
-        throw new Error(
-          nextGenScope === "paid"
-            ? `No successfully paid ${segment.unitNounPlural || "members"} are available. Select All only if you intentionally want a society-wide run.`
-            : segment.emptyMessage || `No active ${segment.unitNounPlural || "members"} found`,
-        );
-      }
-      if (nextGenScope === "all") {
-        const ok = await notify.confirm(
-          `You selected ALL ${members.length} ${segment.unitNounPlural || "members"}. This will generate ${nextPeriodLabel} for every one of them. Continue?`,
-          { tone: "warning" },
-        );
-        if (!ok) { setAutoGenState(null); return; }
-      }
-      const checkRes = await apiClient.post(
-        "/api/bills/get-previous-balances",
-        {
-          memberIds: members.map((m) => m._id || m.memberId || m.id).filter(Boolean),
-          billMonth: billMonth + 1,
-          billYear,
-          billDate: `${billYear}-${String(billMonth + 1).padStart(2, "0")}-01T00:00:00.000Z`,
-          billSeries: segment.billSeries,
-        },
-      );
-      const balances = checkRes.balances || {};
-      const unpaidMembers = Object.values(balances).filter(
-        (b) =>
-          (b.unpaidBills || []).reduce(
-            (s, u) => s + (u.balanceAmount || 0),
-            0,
-          ) > 0.005,
-      );
-      const unpaidCount = unpaidMembers.length;
-      if (unpaidCount > 0) {
-        const memberLines = unpaidMembers
-          .map((b) => {
-            const bill = b.unpaidBills[0];
-            return `  • Member has Rs ${b.unpaidBills.reduce((s, u) => s + (u.balanceAmount || 0), 0).toFixed(2)} pending since ${b.unpaidBills.map((u) => u.billPeriodId).join(", ")}`;
-          })
-          .join("\n");
-        const proceed = await notify.confirm(
-          `${unpaidCount} member(s) have not fully paid their previous bills:\n\n${memberLines}\n\n` +
-            `Their unpaid amount will be carried forward into ${nextPeriodLabel} bills and interest will be added.\n\n` +
-            `OK = Generate ${nextPeriodLabel} bills now\nCancel = Go back and collect pending payments first`,
-          { tone: "warning" },
-        );
-        if (!proceed) {
-          setAutoGenState(null);
-          return;
-        }
-      }
-      const [freshSocietyRes, freshHeadsRes] = await Promise.all([
-        apiClient.get("/api/society/config"),
-        apiClient.get(segment.headsUrl),
-      ]);
-      queryClient.setQueryData(["society-config"], freshSocietyRes);
-      queryClient.setQueryData(segment.headsQueryKey, freshHeadsRes);
-      const society = freshSocietyRes?.society || societyData?.society || {};
-      const config = society.config || {};
-      const heads = freshHeadsRes?.heads || billingHeadsData?.heads || [];
-      const interestRate = parseFloat(config.interestRate) || 0;
-      const serviceTaxRate = parseFloat(config.serviceTaxRate) || 0;
-      const parkingRates = buildParkingRates(heads);
-      const billingMonthStr = `${nextYear}-${String(nextMonth + 1).padStart(2, "0")}-01T00:00:00.000Z`;
-      const prevBalRes = await apiClient.post(
-        "/api/bills/get-previous-balances",
-        {
-          memberIds: members.map((m) => m._id || m.memberId || m.id).filter(Boolean),
-          billMonth: nextMonth + 1,
-          billYear: nextYear,
-          billDate: billingMonthStr,
-          billSeries: segment.billSeries,
-        },
-      );
-      const previousBalances = prevBalRes.balances || {};
-      const bills = members.map((member) => {
-        const memberId = member._id;
-        const prevData = previousBalances[memberId] || {
-          balance: 0,
-          principalBalance: 0,
-          remInt: 0,
-          unpaidBills: [],
-          recentTransactions: [],
-        };
-        const principalBase = prevData.principalBalance ?? 0;
-        const remInt = prevData.remInt ?? 0;
-        const currInt = computeMonthlyInterest(principalBase, interestRate);
-        const interestAmount = parseFloat((remInt + currInt).toFixed(2));
-        const { charges, subtotal, serviceTax, currentBillTotal } =
-          computeCurrentCharges(member, heads, parkingRates, serviceTaxRate);
-        const advanceCredit = prevData.advanceCredit || 0;
-        const { grandTotal } = computeBillTotal({
-          principalOutstanding: principalBase,
-          interestOutstanding: remInt,
-          currInt,
-          currentBillTotal,
-          advanceCredit,
-        });
-        return {
-          memberId,
-          totalAmount: grandTotal,
-          previousBalance: prevData.balance || 0,
-          advanceCredit,
-          interestAmount,
-          subtotal,
-          serviceTax,
-          currentBillTotal,
-          breakdown: Object.fromEntries(charges.map((c) => [c.name, c.amount])),
-          unpaidBills: prevData.unpaidBills || [],
-          recentTransactions: prevData.recentTransactions || [],
-        };
-      });
-      const payload = {
-        billMonth: nextMonth,
-        billYear: nextYear,
-        billSeries: segment.billSeries,
-        dueDate: nextDueDate,
-        bills,
-        publishMode: nextPushMode === "now" ? "now" : "schedule",
-        scheduledPushDate:
-          nextPushMode === "schedule"
-            ? new Date(`${nextPushDate}T09:00:00+05:30`).toISOString()
-            : null,
-      };
-      if (nextPushMode === "schedule" && !nextPushDate) {
-        throw new Error("Choose the date on which members should receive the generated bill");
-      }
-      const result = await postNdjson("/api/bills/generate-final", payload, (p) =>
-        setAutoGenState((s) => (s ? { ...s, progress: { current: p.done, total: p.total } } : s)),
-      );
-      const count = result.billsGenerated ?? result.count ?? 0;
-      // Advance UI to next month
-      setBillMonth(nextMonth);
-      setBillYear(nextYear);
-      setPayResults(null);
-      setExcelFile(null);
-      setExcelValidation(null);
-      setBillGrid(null);
-      setPayGrid(null);
-      setBillsGeneratedForPeriod(nextPeriodLabel);
-      queryClient.invalidateQueries(["bills-list"]);
-      queryClient.invalidateQueries(["latest-period"]);
-      setAutoGenState({
-        status: "done",
-        label: nextPeriodLabel,
-        count,
-        error: null,
-      });
-      onSegmentComplete?.();
-    } catch (err) {
-      setAutoGenState({
-        status: "error",
-        label: null,
-        count: 0,
-        error: err.message,
-      });
     }
   };
   const generateMutation = useMutation({
@@ -1340,17 +1158,6 @@ ${
         isPreviewing={isPreviewing}
         previewProgress={previewProgress}
         generatePreview={generatePreview}
-        billMonth={billMonth}
-        billYear={billYear}
-        nextGenScope={nextGenScope}
-        setNextGenScope={setNextGenScope}
-        nextPushMode={nextPushMode}
-        setNextPushMode={setNextPushMode}
-        nextPushDate={nextPushDate}
-        setNextPushDate={setNextPushDate}
-        autoGenState={autoGenState}
-        setAutoGenState={setAutoGenState}
-        autoGenerateNextMonth={autoGenerateNextMonth}
       />
       )}
       {/* ── Commercial wizard body ───────────────────────────────────────────

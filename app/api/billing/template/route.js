@@ -36,6 +36,16 @@ export async function GET(request) {
   }
 }
 export async function POST(request) {
+  // This wrote society.billTemplate with NO RBAC gate at all — the sibling
+  // GET above is gated on billing.template.view/billing.config.view/
+  // billing.head.view, but this write only checked
+  // `decoded.role === "Accountant"` (excluding just that one role), so any
+  // other authenticated staff role — including one with zero billing
+  // permissions granted through RBAC — could overwrite the society's bill
+  // template. billing.template.update is the permission the sibling
+  // app/api/bill-template/save/route.js already gates its own POST on.
+  const gate = await authorizeAny(request, ["billing.template.update", "billing.template.upload"]);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const token = getTokenFromRequest(request);

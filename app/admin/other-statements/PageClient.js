@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Icon from "../../../components/accounting/generate/Icon";
 import { PageHeader, FySelect, Btn, EmptyState } from "../../../components/accounting/generate/PageHeader";
+import { NoFinancialYear, SetupAdvisory } from "@/components/accounting/SetupGate";
 import { useFinancialYears } from "../../../components/accounting/generate/useFinancialYears";
 import { Banner, HealthGauge } from "../../../components/accounting/generate/Primitives";
 import { AccordionItem } from "../../../components/accounting/generate/Accordion";
@@ -57,12 +58,16 @@ export default function OtherStatementsScreen() {
         }
       />
 
+      {/* Financial Year exists, but something further down the checklist
+          does not — and the output of this page gets signed. */}
+      <SetupAdvisory />
+
       {fyLoading || fetching ? (
         <EmptyState text="Loading ledger data…" />
       ) : error ? (
         <Banner tone="danger" icon="alert-triangle">{error}</Banner>
       ) : !dashboard ? (
-        <EmptyState text="No Financial Year found" hint="Create a Financial Year under Accounting first." />
+        <NoFinancialYear what="the trial balance" />
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16, alignItems: "start" }}>
           <div style={{ background: "var(--bg-surface)", borderRadius: 12, border: "1px solid var(--border)", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", overflow: "hidden" }}>

@@ -11,6 +11,19 @@ import { notifyPaymentReceived } from "@/lib/v1/notify";
 import { postPaymentToLedger } from "@/lib/accounting/paymentLedgerPosting";
 import cache from "@/lib/cache";
 
+/** Same convention app/api/billing/upload-payments/route.js and
+ * app/api/bills/collection-sheet/commit/route.js already use for
+ * Receipt.filename. Kept in three places pending a shared util — same bug
+ * class as this route's own missing-filename fix: three independent
+ * payment-recording paths, three independent chances to omit a required
+ * field. */
+function receiptFilename(member, billPeriodId) {
+  const nameParts = (member?.ownerName || "member").trim().split(/\s+/);
+  const nameSlug = nameParts.length > 1 ? `${nameParts[0]}_${nameParts[nameParts.length - 1]}` : nameParts[0];
+  const flatSlug = `${member?.wing || ""}-${member?.flatNo || ""}`;
+  return `${nameSlug}_${flatSlug}_${billPeriodId}_receipt`.replace(/[^a-zA-Z0-9_\-]/g, "_");
+}
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -76,8 +89,22 @@ export const POST = withRoute(async (req, ctx) => {
   const receiptNo = await issueReceiptNo(bill);
   const transactionId = newTransactionId();
   const label = periodLabelFrom(bill);
+  // Required on the Receipt model (unique + required, no default) — this
+  // route's Receipt.create() omitted it entirely, so every payment recorded
+  // here threw on save with no receipt ever written.
+  const payerMember = await Member.findById(bill.memberId).select("ownerName wing flatNo").lean();
+  const filename = receiptFilename(payerMember, bill.billPeriodId ?? bill.period);
 
-  const [payment, transaction, receipt] = await Promise.all([
+  // Payment and Transaction are the two writes that MUST land — either one
+  // failing is a real error, thrown as before. Receipt is handled
+  // separately: it used to sit in the same Promise.all, so a Receipt-only
+  // failure (missing filename was the actual historical case) 500'd the
+  // whole request even though Payment/Transaction had already been written
+  // — the admin saw "failed" for a payment that had, in fact, gone through.
+  // A missing receipt is real but recoverable (see
+  // app/api/admin/receipts/gaps — it finds and backfills exactly this), so
+  // it no longer holds the payment result hostage.
+  const [payment, transaction] = await Promise.all([
     Payment.create({ societyId, billId: bill._id, memberId: bill.memberId, amount, paymentMode }),
     Transaction.create({
       transactionId,
@@ -97,8 +124,14 @@ export const POST = withRoute(async (req, ctx) => {
       principalCleared: Number(breakdown.principalCleared),
       paymentBreakdown: breakdown,
     }),
-    Receipt.create({
+  ]);
+
+  let receipt = null;
+  let receiptFailed = false;
+  try {
+    receipt = await Receipt.create({
       receiptNo,
+      filename,
       billId: bill._id,
       billPeriodId: bill.billPeriodId ?? bill.period,
       memberId: bill.memberId,
@@ -110,8 +143,11 @@ export const POST = withRoute(async (req, ctx) => {
       paidAt: new Date(),
       transactionId,
       status: "Generated",
-    }),
-  ]);
+    });
+  } catch (err) {
+    receiptFailed = true;
+    console.error(`v1/bills/${bill._id}/pay: Receipt.create failed, payment already recorded:`, err.message);
+  }
 
   if (advanceCredit > 0) {
     await Member.updateOne({ _id: bill.memberId }, { $inc: { advanceCredit } });
@@ -121,14 +157,29 @@ export const POST = withRoute(async (req, ctx) => {
   // no caller-owned session here either (Payment/Transaction/Receipt above
   // are already written outside a shared transaction) — same smaller
   // atomicity window as billing-simulator/pay-real, not a regression.
+  //
+  // appliedToDues/advance MUST be passed — postPaymentToLedger defaults
+  // appliedToDues to the WHOLE payment amount when omitted, posting 100% of
+  // any overpayment to Member Receivable instead of splitting it against
+  // the Advance-From-Members liability (the "Member Receivable went
+  // negative" bug). `advanceCredit` was already computed above but never
+  // forwarded. Also: this used to re-throw as an ApiError on failure, which
+  // told the caller the WHOLE request failed even though Payment/Transaction/
+  // Receipt above had already committed — the member's payment succeeded
+  // but the admin saw a 500. Fail-soft instead, matching the other three
+  // payment-recording routes fixed this session.
+  let ledgerFailed = false;
   try {
     await postPaymentToLedger(societyId, {
       transaction,
       paymentMode,
       actorUserId: claims.userId,
+      appliedToDues: amount - advanceCredit,
+      advance: advanceCredit,
     });
   } catch (err) {
-    throw new ApiError(err.status || 500, err.message);
+    ledgerFailed = true;
+    console.error(`v1/bills/${bill._id}/pay: postPaymentToLedger failed:`, err.message);
   }
 
   await notifyPaymentReceived({ transactionId: transaction._id, societyId, memberId: bill.memberId, amount });
@@ -143,8 +194,19 @@ export const POST = withRoute(async (req, ctx) => {
   return json({
     bill: normalizeBill(freshBill, member),
     payment: { _id: String(payment._id), amount, paymentMode },
-    receipt: { _id: String(receipt._id), receiptNo },
+    receipt: receipt ? { _id: String(receipt._id), receiptNo } : null,
     advanceCredit,
     breakdown,
+    ...(receiptFailed || ledgerFailed
+      ? {
+          warning: [
+            receiptFailed ? "the receipt could not be generated (fix on the Receipts page)" : null,
+            ledgerFailed ? "it could not be posted to Accounting (fix on the Vouchers page)" : null,
+          ]
+            .filter(Boolean)
+            .map((s, i) => (i === 0 ? `Payment recorded, but ${s}.` : ` Also, ${s}.`))
+            .join(""),
+        }
+      : {}),
   });
 });

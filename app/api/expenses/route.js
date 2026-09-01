@@ -5,6 +5,7 @@ import connectDB from "@/lib/mongodb";
 import Expense from "@/models/Expense";
 import { authorize } from "@/lib/rbac/authorize";
 import { logAudit } from "@/lib/audit-logger";
+import { postExpenseToBooks } from "@/lib/accounting/expenseBridge";
 
 const VALID_CATEGORIES = new Set([
   "Salary",
@@ -83,14 +84,39 @@ export async function POST(request) {
       createdBy: gate.context.userId,
       createdByName: gate.context.name || gate.context.email || "",
     });
+    // Into the actual books. Until this existed, an expense recorded here
+    // never reached the double-entry ledger and never appeared on a
+    // ledger-built Income & Expenditure statement — the accounting lab was the
+    // only screen in the product that could book one.
+    //
+    // This never throws and never fails the request: the expense is already
+    // saved, and a society part-way through accounting setup must still be
+    // able to record what it spent. A skip comes back as a reason to show.
+    const accounting = await postExpenseToBooks({
+      societyId: gate.context.societyId,
+      expense,
+      actorUserId: gate.context.userId,
+    });
+    if (accounting.posted) {
+      expense.voucherId = accounting.voucherId || null;
+      expense.postedToBooksAt = new Date();
+      expense.notPostedReason = null;
+    } else {
+      expense.notPostedReason = accounting.reason;
+    }
+    await expense.save().catch((e) => console.error("Expense post-state save failed", e));
+
     await logAudit(gate.context.userId, gate.context.societyId, "EXPENSE_CREATED", null, {
       expenseId: String(expense._id),
       amount: expense.amount,
       category: expense.category,
+      postedToBooks: accounting.posted,
+      voucherId: accounting.voucherId || null,
     });
     return NextResponse.json({
       success: true,
       expense: { ...expense.toObject(), _id: String(expense._id) },
+      accounting,
     });
   } catch (err) {
     console.error("Expense create error", err);

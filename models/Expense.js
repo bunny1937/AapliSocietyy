@@ -49,6 +49,14 @@ const ExpenseSchema = new mongoose.Schema(
     description: { type: String, trim: true, maxlength: 1000 },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     createdByName: { type: String, trim: true },
+    // The double-entry voucher this expense was posted as, when it reached
+    // the books at all. Null with a reason beside it is a normal state: a
+    // society mid-setup records expenses long before its books can accept
+    // them, and refusing the expense would be the wrong trade.
+    // See lib/accounting/expenseBridge.js.
+    voucherId: { type: mongoose.Schema.Types.ObjectId, ref: "Voucher", default: null },
+    postedToBooksAt: { type: Date, default: null },
+    notPostedReason: { type: String, trim: true, default: null },
     isDeleted: { type: Boolean, default: false, index: true },
   },
   { timestamps: true },

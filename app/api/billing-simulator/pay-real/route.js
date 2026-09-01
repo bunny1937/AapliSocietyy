@@ -96,13 +96,31 @@ export async function POST(request) {
     // a smaller atomicity window than PaymentService's fully joined-session
     // version, but not worse than this route's pre-existing lack of
     // end-to-end session wrapping across Bill + Transaction.
-    await postPaymentToLedger(decoded.societyId, {
-      transaction: txn,
-      paymentMode: paymentMethod,
-      paymentDate,
-      notes: remarks,
-      actorUserId: decoded.userId,
-    });
+    //
+    // appliedToDues/advance MUST be passed — postPaymentToLedger defaults
+    // appliedToDues to the WHOLE payment amount when omitted, which posts
+    // 100% of any overpayment to Member Receivable instead of splitting it
+    // against the Advance-From-Members liability. That's the exact "Member
+    // Receivable went negative" bug this file's own header describes as
+    // fixed elsewhere — this route had the fix available (result.advanceCredit,
+    // right above) but never forwarded it. Fail-soft: the Bill/Transaction
+    // already committed above, so a ledger-posting error here must not
+    // report the whole payment as failed.
+    let ledgerFailed = false;
+    try {
+      await postPaymentToLedger(decoded.societyId, {
+        transaction: txn,
+        paymentMode: paymentMethod,
+        paymentDate,
+        notes: remarks,
+        actorUserId: decoded.userId,
+        appliedToDues: twoDp(amount - (result.advanceCredit || 0)),
+        advance: twoDp(result.advanceCredit || 0),
+      });
+    } catch (err) {
+      ledgerFailed = true;
+      console.error(`pay-real: postPaymentToLedger failed for txn ${txn.transactionId}:`, err.message);
+    }
 
     // Real payment against a real bill, same as the non-simulator pay route.
     await cache.del(
@@ -120,6 +138,9 @@ export async function POST(request) {
       advanceCredit: result.advanceCredit,
       primaryBillId: bill._id,
       status: result.status,
+      ...(ledgerFailed
+        ? { warning: "Payment recorded, but it could not be posted to Accounting. Fix this on the Vouchers page." }
+        : {}),
     });
   } catch (err) {
     console.error("pay-real error:", err);

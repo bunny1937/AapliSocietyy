@@ -18,6 +18,7 @@ import { notifyPaymentReceived } from "@/lib/v1/notify";
 import { mapLimit } from "@/lib/concurrency";
 import { ndjsonResponse } from "@/lib/ndjson-stream";
 import { authorize } from "@/lib/rbac/authorize";
+import { postPaymentToLedger } from "@/lib/accounting/paymentLedgerPosting";
 
 // Confirm was previously one sequential `for` loop over every payment row —
 // for 84 rows at several Mongo round trips each (member/bill lookups,
@@ -461,8 +462,34 @@ export async function POST(request) {
           paymentBreakdown: { interestCleared: intClr, principalCleared: prinClr, advanceCredit },
         });
 
-        // Receipt for the bill touched.
+        // This route never posted to the accounting ledger at all — same
+        // gap as collection-sheet/commit (fixed 2026-08-30). Every bulk
+        // Excel payment import (the main way an admin records a full
+        // month's collections at once) went straight to Bill/Transaction/
+        // Receipt and skipped Accounting entirely: no Cash/Bank debit, no
+        // Member Receivable credit, ever, for any society using this
+        // upload. Fail-soft — the payment itself already succeeded and
+        // must not be undone by a downstream ledger issue — but no longer
+        // silent: /admin/accounting/vouchers surfaces the gap via
+        // /api/admin/accounting/ledger-gaps the same way missing receipts
+        // do on /admin/receipts.
         const amountApplied = twoDp(intClr + prinClr);
+        let ledgerFailed = false;
+        try {
+          await postPaymentToLedger(dec.societyId, {
+            transaction: paymentTxn,
+            paymentMode: row.paymentMethod || "Cash",
+            paymentDate: row.paymentDate,
+            appliedToDues: amountApplied,
+            advance: advanceCredit,
+            actorUserId: dec.userId,
+          });
+        } catch (err) {
+          ledgerFailed = true;
+          console.error(`upload-payments: postPaymentToLedger failed for txn ${txnId}:`, err.message);
+        }
+
+        // Receipt for the bill touched.
         const receiptNos = [];
         if (amountApplied > 0) {
           const nameParts = (member.ownerName || "member").trim().split(/\s+/);
@@ -508,6 +535,7 @@ export async function POST(request) {
           prinClr,
           advanceCredit,
           amountPaid: row.amountPaid,
+          ledgerFailed,
           entry: {
             memberId: row.memberId,
             flat: row.flat,
@@ -532,6 +560,7 @@ export async function POST(request) {
         let successCount = 0;
         let failCount = 0;
         let skippedCount = 0;
+        let ledgerFailCount = 0;
 
         await mapLimit(validRows, CONCURRENCY, processRow, (settled, row, done, total) => {
           if (settled.status === "fulfilled") {
@@ -545,6 +574,7 @@ export async function POST(request) {
               totalAdvanceCredit += r.advanceCredit;
               totalAmountProcessed += r.amountPaid;
               successCount++;
+              if (r.ledgerFailed) ledgerFailCount++;
             }
             emit({ type: "progress", done, total, flat: row.flat, memberName: row.memberName, ok: r.kind !== "failed", status: r.entry.status });
           } else {
@@ -618,6 +648,12 @@ export async function POST(request) {
           totalPrincipalCleared: twoDp(totalPrincipalCleared),
           totalAdvanceCredit: twoDp(totalAdvanceCredit),
           results: importResults,
+          ...(ledgerFailCount > 0
+            ? {
+                warning: `${ledgerFailCount} payment(s) posted but could not be recorded in Accounting. Fix this on the Vouchers page.`,
+                ledgerFailCount,
+              }
+            : {}),
         };
       });
     }

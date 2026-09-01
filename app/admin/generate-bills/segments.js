@@ -26,7 +26,15 @@ export const SEGMENTS = {
     unitNoun: "flat",
     unitNounPlural: "flats",
     supportsExcelUpload: true,
-    previewMode: "client", // uses the existing computeCurrentCharges() math already in this codebase
+    // Was "client" — computeCurrentCharges() reimplemented in the browser, a
+    // second copy of the billing math kept in sync with
+    // lib/billing/generationService.js by hand. Commercial was already fixed
+    // to run the real engine as a dry run instead (see its own comment:
+    // "the numbers on screen can never diverge from what generation
+    // writes"); /api/bills/preview-residential gives residential the same
+    // guarantee, on the same contract.
+    previewMode: "server",
+    previewUrl: "/api/bills/preview-residential",
     membersUrl: "/api/members/list",
     membersQueryKey: ["members-list"],
     headsUrl: "/api/billing-heads/list",

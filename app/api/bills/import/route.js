@@ -331,17 +331,48 @@ export async function POST(request) {
           errors.push({ rowNumber: row.rowNumber, error: err.message });
         }
       }
+      // ordered:true (the default) would insert sequentially and STOP at the
+      // first document a database-level rule rejects (e.g. a duplicate
+      // member+period unique index) — every row before it in the batch is
+      // already committed when that throw happens, but the outer catch
+      // below used to map it straight to a bare "Internal server error"
+      // with no count of what actually landed. An admin seeing that error
+      // had every reason to just retry the same file, hitting duplicate-key
+      // errors on the rows that DID land with no explanation why.
+      //
+      // ordered:false continues past a rejected doc instead of stopping,
+      // and (same lesson as collection-sheet/commit and upload-payments,
+      // fixed earlier this session) can silently drop client-side-invalid
+      // documents without throwing at all — so the actually-inserted count
+      // is checked explicitly rather than trusted to equal billsToInsert.length.
+      let insertedCount = 0;
       if (billsToInsert.length > 0) {
-        await Bill.insertMany(billsToInsert);
+        let inserted = [];
+        try {
+          inserted = await Bill.insertMany(billsToInsert, { ordered: false });
+        } catch (err) {
+          // A BulkWriteError from ordered:false still carries what DID land
+          // before/around the rejected docs — recover that count rather than
+          // treating the whole batch as failed.
+          inserted = err.insertedDocs || err.writeErrors ? err.insertedDocs || [] : null;
+          if (inserted === null) throw err;
+        }
+        insertedCount = inserted.length;
+        if (insertedCount !== billsToInsert.length) {
+          errors.push({
+            rowNumber: null,
+            error: `Only ${insertedCount} of ${billsToInsert.length} validated bills were actually written to the database (likely a duplicate bill for that member/period). Check before retrying — re-running this import would create duplicates for the ${insertedCount} that already landed.`,
+          });
+        }
         await cache.delPattern(`v1:bills:${cachedSocietyId}:member:*`);
         await cache.delPattern(`v1:ledger:${cachedSocietyId}:member:*`);
       }
       return NextResponse.json({
         success: true,
-        imported: billsToInsert.length,
+        imported: insertedCount,
         failed: errors.length,
         errors: errors.length > 0 ? errors : undefined,
-        message: `${billsToInsert.length} bill(s) imported successfully`,
+        message: `${insertedCount} bill(s) imported successfully`,
       });
     }
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });

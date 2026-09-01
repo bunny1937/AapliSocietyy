@@ -35,7 +35,7 @@ export async function GET(request) {
     } else {
       query.status = { $ne: "Scheduled" };
     }
-    const [bills, total, agg] = await Promise.all([
+    const [bills, total, agg, latestBill] = await Promise.all([
       Bill.find(query)
         .sort({ billYear: -1, billMonth: -1 })
         .skip((page - 1) * limit)
@@ -50,21 +50,31 @@ export async function GET(request) {
             _id: null,
             totalAmount: { $sum: "$totalAmount" },
             totalPaid: { $sum: "$amountPaid" },
-            totalOutstanding: {
-              $sum: {
-                $cond: [{ $ne: ["$status", "Paid"] }, "$balanceAmount", 0],
-              },
-            },
           },
         },
       ]),
+      // Each bill's balanceAmount is CUMULATIVE (resolveOpeningBalances seeds
+      // the next bill's opening straight from the previous one's closing —
+      // lib/billing/generationService.js), so summing balanceAmount across
+      // every non-Paid bill counts the same carried-forward rupees once per
+      // month it's stayed open. An older bill can also go stale-Partial even
+      // after its balance was fully absorbed and paid off via a later bill
+      // (nothing retroactively closes it) — that stale balance would get
+      // summed in here too. What's actually owed right now is always just
+      // the LATEST bill's own balance (see outstandingForBills() in
+      // lib/billing/paymentApplication.js for the same rule applied
+      // server-side to payments).
+      Bill.findOne({ memberId, societyId, isDeleted: { $ne: true }, status: { $ne: "Scheduled" } })
+        .sort({ billYear: -1, billMonth: -1 })
+        .select("status balanceAmount")
+        .lean(),
     ]);
     const aggRow = agg[0] || {};
     const summary = {
       total,
       totalAmount: aggRow.totalAmount || 0,
       totalPaid: aggRow.totalPaid || 0,
-      totalOutstanding: aggRow.totalOutstanding || 0,
+      totalOutstanding: latestBill && latestBill.status !== "Paid" ? latestBill.balanceAmount || 0 : 0,
     };
     return NextResponse.json({
       success: true,

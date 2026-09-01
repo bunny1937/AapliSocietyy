@@ -109,6 +109,12 @@ export default function PaymentsProcessed({
           {committed.scheduled &&
             ` Next month's bills are scheduled for ${new Date(committed.scheduled).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}.`}
         </p>
+        {committed.warning && (
+          <p className={s.doneWarning} data-pp-stagger>
+            ⚠ {committed.warning}{" "}
+            <a href="/admin/receipts">Open Receipts →</a>
+          </p>
+        )}
       </div>
     );
   }

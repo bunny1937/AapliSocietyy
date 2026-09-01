@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 // ── helpers ────────────────────────────────────────────────────────────────
 const fmt = (n) =>
   "₹" +
@@ -393,6 +393,85 @@ function ReceiptActions({ onPrint }) {
   );
 }
 // ── Main Page ───────────────────────────────────────────────────────────────
+// A payment can be recorded without a Receipt if the write silently fails
+// (2026-08-30: two payment routes were found doing exactly that) — this bar
+// makes that condition visible instead of a member just never getting one.
+function MissingReceiptsBar() {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["receipt-gaps"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/receipts/gaps", { credentials: "include" });
+      if (!res.ok) throw new Error("Could not check for missing receipts");
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+  const fixMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/receipts/gaps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error("Could not generate the missing receipts");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["receipt-gaps"] });
+      queryClient.invalidateQueries({ queryKey: ["bill-receipts"] });
+    },
+  });
+  if (isLoading || !data?.count) return null;
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "1rem",
+        flexWrap: "wrap",
+        marginBottom: "1.25rem",
+        padding: "0.75rem 1rem",
+        borderRadius: 8,
+        border: "1px solid var(--danger)",
+        background: "var(--danger-bg)",
+        color: "var(--danger-fg)",
+      }}
+    >
+      <div style={{ fontSize: "0.85rem" }}>
+        <strong>{data.count} payment{data.count === 1 ? "" : "s"} have no receipt.</strong>{" "}
+        The money was received and recorded, but the receipt was never generated.
+        {fixMutation.isError && (
+          <div style={{ marginTop: 4, fontWeight: 700 }}>{fixMutation.error.message}</div>
+        )}
+        {fixMutation.data && !fixMutation.isError && (
+          <div style={{ marginTop: 4, fontWeight: 700 }}>
+            Generated {fixMutation.data.created} receipt{fixMutation.data.created === 1 ? "" : "s"}.
+          </div>
+        )}
+      </div>
+      <button
+        onClick={() => fixMutation.mutate()}
+        disabled={fixMutation.isPending}
+        style={{
+          padding: "0.5rem 1.1rem",
+          borderRadius: 6,
+          border: "none",
+          background: "var(--danger)",
+          color: "#fff",
+          fontWeight: 700,
+          fontSize: "0.82rem",
+          cursor: fixMutation.isPending ? "default" : "pointer",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {fixMutation.isPending ? "Generating…" : "Generate missing receipts"}
+      </button>
+    </div>
+  );
+}
 export default function ReceiptsPage() {
   const [tab, setTab] = useState("bills"); // "bills" | "transactional"
   const [selectedFY, setSelectedFY] = useState(currentFY());
@@ -584,6 +663,7 @@ export default function ReceiptsPage() {
           </p>
         </div>
       </div>
+      <MissingReceiptsBar />
       {/* Tabs */}
       <div
         style={{

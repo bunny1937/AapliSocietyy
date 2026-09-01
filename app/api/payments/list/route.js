@@ -54,11 +54,15 @@ export async function GET(request) {
       { $match: query },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]);
-    return NextResponse.json({
+    // This used to `return` before ever building/caching `responseData` —
+    // the cache.set below was dead code (unreachable), so cache.get at line
+    // 45 could never hit and this endpoint hit the database on every call
+    // despite being written to look cached.
+    const responseData = {
       payments,
       count: payments.length,
       totalAmount: totalAmount[0]?.total || 0,
-    });
+    };
     await cache.set(cacheKey, responseData, 60);
     return NextResponse.json(responseData);
   } catch (error) {

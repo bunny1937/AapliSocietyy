@@ -630,6 +630,22 @@
   font-size: 0.88rem;
   line-height: 1.5;
 }
+.doneWarning {
+  margin: 0.75rem auto 0;
+  max-width: 480px;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--danger);
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.doneWarning a {
+  color: inherit;
+  text-decoration: underline;
+}
 
 .ppSummary {
   display: grid;

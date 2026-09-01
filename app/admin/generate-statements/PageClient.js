@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Icon from "../../../components/accounting/generate/Icon";
 import { PageHeader, FySelect, Btn, EmptyState } from "../../../components/accounting/generate/PageHeader";
+import { NoFinancialYear, SetupAdvisory } from "@/components/accounting/SetupGate";
 import { useFinancialYears } from "../../../components/accounting/generate/useFinancialYears";
 import {
   fmtINR,
@@ -21,6 +22,7 @@ import {
 import { PrintArea } from "../../../components/accounting/generate/PrintArea";
 import { useSocietyName } from "../../../components/accounting/generate/useSocietyName";
 import StatutoryStatements from "../../../components/accounting/StatutoryStatements";
+import notify from "@/lib/notify";
 
 const STEPS = [
   { key: "income", label: "Income", icon: "trending-up" },
@@ -136,6 +138,8 @@ export default function GenerateStatementsScreen() {
   const [fetchError, setFetchError] = useState(null);
   const [status, setStatus] = useState("idle"); // idle | generating | done
   const [revealCount, setRevealCount] = useState(0);
+  const [stamp, setStamp] = useState(null); // {hash, generatedAt, generatedByName} once exported
+  const [stamping, setStamping] = useState(false);
   const society = useSocietyName();
 
   const loadData = useCallback(async (fyId) => {
@@ -173,6 +177,42 @@ export default function GenerateStatementsScreen() {
   }, [status, revealCount, units]);
 
   const start = () => { setRevealCount(0); setStatus("generating"); };
+
+  /**
+   * Export (signed) — stamps this exact statement with a hash before
+   * printing, so the PDF a print-to-PDF produces carries proof of what it
+   * said and when. Failure to stamp never blocks the print itself; the
+   * admin still gets an unstamped PDF rather than no PDF.
+   */
+  const exportSigned = useCallback(async () => {
+    setStamping(true);
+    try {
+      const res = await fetch("/api/accounting/statements/export-receipt", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          financialYearId, financialYearLabel: data.ie.financialYearLabel,
+          ie: data.ie, bs: data.bs, trialBalance: data.trialBalance,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.receipt) {
+        setStamp({
+          hash: json.receipt.hash,
+          generatedAt: json.receipt.generatedAt,
+          generatedByName: json.receipt.generatedByName,
+        });
+      } else {
+        notify.error(json.error || "Could not stamp the export — printing unstamped.");
+      }
+    } catch {
+      notify.error("Could not stamp the export — printing unstamped.");
+    } finally {
+      setStamping(false);
+      // The stamp render above needs a tick to reach the print DOM before print() reads it.
+      setTimeout(() => window.print(), 50);
+    }
+  }, [financialYearId, data]);
   // View-only reset: clears this page's revealed build back to the empty
   // state. Touches nothing but local component state — no API call, no
   // ledger data, no other accounting page affected.
@@ -258,12 +298,16 @@ export default function GenerateStatementsScreen() {
         }
       />
 
+      {/* Financial Year exists, but something further down the checklist
+          does not — and the output of this page gets signed. */}
+      <SetupAdvisory />
+
       {fyLoading || fetching ? (
         <EmptyState text="Loading ledger data…" />
       ) : fetchError ? (
         <Banner tone="danger" icon="alert-triangle">{fetchError}</Banner>
       ) : !data ? (
-        <EmptyState text="No Financial Year found" hint="Create a Financial Year under Accounting before generating statements." />
+        <NoFinancialYear what="generating statements" />
       ) : (
         <>
           {status !== "idle" && <StepDots activeKey={activeKey} reachedKeys={reachedKeys} />}
@@ -292,12 +336,20 @@ export default function GenerateStatementsScreen() {
             <>
               <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
                 <Btn variant="secondary" onClick={() => window.print()}><Icon name="file-text" size={14} /> Print statements</Btn>
+                <Btn variant="primary" disabled={stamping} onClick={exportSigned}>
+                  <Icon name="shield-check" size={14} /> {stamping ? "Stamping…" : "Export (signed)"}
+                </Btn>
               </div>
 
               <div style={{ marginTop: 24 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--fg-2)", marginBottom: 10 }}>Final statutory statements</div>
                 <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 12, padding: 20 }}>
                   <PrintArea>
+                    {stamp ? (
+                      <div style={{ fontSize: 10.5, color: "var(--fg-5)", borderBottom: "1px solid var(--border)", paddingBottom: 8, marginBottom: 12 }}>
+                        Exported by {stamp.generatedByName || "—"} on {new Date(stamp.generatedAt).toLocaleString("en-IN")} · verification hash {stamp.hash.slice(0, 16)}…
+                      </div>
+                    ) : null}
                     <StatutoryStatements
                       balanceSheet={data.bs}
                       incomeExpenditure={data.ie}
