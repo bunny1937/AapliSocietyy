@@ -15,6 +15,7 @@ import { mapLimit } from "@/lib/concurrency";
 import { ndjsonResponse } from "@/lib/ndjson-stream";
 import { transactionDeleteFilterForRegenerate } from "@/lib/billing/regenerateFilter";
 import { authorize } from "@/lib/rbac/authorize";
+import { writeBillGenerationReceipt } from "@/lib/billing/billGenerationReceipts";
 
 // Each member's bill generation was previously awaited one at a time — for
 // 84 members at ~2.5s/member (several sequential Mongo round trips each,
@@ -55,6 +56,23 @@ export async function POST(request) {
         { error: "Missing required fields" },
         { status: 400 },
       );
+    }
+    // ?dryRun=1 — same Plan phase Setup already has (design doc §6), applied
+    // to billing. Read-only: computes what each member's bill WOULD be via
+    // lib/billing/billPreview.js's pure-function-only path, writes nothing,
+    // and returns before any of the write logic below ever runs.
+    const { searchParams } = new URL(request.url);
+    if (searchParams.get("dryRun") === "1") {
+      if (!["RESIDENTIAL", "COMMERCIAL"].includes(billSeries)) {
+        return NextResponse.json({ error: "billSeries must be RESIDENTIAL or COMMERCIAL" }, { status: 400 });
+      }
+      const memberIds = [...new Set(bills.map((b) => String(b.memberId)).filter(Boolean))];
+      if (!memberIds.length) return NextResponse.json({ error: "No members to preview" }, { status: 400 });
+      const { previewBillsForMembers } = await import("@/lib/billing/billPreview");
+      const preview = await previewBillsForMembers({
+        societyId: decoded.societyId, memberIds, year: billYear, month: billMonth + 1, billSeries,
+      });
+      return NextResponse.json({ dryRun: true, ...preview });
     }
     if (!["RESIDENTIAL", "COMMERCIAL"].includes(billSeries)) {
       return NextResponse.json({ error: "billSeries must be RESIDENTIAL or COMMERCIAL" }, { status: 400 });
@@ -251,28 +269,49 @@ export async function POST(request) {
       return { memberId, error: err.message };
     }
 
+    const runStartedAt = new Date();
+
     return ndjsonResponse(async (emit) => {
       const createdBills = [];
       const errors = [];
 
-      await mapLimit(memberIds, CONCURRENCY, generateOneMember, (settled, memberId, done, total) => {
-        if (settled.status === "fulfilled") {
-          createdBills.push(settled.value.billId);
-          emit({ type: "progress", done, total, memberId, flat: settled.value.flat, ownerName: settled.value.ownerName, ok: true });
-        } else {
-          errors.push(classifyError(settled.reason, memberId));
-          emit({ type: "progress", done, total, memberId, ok: false, error: settled.reason.message });
-        }
-      });
+      try {
+        await mapLimit(memberIds, CONCURRENCY, generateOneMember, (settled, memberId, done, total) => {
+          if (settled.status === "fulfilled") {
+            createdBills.push(settled.value.billId);
+            emit({ type: "progress", done, total, memberId, flat: settled.value.flat, ownerName: settled.value.ownerName, ok: true });
+          } else {
+            errors.push(classifyError(settled.reason, memberId));
+            emit({ type: "progress", done, total, memberId, ok: false, error: settled.reason.message });
+          }
+        });
 
-      await cache.delPattern(`billing:list:${societyId}:*`);
-      await cache.del(`billing:generated:${societyId}`);
-      await cache.del(`payments:outstanding:${societyId}`);
-      await cache.del(`admin:stats:global`);
-      // New bills for every member in this run - the mobile app's per-member
-      // cache must not serve last period's bills/ledger after this.
-      await cache.delPattern(`v1:bills:${societyId}:member:*`);
-      await cache.delPattern(`v1:ledger:${societyId}:member:*`);
+        await cache.delPattern(`billing:list:${societyId}:*`);
+        await cache.del(`billing:generated:${societyId}`);
+        await cache.del(`payments:outstanding:${societyId}`);
+        await cache.del(`admin:stats:global`);
+        // New bills for every member in this run - the mobile app's per-member
+        // cache must not serve last period's bills/ledger after this.
+        await cache.delPattern(`v1:bills:${societyId}:member:*`);
+        await cache.delPattern(`v1:ledger:${societyId}:member:*`);
+      } catch (runError) {
+        // The run itself blew up mid-way (not a single member's failure,
+        // which is already captured in `errors` above) — record that too,
+        // then let ndjsonResponse's own catch emit the {type:"error"} line
+        // exactly as it already does. Nothing about that behaviour changes.
+        await writeBillGenerationReceipt({
+          societyId, billPeriodId, billSeries, actorId: decoded.userId, startedAt: runStartedAt,
+          publishMode, error: runError.message,
+        }).catch((e) => console.error("[billing] generation receipt write failed:", e?.message));
+        throw runError;
+      }
+
+      // Receipt write is additive and best-effort — a failure here must
+      // never turn a successful bill run into an error response.
+      await writeBillGenerationReceipt({
+        societyId, billPeriodId, billSeries, actorId: decoded.userId, startedAt: runStartedAt,
+        publishMode, counts: { created: createdBills.length, failed: errors.length }, errors,
+      }).catch((e) => console.error("[billing] generation receipt write failed:", e?.message));
 
       return {
         success: true,
