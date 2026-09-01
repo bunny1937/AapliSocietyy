@@ -28,6 +28,16 @@ import {
   FlaskConical,
   Shield,
   KeyRound,
+  Repeat,
+  ShieldCheck,
+  Table,
+  History,
+  Package,
+  PiggyBank,
+  Landmark,
+  Banknote,
+  SlidersHorizontal,
+  Layers,
 } from "lucide-react";
 
 // Shared between app/admin/layout.js and app/my-access/page.js — the latter
@@ -80,14 +90,36 @@ export const ADMIN_NAVIGATION = [
       { name: "Load Test Lab", path: "/admin/loadtest-lab", pageKey: "systemTests", icon: <FlaskConical size={16} /> },
     ],
   },
+  // The accounting UI/UX revamp: exactly 6 rail entries, one page each, no
+  // sidebar sprawl. Everything small (financial years, book checks, posting
+  // rules, fiscal mappings, guided setup) lives INLINE on page 1
+  // (Configuration) as accordion sections — not its own nav row, not a
+  // drawer overlay. Statements (Full Pack / Income & Expenditure / Balance
+  // Sheet / Trial Balance / Year-End Close) live as tabs INSIDE page 6
+  // (Generate Balance Sheet) — one nav row, not five. Every one of the 6
+  // pages carries a StepRail (components/accounting/StepRail.jsx) so a
+  // missed earlier step is flagged with a direct jump, cross-page, wherever
+  // you are. See docs/accounting-module-audit-and-consolidation-plan.md.
   {
-    title: "Financial Statements",
+    title: "Accounting",
     items: [
+      { name: "Configuration", path: "/admin/accounting", pageKey: "accountingOverview", icon: <Settings size={16} /> },
+      { name: "Account Heads", path: "/admin/accounting/chart-of-accounts", pageKey: "chartOfAccounts", icon: <BookOpen size={16} /> },
+      { name: "Assets & Liabilities", path: "/admin/accounting/registers", pageKey: "assets", icon: <Package size={16} /> },
+      { name: "Cash Flow Setup", path: "/admin/accounting/cash-flow", pageKey: "bankAccounts", icon: <Banknote size={16} /> },
+      { name: "Balance Sheet Format", path: "/admin/accounting/format", pageKey: "schedules", icon: <Layers size={16} /> },
+      { name: "Generate Balance Sheet", path: "/admin/accounting/statements", pageKey: "statementsWorkspace", icon: <Zap size={16} /> },
+    ],
+  },
+  // Not part of the 6-page cluster above (these are day-to-day transaction
+  // entry and audit, not one-time setup/configuration) — kept as their own
+  // minimal rows, same as before.
+  {
+    title: "Books & Audit",
+    items: [
+      { name: "The Books", path: "/admin/accounting/books", pageKey: "books", icon: <BookOpen size={16} /> },
       { name: "Opening Balances", path: "/admin/opening-balances", pageKey: "openingBalances", icon: <Database size={16} /> },
-      { name: "Generate Statements", path: "/admin/generate-statements", pageKey: "generateStatements", icon: <Zap size={16} /> },
-      { name: "Income & Expenditure", path: "/admin/income-expenditure", pageKey: "incomeExpenditure", icon: <TrendingUp size={16} /> },
-      { name: "Assets & Liabilities", path: "/admin/assets-liabilities", pageKey: "assetsLiabilities", icon: <BarChart3 size={16} /> },
-      { name: "Trial Balance & Validation", path: "/admin/other-statements", pageKey: "otherStatements", icon: <ClipboardCheck size={16} /> },
+      { name: "Auditor Workspace", path: "/admin/accounting/auditor", pageKey: "auditorWorkspace", icon: <ShieldCheck size={16} /> },
     ],
   },
   {
@@ -97,7 +129,14 @@ export const ADMIN_NAVIGATION = [
       { name: "Payments", path: "/admin/payments", pageKey: "payments", icon: <CreditCard size={16} /> },
       { name: "Receipts", path: "/admin/receipts", pageKey: "receipts", icon: <FileText size={16} /> },
       { name: "Late Payments", path: "/admin/late-payment", pageKey: "latePayment", icon: <AlertTriangle size={16} /> },
-      { name: "Balance Sheet", path: "/admin/balance-sheet", pageKey: "balanceSheet", icon: <BarChart3 size={16} /> },
+      // Was labeled "Balance Sheet" — it isn't one (no ledger, no Assets=
+      // Liabilities+Equity). It's a monthly billing/collection dashboard
+      // with manual accrual-entry add/remove. Renamed so it stops being
+      // mistaken for the real statutory Balance Sheet at
+      // /admin/assets-liabilities. See docs/accounting-module-audit-and-
+      // consolidation-plan.md §3 item 5 — full fold-in into Statements is
+      // follow-up work, not done here.
+      { name: "Billing & Accrual Entries", path: "/admin/balance-sheet", pageKey: "balanceSheet", icon: <BarChart3 size={16} /> },
       { name: "Expenditure", path: "/admin/expenditure", pageKey: "expenditure", icon: <Wallet size={16} /> },
     ],
   },
