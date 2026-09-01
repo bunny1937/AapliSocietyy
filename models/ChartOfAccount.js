@@ -23,6 +23,7 @@ const SUB_TYPES = [
   "CorpusFund",
   "ShareCapital",
   "GeneralFund",
+  "RetainedSurplus",
   "Income",
   "Expense",
   "Other",

@@ -1,18 +1,21 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting, requireAccountingClose } from "@/lib/authz";
-import { authorize } from "@/lib/rbac/authorize";
+import { authorizeAny } from "@/lib/rbac/authorize";
 import {
   getFiscalConfig,
   updateFiscalConfig,
   FiscalConfigServiceError,
 } from "@/lib/services/FiscalConfigService";
 
+const VIEW = ["accounting.fiscalConfig.view", "society.systemTests.view"];
+const UPDATE = ["accounting.fiscalConfig.update", "society.systemTests.update"];
+
 // GET /api/accounting/fiscal-config — the ERP's accounting control center (§6.11).
 export async function GET(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.view");
+  const gate = await authorizeAny(request, VIEW);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();
@@ -34,7 +37,7 @@ export async function GET(request) {
 export async function PATCH(request) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.update");
+  const gate = await authorizeAny(request, UPDATE);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();
