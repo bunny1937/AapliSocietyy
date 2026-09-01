@@ -39,7 +39,8 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { name, email, username, password, roleId, expiresAt } = body || {};
+  const { name, email, username, password, roleId, expiresAt, gateLabel, phone } =
+    body || {};
 
   try {
     const result = await createStaffUser({
@@ -51,6 +52,10 @@ export async function POST(request) {
       password,
       roleId,
       expiresAt: expiresAt || null,
+      // Only meaningful when the role being assigned is Security; the service
+      // ignores them otherwise. See the guard exception in user-service.js.
+      gateLabel,
+      phone,
     });
     return NextResponse.json(result, { status: 201 });
   } catch (err) {

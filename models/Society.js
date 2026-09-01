@@ -317,10 +317,17 @@ const SocietySchema = new mongoose.Schema(
       // Default false everywhere: a new society gets base, and a trial grants
       // everything through the resolver rather than by writing flags, so a
       // trial ending needs no cleanup pass.
+      //
+      // `rbac` sat here until 2026-08-27. Advanced Access Control is base now
+      // (docs/subscriptions-module-docs/00-plan.md M13) and gone from
+      // lib/entitlements/modules.js, so the flag is dead: normalizeFeatures()
+      // iterates MODULES and never looks for it. Existing societies keep a
+      // stale features.rbac sub-document, which is harmless and left alone —
+      // dropping the path from the schema stops new writes without needing a
+      // migration over documents nothing reads.
       security: { enabled: { type: Boolean, default: false } },
       amenities: { enabled: { type: Boolean, default: false } },
       tenancy: { enabled: { type: Boolean, default: false } },
-      rbac: { enabled: { type: Boolean, default: false } },
       retention: { enabled: { type: Boolean, default: false } },
     },
     // Bumped on any entitlement change. Forms part of the Redis cache key, so

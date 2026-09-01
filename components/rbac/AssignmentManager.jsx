@@ -43,7 +43,16 @@ function randomPassword(len = 12) {
   return out;
 }
 
-const EMPTY_NEW = { name: "", email: "", username: "", password: "" };
+const EMPTY_NEW = { name: "", email: "", username: "", password: "", gateLabel: "", phone: "" };
+
+// The Security system role is the one role whose account needs more than a
+// login. The gate app stamps gateLabel onto every visitor entry and shows the
+// phone number for the resident's one-tap call, and /api/security/auth/login
+// finds the account by root role "Security" rather than by RoleAssignment —
+// so these two fields, and that role key, are what make a guard created here
+// identical to one created on /admin/security-guards.
+const isGuardRole = (role) =>
+  !!(role?.isSystem ?? role?.system) && role?.key === "security";
 
 export function AssignmentManager({ role, onClose, onChanged }) {
   const roleId = role?.id || role?._id || role?.key;
@@ -393,6 +402,45 @@ export function AssignmentManager({ role, onClose, onChanged }) {
                       placeholder="e.g. priya.s"
                     />
                   </label>
+                  {isGuardRole(role) ? (
+                    <>
+                      <label className="block text-sm">
+                        <span className="mb-1 block font-medium text-gray-700">
+                          Gate
+                        </span>
+                        <input
+                          value={draft.gateLabel}
+                          maxLength={50}
+                          onChange={(e) =>
+                            setDraft((d) => ({ ...d, gateLabel: e.target.value }))
+                          }
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                          placeholder="Main Gate"
+                        />
+                        <span className="mt-1 block text-xs text-gray-500">
+                          Stamped on every visitor this guard logs. Defaults to
+                          Main Gate.
+                        </span>
+                      </label>
+                      <label className="block text-sm">
+                        <span className="mb-1 block font-medium text-gray-700">
+                          Contact number
+                        </span>
+                        <input
+                          value={draft.phone}
+                          onChange={(e) =>
+                            setDraft((d) => ({ ...d, phone: e.target.value }))
+                          }
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                          placeholder="10-digit mobile"
+                        />
+                        <span className="mt-1 block text-xs text-gray-500">
+                          Lets residents call the gate in one tap. Optional but
+                          worth filling in.
+                        </span>
+                      </label>
+                    </>
+                  ) : null}
                   <label className="block text-sm">
                     <span className="mb-1 block font-medium text-gray-700">
                       Password

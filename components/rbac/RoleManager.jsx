@@ -41,13 +41,14 @@ const EMPTY_DRAFT = {
 // lib/rbac/system-role-defaults.js so the client bundle never needs the
 // server-side permission-expansion logic, just enough to render checkboxes.
 // Keys must match SYSTEM_ROLE_DEFAULTS keys in that file.
-const SEED_TEMPLATES = [
+export const SEED_TEMPLATES = [
   { key: "admin", name: "Admin", description: "Full administrative control of the society.", color: "var(--danger)" },
   { key: "secretary", name: "Secretary", description: "Day-to-day operations: members, notices, complaints, visitors.", color: "var(--accent)" },
   { key: "accountant", name: "Treasurer", description: "Finance, billing, payments, ledger and statements.", color: "var(--success)" },
   { key: "auditor", name: "Auditor", description: "Read-only access to finance, billing and audit records.", color: "#a855f7" },
   { key: "committeeMember", name: "Committee Member", description: "Broad read access with limited management.", color: "#14b8a6" },
   { key: "security", name: "Security", description: "Gate operations: visitor entry/exit, passes and SOS.", color: "var(--warning)" },
+  { key: "clubhouseManager", name: "Clubhouse Manager", description: "Runs the clubhouse from the mobile app: scan residents in, attendance, open/close, timings, maintenance, incidents.", color: "#14b8a6" },
 ];
 
 export function RoleManager() {
@@ -60,6 +61,10 @@ export function RoleManager() {
   const [seedPicked, setSeedPicked] = useState(() => new Set());
   const [seeding, setSeeding] = useState(false);
   const [seedErr, setSeedErr] = useState(null);
+  // pageKey -> { label, dangerous[] }. Same payload PageAccessPicker fetches;
+  // needed here too so the save review can name pages and destructive actions
+  // in the admin's own words rather than echoing page keys back at them.
+  const [pageMeta, setPageMeta] = useState(null);
 
   // Templates the society doesn't have a system role for yet. Keyed by role
   // `key` only (not name) — the whole point of the seed routes' name-clash
@@ -89,6 +94,24 @@ export function RoleManager() {
     load(ac.signal);
     return () => ac.abort();
   }, [load]);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    rbacFetch("/api/rbac/permissions", { signal: ac.signal })
+      .then((d) => {
+        const map = {};
+        for (const g of d?.groups || []) {
+          for (const p of g.pages || []) {
+            map[p.key] = { label: p.label, dangerous: p.dangerous || [] };
+          }
+        }
+        setPageMeta(map);
+      })
+      // A failed fetch costs the review its labels, not the ability to save.
+      // reviewOf() falls back to page keys and an empty dangerous list.
+      .catch(() => setPageMeta({}));
+    return () => ac.abort();
+  }, []);
 
   const roleId = (r) => r.id || r._id || r.key;
   const isSystem = (r) => !!(r.isSystem ?? r.system ?? r.locked);
@@ -124,21 +147,89 @@ export function RoleManager() {
       });
       return;
     }
+    const pageAccess = reduceToPageAccess(role.permissions || []);
     setEditor({
       mode: "edit",
       roleId: roleId(role),
+      // What the role could do when the dialog opened. saveEditor() diffs the
+      // draft against this to work out what is actually changing — without it
+      // there is no way to tell "left Manage alone" from "just granted Manage".
+      baseline: pageAccess,
       draft: {
         name: role.name || "",
         description: role.description || "",
         color: role.color || EMPTY_DRAFT.color,
-        pageAccess: reduceToPageAccess(role.permissions || []),
+        pageAccess,
       },
     });
   }
 
+  // What is about to change, in the admin's own vocabulary.
+  //
+  // `lost`      pages this role could open and no longer will, or drops from
+  //             Manage to View. Everyone holding the role is forced to re-auth
+  //             on save (updateRole, Q11), so this is the half that surprises.
+  // `dangerous` pages newly raised to Manage that carry a destructive action.
+  //             A grant is not undone by a re-auth; it is undone by noticing.
+  function reviewOf(editorState) {
+    const meta = pageMeta || {};
+    const labelOf = (key) => meta[key]?.label || key;
+    const levelIn = (list, key) =>
+      list.find((v) => v.pageKey === key)?.level || "none";
+
+    const before = editorState.baseline || [];
+    const after = editorState.draft.pageAccess || [];
+    const keys = new Set([
+      ...before.map((v) => v.pageKey),
+      ...after.map((v) => v.pageKey),
+    ]);
+
+    const lost = [];
+    const dangerous = [];
+    for (const key of keys) {
+      const was = levelIn(before, key);
+      const now = levelIn(after, key);
+      if (was === now) continue;
+      if (now === "none") lost.push({ label: labelOf(key), detail: "loses access" });
+      else if (was === "manage" && now === "view")
+        lost.push({ label: labelOf(key), detail: "drops to view only" });
+      if (now === "manage" && meta[key]?.dangerous?.length) {
+        dangerous.push({ label: labelOf(key), actions: meta[key].dangerous });
+      }
+    }
+    return { lost, dangerous };
+  }
+
+  // Step one of saving: decide whether this edit deserves a second look.
+  // A create or a purely additive edit goes straight through — a confirmation
+  // dialog that always appears is a dialog nobody reads.
   async function saveEditor() {
     if (!editor) return;
-    setEditor((s) => ({ ...s, busy: true, err: null, warnings: null }));
+    const review = reviewOf(editor);
+    if (!review.lost.length && !review.dangerous.length) return commitSave();
+
+    setEditor((s) => ({ ...s, review: { ...review, holders: null }, err: null }));
+
+    // How many people this actually lands on. Only meaningful for an existing
+    // role, and only worth blocking the dialog on if it answers quickly — a
+    // failed count leaves the review standing without it.
+    if (editor.mode === "edit" && editor.roleId) {
+      try {
+        const data = await rbacFetch(`/api/rbac/roles/${editor.roleId}/impact`);
+        setEditor((s) =>
+          s?.review
+            ? { ...s, review: { ...s.review, holders: data?.affectedUserCount ?? null } }
+            : s,
+        );
+      } catch {
+        /* count is a nicety; the review stands without it */
+      }
+    }
+  }
+
+  async function commitSave() {
+    if (!editor) return;
+    setEditor((s) => ({ ...s, busy: true, err: null, warnings: null, review: null }));
     try {
       const { draft, mode, roleId: id, cloneFromRoleId } = editor;
       const body = {
@@ -563,23 +654,84 @@ export function RoleManager() {
               ) : null}
             </div>
 
-            <div className="flex justify-end gap-2 border-t px-6 py-4">
-              <button
-                type="button"
-                onClick={() => setEditor(null)}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={editor.busy || !editor.draft.name.trim()}
-                onClick={saveEditor}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-              >
-                {editor.busy ? "Saving…" : "Save role"}
-              </button>
-            </div>
+            {editor.review ? (
+              <div className="border-t bg-gray-50 px-6 py-4 text-sm">
+                <p className="mb-3 font-semibold text-gray-800">
+                  Before you save
+                </p>
+
+                {editor.review.lost.length ? (
+                  <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3">
+                    <p className="mb-1 text-xs font-semibold text-amber-800">
+                      {editor.review.holders === null
+                        ? "Anyone holding this role"
+                        : editor.review.holders === 1
+                          ? "1 person holds this role and"
+                          : `${editor.review.holders} people hold this role and`}{" "}
+                      will be signed out and lose:
+                    </p>
+                    <ul className="ml-4 list-disc text-xs text-amber-900">
+                      {editor.review.lost.map((l) => (
+                        <li key={l.label}>
+                          {l.label} — {l.detail}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {editor.review.dangerous.length ? (
+                  <div className="mb-3 rounded-lg border border-red-300 bg-red-50 p-3">
+                    <p className="mb-1 text-xs font-semibold text-red-800">
+                      This role will be able to do things that cannot be undone:
+                    </p>
+                    <ul className="ml-4 list-disc text-xs text-red-900">
+                      {editor.review.dangerous.map((d) => (
+                        <li key={d.label}>
+                          <strong>{d.label}</strong> — {d.actions.join(", ").toLowerCase()}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditor((s) => ({ ...s, review: null }))}
+                    className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm"
+                  >
+                    Go back
+                  </button>
+                  <button
+                    type="button"
+                    disabled={editor.busy}
+                    onClick={commitSave}
+                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                  >
+                    {editor.busy ? "Saving…" : "Save anyway"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-end gap-2 border-t px-6 py-4">
+                <button
+                  type="button"
+                  onClick={() => setEditor(null)}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={editor.busy || !editor.draft.name.trim()}
+                  onClick={saveEditor}
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                >
+                  {editor.busy ? "Saving…" : "Save role"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       ) : null}

@@ -10,6 +10,7 @@
 import { NextResponse } from "next/server";
 import { authorize } from "@/lib/rbac/authorize";
 import { PAGE_CATALOG } from "@/lib/rbac/page-catalog";
+import { dangerousActionsForPage } from "@/lib/rbac/dangerous-actions";
 
 export async function GET(request) {
   const gate = await authorize(request, "rbac.role.view");
@@ -18,11 +19,17 @@ export async function GET(request) {
   const groups = new Map();
   for (const p of PAGE_CATALOG) {
     if (!groups.has(p.group)) groups.set(p.group, []);
+    // `dangerous` is the one place granular ids reach the client, and only as
+    // human labels ("Delete", "Export") attached to the page whose MANAGE
+    // level grants them. The admin still never picks a permission id — they
+    // pick a level, and this tells them what that level includes.
+    const dangerous = dangerousActionsForPage(p.key).map((a) => a.label);
     groups.get(p.group).push({
       key: p.key,
       label: p.label,
       path: p.path,
       adminOnly: !!p.adminOnly,
+      dangerous: [...new Set(dangerous)],
     });
   }
 

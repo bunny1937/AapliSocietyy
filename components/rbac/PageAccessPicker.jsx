@@ -80,6 +80,18 @@ export function PageAccessPicker({ value = [], onChange }) {
                       Admin only
                     </span>
                   ) : null}
+                  {/* Only while Manage is actually selected. Shown against
+                      every page with a destructive action it would be
+                      wallpaper — twenty warnings nobody reads. Shown against
+                      the choice the admin just made, it is information. */}
+                  {p.dangerous?.length && levelFor(p.key) === "manage" ? (
+                    <span
+                      className="ml-2 rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-700"
+                      title={`Manage on this page also allows: ${p.dangerous.join(", ")}`}
+                    >
+                      ⚠ includes {p.dangerous.join(", ").toLowerCase()}
+                    </span>
+                  ) : null}
                 </span>
                 <div className="flex overflow-hidden rounded-lg border border-gray-300">
                   {LEVELS.map((lvl) => {
