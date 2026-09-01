@@ -94,8 +94,21 @@ function normalizeGroup(g) {
   };
 }
 
-/** A schedule group: bold heading row, its accounts indented beneath. */
-function ScheduleGroup({ group, prefix = "" }) {
+/** True for a real ChartOfAccount _id — the synthetic "dep:Water Pump" ids
+ *  per-asset depreciation rows carry can't be drilled into (there's no
+ *  single ledger account behind them, it's an aggregate across runs). */
+function isRealAccountId(id) {
+  return typeof id === "string" && !id.startsWith("dep:") && /^[a-f0-9]{24}$/i.test(id);
+}
+
+/** A schedule group: bold heading row, its accounts indented beneath.
+ *  §7.30 drill-down: each account line is clickable when onAccountClick is
+ *  supplied and the row carries a real account id — opens that account's
+ *  ledger (see components/accounting/StatutoryStatements.js callers), so
+ *  "where did this number come from" is answered without leaving the
+ *  statement. Print/PDF rendering is unaffected: no handler in that context
+ *  means the row renders as plain text, same as before this change. */
+function ScheduleGroup({ group, prefix = "", onAccountClick }) {
   const accounts = group.accounts || [];
   const multi = accounts.length > 1;
 
@@ -116,16 +129,30 @@ function ScheduleGroup({ group, prefix = "" }) {
       </tr>
 
       {multi &&
-        accounts.map((a) => (
-          <tr key={a.accountId || a.name}>
-            <Amt value={a.prior} className="border-r border-gray-300 text-gray-600" />
-            <td className="py-1 pl-6 pr-2">
-              {prefix}
-              {a.name}
-            </td>
-            <Amt value={a.current} className="border-l border-gray-300" />
-          </tr>
-        ))}
+        accounts.map((a) => {
+          const clickable = onAccountClick && isRealAccountId(a.accountId);
+          return (
+            <tr key={a.accountId || a.name}>
+              <Amt value={a.prior} className="border-r border-gray-300 text-gray-600" />
+              <td className="py-1 pl-6 pr-2">
+                {prefix}
+                {clickable ? (
+                  <button
+                    type="button"
+                    onClick={() => onAccountClick(a.accountId)}
+                    className="underline decoration-dotted text-blue-700 hover:text-blue-900"
+                    title="See this account's ledger"
+                  >
+                    {a.name}
+                  </button>
+                ) : (
+                  a.name
+                )}
+              </td>
+              <Amt value={a.current} className="border-l border-gray-300" />
+            </tr>
+          );
+        })}
 
       {multi && (
         <tr>
@@ -148,6 +175,7 @@ function Side({
   totalLabel = "TOTAL",
   prefix = "",
   minRows = 0,
+  onAccountClick,
 }) {
   const clean = groups.map(normalizeGroup).filter(Boolean);
 
@@ -188,7 +216,7 @@ function Side({
           )}
 
           {clean.map((g, i) => (
-            <ScheduleGroup key={g.scheduleCode || g.label || i} group={g} prefix={prefix} />
+            <ScheduleGroup key={g.scheduleCode || g.label || i} group={g} prefix={prefix} onAccountClick={onAccountClick} />
           ))}
 
           {extraRows.map((r) => (
@@ -271,6 +299,10 @@ export default function StatutoryStatements({
   // component is shown without a balanceSheet (e.g. a dedicated I&E page) —
   // balanceSheet.asOf is preferred whenever both are supplied.
   ieAsOf,
+  // §7.30: called with a real ChartOfAccount _id when an account line is
+  // clicked. Omit this prop (e.g. for a print/export render) and every line
+  // renders as plain text — no behaviour change.
+  onAccountClick,
 }) {
   if (!balanceSheet && !incomeExpenditure) return null;
 
@@ -399,6 +431,7 @@ export default function StatutoryStatements({
               ]}
               totalCurrent={num(bs.totalLiabilitiesCurrent) + num(bs.totalEquityInclSurplusCurrent)}
               totalPrior={num(bs.totalLiabilitiesPrior) + num(bs.totalEquityInclSurplusPrior)}
+              onAccountClick={onAccountClick}
             />
             <Side
               heading="Assets"
@@ -406,6 +439,7 @@ export default function StatutoryStatements({
               minRows={bsRows}
               totalCurrent={bs.totalAssetsCurrent}
               totalPrior={bs.totalAssetsPrior}
+              onAccountClick={onAccountClick}
             />
           </div>
 
@@ -439,6 +473,7 @@ export default function StatutoryStatements({
               minRows={ieRows}
               totalCurrent={ieTotalExpCurrent}
               totalPrior={ieTotalExpPrior}
+              onAccountClick={onAccountClick}
             />
             <Side
               heading="Income"
@@ -448,6 +483,7 @@ export default function StatutoryStatements({
               minRows={ieRows}
               totalCurrent={ieTotalIncCurrent}
               totalPrior={ieTotalIncPrior}
+              onAccountClick={onAccountClick}
             />
           </div>
 
