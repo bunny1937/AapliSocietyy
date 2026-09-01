@@ -3,11 +3,14 @@ import { validateAdminRequest } from '@/lib/admin-middleware';
 import { getAdminModels } from '@/lib/admin-models';
 import { authorize } from '@/lib/rbac/authorize';
 export async function GET(request) {
-  const gate = await authorize(request, 'society.data.export');
-  if (!gate.ok) return gate.response;
+  // Superadmin first — see app/api/admin/data-browser/route.js for why.
+  // authorize() reads the society-scoped `token` cookie; a superadmin holds
+  // `admin_token` and has no society context, so gating on it first returns
+  // 401 for the platform owner.
   const validation = validateAdminRequest(request);
   if (!validation.valid) {
-    return validation;
+    const gate = await authorize(request, 'society.data.export');
+    if (!gate.ok) return gate.response;
   }
   try {
     const { searchParams } = new URL(request.url);

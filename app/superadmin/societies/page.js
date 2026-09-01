@@ -1,9 +1,13 @@
 ﻿"use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import ExcelJS from "exceljs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import styles from "@/styles/Admin.module.css";
+import {
+  Card, StatusPill, PlanChip, SocietyMark, Btn, Empty,
+  money, shortDate,
+} from "../_components/PlatformUI";
 import DropZone from "../../../components/DropZone";
 import BulkImportWizard from "./BulkImportWizard";
 import DeleteWizard from "./DeleteWizard";
@@ -1011,107 +1015,70 @@ export default function AdminSocietiesPage() {
   const isReady =
     parsedRows && parsedRows.length > 0 && !hasErrors && !creationResults;
   return (
-    <div className={styles.adminContainer}>
-      <div className={styles.pageHeader}>
+    <div style={{ maxWidth: 1560, margin: "0 auto", color: "var(--fg-2)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
         <div>
-          <h1 className={styles.pageTitle}>Society Management</h1>
-          <p className={styles.pageSubtitle}>
-            Total: {societies.length} societies
+          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0, color: "var(--fg-1)" }}>Societies</h1>
+          <p style={{ color: "var(--fg-4)", fontSize: 13, marginTop: 4 }}>
+            {societies.length} on the platform · onboarding, credentials and lifecycle
           </p>
-          <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem" }}>
-            <button
-              onClick={() => {
-                setShowAddModal(true);
-                setUploadedFile(null);
-                setParsedRows(null);
-                setValidationErrors([]);
-                setCreationResults(null);
-              }}
-              style={{
-                background: "var(--success)",
-                color: "#fff",
-                border: "none",
-                padding: "0.6rem 1.4rem",
-                borderRadius: 6,
-                cursor: "pointer",
-                fontWeight: 600,
-              }}
-            >
-              + Add Societies
-            </button>
-            <button
-              onClick={() => setShowBulkModal(true)}
-              style={{
-                background: "var(--accent)",
-                color: "#fff",
-                border: "none",
-                padding: "0.6rem 1.4rem",
-                borderRadius: 6,
-                cursor: "pointer",
-                fontWeight: 600,
-              }}
-            >
-              Bulk Import (Society + Members)
-            </button>
-          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <Btn onClick={() => setShowBulkModal(true)}>Bulk import</Btn>
+          <Btn
+            variant="primary"
+            onClick={() => {
+              setShowAddModal(true);
+              setUploadedFile(null);
+              setParsedRows(null);
+              setValidationErrors([]);
+              setCreationResults(null);
+            }}
+          >
+            Add societies
+          </Btn>
         </div>
       </div>
       {/* Filters */}
-      <div className={styles.filtersBar}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
         <input
           type="text"
-          placeholder="🔍 Search societies..."
+          placeholder="Search name, registration no, email…"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className={styles.searchInput}
+          style={{
+            flex: 1, minWidth: 240, padding: "8px 12px", borderRadius: 8, fontSize: 13,
+            border: "1px solid var(--border-strong)", background: "var(--bg-input, var(--bg-surface))",
+            color: "var(--fg-2)", outline: "none",
+          }}
         />
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className={styles.filterSelect}
-        >
-          <option value="All">All Status</option>
-          <option value="Active">Active</option>
-          <option value="Trial">Trial</option>
-          <option value="Suspended">Suspended</option>
-          <option value="Expired">Expired</option>
-        </select>
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+          {["All", "Active", "Trial", "Suspended", "Expired"].map((st) => (
+            <Btn
+              key={st}
+              size="sm"
+              variant={filterStatus === st ? "primary" : "secondary"}
+              onClick={() => setFilterStatus(st)}
+            >
+              {st}
+            </Btn>
+          ))}
+        </div>
       </div>
       {/* Stats */}
-      <div className={styles.statsGrid}>
-        <div className={styles.statCard} style={{ borderColor: "var(--success)" }}>
-          <div className={styles.statNumber}>
-            {
-              societies.filter((s) => s.subscription?.status === "Active")
-                .length
-            }
-          </div>
-          <div className={styles.statLabel}>Active</div>
-        </div>
-        <div className={styles.statCard} style={{ borderColor: "var(--warning)" }}>
-          <div className={styles.statNumber}>
-            {societies.filter((s) => s.subscription?.status === "Trial").length}
-          </div>
-          <div className={styles.statLabel}>Trial</div>
-        </div>
-        <div className={styles.statCard} style={{ borderColor: "var(--danger)" }}>
-          <div className={styles.statNumber}>
-            {
-              societies.filter((s) => s.subscription?.status === "Suspended")
-                .length
-            }
-          </div>
-          <div className={styles.statLabel}>Suspended</div>
-        </div>
-        <div className={styles.statCard} style={{ borderColor: "var(--accent)" }}>
-          <div className={styles.statNumber}>
-            ₹
-            {societies
-              .reduce((sum, s) => sum + (s.subscription?.amountPaid || 0), 0)
-              .toLocaleString()}
-          </div>
-          <div className={styles.statLabel}>Total Revenue</div>
-        </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 11, marginBottom: 16 }}>
+        {[
+          { label: "Active", value: societies.filter((s) => s.subscription?.status === "Active").length, tone: "var(--success)" },
+          { label: "Trial", value: societies.filter((s) => s.subscription?.status === "Trial").length, tone: "var(--info)" },
+          { label: "Suspended", value: societies.filter((s) => s.subscription?.status === "Suspended").length, tone: "var(--danger)" },
+          { label: "Expired", value: societies.filter((s) => s.subscription?.status === "Expired").length, tone: "var(--fg-4)" },
+          { label: "Recorded revenue", value: money(societies.reduce((sum, s) => sum + (s.subscription?.amountPaid || 0), 0)), tone: "var(--fg-2)" },
+        ].map((c) => (
+          <Card key={c.label} style={{ padding: "13px 15px" }}>
+            <div style={{ fontSize: 10, color: "var(--fg-4)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>{c.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, marginTop: 5, color: c.tone, lineHeight: 1.1 }}>{c.value}</div>
+          </Card>
+        ))}
       </div>
       {/* ── SUBSCRIPTION OVERVIEW ── */}
       {!isLoading && (() => {
@@ -1144,7 +1111,7 @@ export default function AdminSocietiesPage() {
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
                   {overdue.map((s) => (
-                    <span key={s._id} style={{ background: "var(--danger-bg)", border: "1px solid var(--danger-fg)", borderRadius: 4, padding: "3px 8px", fontSize: "0.75rem", color: "var(--danger-bg)" }}>
+                    <span key={s._id} style={{ background: "var(--danger-bg)", border: "1px solid var(--danger-fg)", borderRadius: 4, padding: "3px 8px", fontSize: "0.75rem", color: "var(--danger)" }}>
                       {s.name}
                       {s.subscription?.nextPaymentDate && (
                         <span style={{ color: "var(--danger)", marginLeft: 4 }}>
@@ -1163,37 +1130,30 @@ export default function AdminSocietiesPage() {
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
                   {dueSoon.map((s) => (
-                    <span key={s._id} style={{ background: "var(--warning-bg)", border: "1px solid var(--warning-fg)", borderRadius: 4, padding: "3px 8px", fontSize: "0.75rem", color: "var(--warning-bg)" }}>
+                    <span key={s._id} style={{ background: "var(--warning-bg)", border: "1px solid var(--warning-fg)", borderRadius: 4, padding: "3px 8px", fontSize: "0.75rem", color: "var(--warning)" }}>
                       {s.name} ({new Date(s.subscription.nextPaymentDate).toLocaleDateString("en-IN")})
                     </span>
                   ))}
                 </div>
               </div>
             )}
-            {/* Summary row */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem" }}>
-              <div style={{ background: "var(--primary-tint)", border: "1px solid var(--primary)", borderRadius: 8, padding: "0.9rem 1rem" }}>
-                <div style={{ color: "var(--accent)", fontSize: "0.75rem", fontWeight: 600, marginBottom: 4 }}>Due in 30 days</div>
-                <div style={{ color: "#fff", fontSize: "1.3rem", fontWeight: 700 }}>{dueIn30.length}</div>
-                <div style={{ color: "var(--fg-3)", fontSize: "0.72rem", marginTop: 2 }}>societies</div>
-              </div>
-              <div style={{ background: "var(--success-bg)", border: "1px solid var(--success-fg)", borderRadius: 8, padding: "0.9rem 1rem" }}>
-                <div style={{ color: "var(--success)", fontSize: "0.75rem", fontWeight: 600, marginBottom: 4 }}>Total Revenue</div>
-                <div style={{ color: "#fff", fontSize: "1.3rem", fontWeight: 700 }}>₹{totalRevenue.toLocaleString("en-IN")}</div>
-                <div style={{ color: "var(--fg-3)", fontSize: "0.72rem", marginTop: 2 }}>all time</div>
-              </div>
-              <div style={{ background: "var(--fg-1)" /* TODO: unmapped color, needs design review */, border: "1px solid #6b21a8" /* TODO: unmapped color, needs design review */, borderRadius: 8, padding: "0.9rem 1rem" }}>
-                <div style={{ color: "#c084fc" /* TODO: unmapped color, needs design review */, fontSize: "0.75rem", fontWeight: 600, marginBottom: 4 }}>Trial Societies</div>
-                <div style={{ color: "#fff", fontSize: "1.3rem", fontWeight: 700 }}>
-                  {societies.filter((s) => s.subscription?.status === "Trial").length}
+            {/* Summary row. These were four cards with hardcoded #fff numbers
+                sitting on tinted backgrounds — legible on the dark canvas they
+                were designed against, invisible in light mode. Token-painted
+                now, so they follow the theme like everything else. */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 11 }}>
+              {[
+                { label: "Due in 30 days", value: dueIn30.length, sub: "societies", tone: "var(--accent)" },
+                { label: "Recorded revenue", value: money(totalRevenue), sub: "all time", tone: "var(--success)" },
+                { label: "Trial societies", value: societies.filter((s) => s.subscription?.status === "Trial").length, sub: "not converted", tone: "var(--info)" },
+                { label: "No pay date set", value: noPayment.length, sub: "societies", tone: "var(--warning)" },
+              ].map((c) => (
+                <div key={c.label} style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
+                  <div style={{ color: c.tone, fontSize: 11, fontWeight: 700, marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.5px" }}>{c.label}</div>
+                  <div style={{ color: "var(--fg-2)", fontSize: 20, fontWeight: 700, lineHeight: 1.1 }}>{c.value}</div>
+                  <div style={{ color: "var(--fg-4)", fontSize: 11, marginTop: 3 }}>{c.sub}</div>
                 </div>
-                <div style={{ color: "var(--fg-3)", fontSize: "0.72rem", marginTop: 2 }}>not converted</div>
-              </div>
-              <div style={{ background: "var(--fg-1)" /* TODO: unmapped color, needs design review */, border: "1px solid var(--warning-fg)", borderRadius: 8, padding: "0.9rem 1rem" }}>
-                <div style={{ color: "var(--warning)", fontSize: "0.75rem", fontWeight: 600, marginBottom: 4 }}>No Pay Date Set</div>
-                <div style={{ color: "#fff", fontSize: "1.3rem", fontWeight: 700 }}>{noPayment.length}</div>
-                <div style={{ color: "var(--fg-3)", fontSize: "0.72rem", marginTop: 2 }}>societies</div>
-              </div>
+              ))}
             </div>
           </div>
         );
@@ -1202,27 +1162,29 @@ export default function AdminSocietiesPage() {
       {isLoading ? (
         <div className={styles.loading}>Loading societies...</div>
       ) : (
-        <div className={styles.tableCard}>
-          <table className={styles.adminTable}>
+        <Card padded={false}>
+          <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
             <thead>
               <tr>
-                <th>Society Name</th>
-                <th>Admin Credentials</th>
-                <th>Registration</th>
-                <th>Plan</th>
-                <th>Status</th>
-                <th>Last Payment</th>
-                <th>Next Payment</th>
-                <th>Total Paid</th>
-                <th>Config Ver.</th>
-                <th>Actions</th>
+                {["Society", "Admin credentials", "Plan", "Status", "Last paid", "Next due", "Total paid", "Actions"].map((h, i) => (
+                  <th key={h} style={{
+                    padding: "9px 12px", fontSize: 10, fontWeight: 700, color: "var(--fg-4)",
+                    textTransform: "uppercase", letterSpacing: "0.6px", background: "var(--bg-sunken)",
+                    borderBottom: "1px solid var(--border)", whiteSpace: "nowrap",
+                    textAlign: i === 6 ? "right" : "left",
+                  }}>{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {filteredSocieties.map((society) => (
                 <tr key={society._id}>
-                  <td>
-                    <div className={styles.societyName}>
+                  <td style={SOC_TD}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <SocietyMark name={society.name} size={30} />
+                      <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>
                       {society.name}
                       {society.isTestSociety && (
                         <span style={{ color: "var(--warning)", fontWeight: 700, marginLeft: 6 }}> (test)</span>
@@ -1232,7 +1194,7 @@ export default function AdminSocietiesPage() {
                           {society.isDeleted ? " (pending delete)" : " (paused)"}
                           {!society.isDeleted && (
                             <button
-                              style={{ marginLeft: 6, background: "var(--success-fg)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.68rem", padding: "1px 6px", cursor: "pointer", fontWeight: 600 }}
+                              style={{ ...ACTION_BTN, ...ACTION_TONES.success, marginLeft: 6 }}
                               onClick={async () => {
                                 const res = await fetch(`/api/superadmin/societies/${society._id}/lifecycle`, {
                                   method: "POST",
@@ -1250,78 +1212,58 @@ export default function AdminSocietiesPage() {
                         </span>
                       )}
                     </div>
-                    <div className={styles.societyId}>{society._id}</div>
-                  </td>
-                  <td style={{ fontSize: "0.8rem" }}>
-                    {society.credentials?.adminEmail ? (
-                      <div>
-                        <div style={{ color: "var(--fg-4)" }}>
-                          {society.credentials.adminEmail}
-                        </div>
-                        <div
-                          style={{
-                            fontFamily: "monospace",
-                            color: "var(--success)",
-                            fontWeight: 700,
-                          }}
-                        >
-                          {society.credentials.plainPassword || "—"}
-                        </div>
-                      </div>
-                    ) : (
-                      "—"
+                    <div style={{ fontSize: 10.5, color: "var(--fg-5)", fontFamily: "monospace" }}>
+                      {society.registrationNo || "no reg no"} · {society._id.slice(-8)}
+                    </div>
+                    {society.isDeleted && (
+                      <a
+                        href="/superadmin/lifecycle"
+                        style={{
+                          display: "inline-block", marginTop: 4, textDecoration: "none",
+                          background: "var(--danger-bg)", color: "var(--danger)",
+                          borderRadius: 999, padding: "1px 8px", fontSize: 9.5,
+                          fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.4px",
+                        }}
+                      >
+                        being erased{society.purgeScheduledFor ? ` · ${shortDate(society.purgeScheduledFor)}` : ""}
+                      </a>
                     )}
+                      </div>
+                    </div>
                   </td>
-                  <td>{society.registrationNo || "N/A"}</td>
-                  <td>
-                    <span className={styles.planBadge}>
-                      {society.subscription?.planType || "Free"}
-                    </span>
+                  <td style={SOC_TD}>
+                    <CredentialsCell credentials={society.credentials} />
                   </td>
-                  <td>
-                    <span
-                      className={`${styles.statusBadge} ${styles[society.subscription?.status?.toLowerCase()]}`}
-                    >
-                      {society.subscription?.status || "Trial"}
-                    </span>
+                  <td style={SOC_TD}><PlanChip plan={society.subscription?.planType || "Free"} /></td>
+                  <td style={SOC_TD}><StatusPill status={society.subscription?.status || "Trial"} /></td>
+                  <td style={{ ...SOC_TD, color: "var(--fg-3)", whiteSpace: "nowrap" }}>
+                    {society.subscription?.lastPaymentDate ? shortDate(society.subscription.lastPaymentDate) : "Never"}
                   </td>
-                  <td>
-                    {society.subscription?.lastPaymentDate
-                      ? new Date(
-                          society.subscription.lastPaymentDate,
-                        ).toLocaleDateString("en-IN")
-                      : "Never"}
+                  <td style={{ ...SOC_TD, whiteSpace: "nowrap", color: OVERDUE(society) ? "var(--danger)" : "var(--fg-3)", fontWeight: OVERDUE(society) ? 700 : 400 }}>
+                    {society.subscription?.nextPaymentDate ? shortDate(society.subscription.nextPaymentDate) : "Not set"}
                   </td>
-                  <td>
-                    {society.subscription?.nextPaymentDate
-                      ? new Date(
-                          society.subscription.nextPaymentDate,
-                        ).toLocaleDateString("en-IN")
-                      : "Not set"}
+                  <td style={{ ...SOC_TD, textAlign: "right", fontWeight: 600, whiteSpace: "nowrap" }}>
+                    {money(society.subscription?.amountPaid || 0)}
                   </td>
-                  <td className={styles.amountCell}>
-                    ₹{(society.subscription?.amountPaid || 0).toLocaleString()}
-                  </td>
-                  <td>v{society.configVersion || 1}</td>
-                  <td>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
+                  <td style={SOC_TD}>
+                    <RowActions>
                       <button
                         onClick={() => handlePaymentRecord(society)}
-                        style={{ background: "var(--success)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                        style={{ ...ACTION_BTN, ...ACTION_TONES.success }}
                       >
                         💰 Payment
                       </button>
                       {society.subscription?.status === "Active" ? (
                         <button
                           onClick={() => suspendSociety(society._id)}
-                          style={{ background: "var(--danger)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                          style={{ ...ACTION_BTN, ...ACTION_TONES.danger }}
                         >
                           🚫 Suspend
                         </button>
                       ) : (
                         <button
                           onClick={() => activateSociety(society._id)}
-                          style={{ background: "var(--success)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                          style={{ ...ACTION_BTN, ...ACTION_TONES.success }}
                         >
                           ✅ Activate
                         </button>
@@ -1333,12 +1275,12 @@ export default function AdminSocietiesPage() {
                             "_blank",
                           )
                         }
-                        style={{ background: "var(--accent)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                        style={{ ...ACTION_BTN, ...ACTION_TONES.accent }}
                       >
                         📊 Details
                       </button>
                       <button
-                        style={{ background: "#7c3aed" /* TODO: unmapped color, needs design review */, color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                        style={{ ...ACTION_BTN, ...ACTION_TONES.neutral }}
                         onClick={async () => {
                           if (!(await notify.confirm(`Reset passwords for ALL members of "${society.name}"? They will need new credentials to login.`, { tone: "danger" }))) return;
                           const res = await fetch("/api/superadmin/reset-member-passwords", {
@@ -1369,7 +1311,7 @@ export default function AdminSocietiesPage() {
                         🔑 Reset Creds
                       </button>
                       <button
-                        style={{ background: "var(--warning-fg)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                        style={{ ...ACTION_BTN, ...ACTION_TONES.warning }}
                         onClick={async () => {
                           const custom = await notify.prompt(
                             `Reset admin password for "${society.name}".\n\nEnter new password (min 8 chars), or leave blank to auto-generate:`
@@ -1390,7 +1332,7 @@ export default function AdminSocietiesPage() {
                         🔐 Reset Admin Pass
                       </button>
                       <button
-                        style={{ background: "var(--info)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                        style={{ ...ACTION_BTN, ...ACTION_TONES.info }}
                         onClick={async () => {
                           setViewCredsTarget({ societyId: society._id, name: society.name });
                           setViewCreds(null);
@@ -1414,21 +1356,21 @@ export default function AdminSocietiesPage() {
                       </button>
                       {!society.onboarding?.billHistoryImported ? (
                         <button
-                          style={{ background: "#7c3aed" /* TODO: unmapped color, needs design review */, color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                          style={{ ...ACTION_BTN, ...ACTION_TONES.neutral }}
                           onClick={() => setBhModalSociety(society)}
                         >
                           📜 Bill History
                         </button>
                       ) : (
                         <button
-                          style={{ background: "var(--success-fg)", color: "var(--success)", border: "1px solid var(--success)", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "default" }}
+                          style={{ ...ACTION_BTN, ...ACTION_TONES.success }}
                           disabled
                         >
                           ✓ History Done
                         </button>
                       )}
                       <button
-                        style={{ background: "var(--warning-fg)", color: "var(--warning-bg)", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                        style={{ ...ACTION_BTN, ...ACTION_TONES.warning }}
                         onClick={async () => {
                           const joinPeriod = society.onboarding?.joinPeriodId;
                           const confirmMsg = joinPeriod
@@ -1451,7 +1393,7 @@ export default function AdminSocietiesPage() {
                         🔧 Fix History Bills
                       </button>
                       <button
-                        style={{ background: "var(--fg-3)", color: "var(--border-strong)", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                        style={{ ...ACTION_BTN, ...ACTION_TONES.neutral }}
                         title={society.isTestSociety ? "Unmark as test society" : "Mark as test society (enables quick delete)"}
                         onClick={async () => {
                           const res = await fetch(`/api/superadmin/societies/${society._id}/mark-test`, {
@@ -1468,7 +1410,7 @@ export default function AdminSocietiesPage() {
                       </button>
                       {society.isTestSociety ? (
                         <button
-                          style={{ background: "var(--danger-fg)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer", fontWeight: 700 }}
+                          style={{ ...ACTION_BTN, ...ACTION_TONES.danger }}
                           title="Quick-delete this test society (no export/verify wizard)"
                           onClick={async () => {
                             if (!(await notify.confirm(`Quick-delete TEST society "${society.name}"? Skips the export/verify wizard. Only works because it's marked (test).`, { tone: "danger" }))) return;
@@ -1486,24 +1428,23 @@ export default function AdminSocietiesPage() {
                         </button>
                       ) : (
                         <button
-                          style={{ background: "var(--danger-fg)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.72rem", padding: "3px 8px", cursor: "pointer" }}
+                          style={{ ...ACTION_BTN, ...ACTION_TONES.danger }}
                           onClick={() => setDeleteTarget(society)}
                         >
                           🗑 Delete
                         </button>
                       )}
-                    </div>
+                    </RowActions>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
           {filteredSocieties.length === 0 && (
-            <div className={styles.emptyState}>
-              No societies found matching your filters
-            </div>
+            <Empty title="No societies match" sub="Try a different status filter or search term." />
           )}
-        </div>
+        </Card>
       )}
       {/* ── ADD SOCIETY MODAL ── */}
       {showAddModal && (
@@ -1562,7 +1503,7 @@ export default function AdminSocietiesPage() {
                             padding: "8px 10px",
                             textAlign: "left",
                             color: "var(--fg-4)",
-                            borderBottom: "1px solid var(--fg-2)",
+                            borderBottom: "1px solid var(--border)",
                           }}
                         >
                           Society
@@ -1572,7 +1513,7 @@ export default function AdminSocietiesPage() {
                             padding: "8px 10px",
                             textAlign: "left",
                             color: "var(--fg-4)",
-                            borderBottom: "1px solid var(--fg-2)",
+                            borderBottom: "1px solid var(--border)",
                           }}
                         >
                           Admin Email
@@ -1582,7 +1523,7 @@ export default function AdminSocietiesPage() {
                             padding: "8px 10px",
                             textAlign: "left",
                             color: "var(--fg-4)",
-                            borderBottom: "1px solid var(--fg-2)",
+                            borderBottom: "1px solid var(--border)",
                           }}
                         >
                           Password
@@ -1592,7 +1533,7 @@ export default function AdminSocietiesPage() {
                             padding: "8px 10px",
                             textAlign: "left",
                             color: "var(--fg-4)",
-                            borderBottom: "1px solid var(--fg-2)",
+                            borderBottom: "1px solid var(--border)",
                           }}
                         >
                           Status
@@ -1610,8 +1551,8 @@ export default function AdminSocietiesPage() {
                           <td
                             style={{
                               padding: "8px 10px",
-                              color: "#fff",
-                              borderBottom: "1px solid var(--fg-2)",
+                              color: "var(--fg-2)",
+                              borderBottom: "1px solid var(--border)",
                             }}
                           >
                             {r.societyName}
@@ -1620,7 +1561,7 @@ export default function AdminSocietiesPage() {
                             style={{
                               padding: "8px 10px",
                               color: "var(--border-strong)",
-                              borderBottom: "1px solid var(--fg-2)",
+                              borderBottom: "1px solid var(--border)",
                             }}
                           >
                             {r.email}
@@ -1631,7 +1572,7 @@ export default function AdminSocietiesPage() {
                               fontFamily: "monospace",
                               color: r.password ? "var(--warning)" : "var(--fg-3)",
                               fontWeight: 700,
-                              borderBottom: "1px solid var(--fg-2)",
+                              borderBottom: "1px solid var(--border)",
                             }}
                           >
                             {r.password || "—"}
@@ -1639,7 +1580,7 @@ export default function AdminSocietiesPage() {
                           <td
                             style={{
                               padding: "8px 10px",
-                              borderBottom: "1px solid var(--fg-2)",
+                              borderBottom: "1px solid var(--border)",
                             }}
                           >
                             {r.error ? (
@@ -1831,7 +1772,7 @@ export default function AdminSocietiesPage() {
                       }}
                     >
                       Parsed{" "}
-                      <strong style={{ color: "#fff" }}>
+                      <strong style={{ color: "var(--fg-2)" }}>
                         {parsedRows.length}
                       </strong>{" "}
                       rows
@@ -1992,7 +1933,7 @@ export default function AdminSocietiesPage() {
                               padding: "6px 10px",
                               textAlign: "left",
                               color: "var(--fg-4)",
-                              borderBottom: "1px solid var(--fg-2)",
+                              borderBottom: "1px solid var(--border)",
                             }}
                           >
                             #
@@ -2002,7 +1943,7 @@ export default function AdminSocietiesPage() {
                               padding: "6px 10px",
                               textAlign: "left",
                               color: "var(--fg-4)",
-                              borderBottom: "1px solid var(--fg-2)",
+                              borderBottom: "1px solid var(--border)",
                             }}
                           >
                             Society
@@ -2012,7 +1953,7 @@ export default function AdminSocietiesPage() {
                               padding: "6px 10px",
                               textAlign: "left",
                               color: "var(--fg-4)",
-                              borderBottom: "1px solid var(--fg-2)",
+                              borderBottom: "1px solid var(--border)",
                             }}
                           >
                             Admin Email
@@ -2022,7 +1963,7 @@ export default function AdminSocietiesPage() {
                               padding: "6px 10px",
                               textAlign: "left",
                               color: "var(--fg-4)",
-                              borderBottom: "1px solid var(--fg-2)",
+                              borderBottom: "1px solid var(--border)",
                             }}
                           >
                             Interest
@@ -2032,7 +1973,7 @@ export default function AdminSocietiesPage() {
                               padding: "6px 10px",
                               textAlign: "left",
                               color: "var(--fg-4)",
-                              borderBottom: "1px solid var(--fg-2)",
+                              borderBottom: "1px solid var(--border)",
                             }}
                           >
                             Charges
@@ -2060,7 +2001,7 @@ export default function AdminSocietiesPage() {
                                 style={{
                                   padding: "5px 10px",
                                   color: "var(--fg-3)",
-                                  borderBottom: "1px solid var(--fg-2)",
+                                  borderBottom: "1px solid var(--border)",
                                 }}
                               >
                                 {i + 1}
@@ -2068,8 +2009,8 @@ export default function AdminSocietiesPage() {
                               <td
                                 style={{
                                   padding: "5px 10px",
-                                  color: "#fff",
-                                  borderBottom: "1px solid var(--fg-2)",
+                                  color: "var(--fg-2)",
+                                  borderBottom: "1px solid var(--border)",
                                   fontWeight: 600,
                                 }}
                               >
@@ -2079,7 +2020,7 @@ export default function AdminSocietiesPage() {
                                 style={{
                                   padding: "5px 10px",
                                   color: "var(--border-strong)",
-                                  borderBottom: "1px solid var(--fg-2)",
+                                  borderBottom: "1px solid var(--border)",
                                 }}
                               >
                                 {row["Admin Email"]}
@@ -2088,7 +2029,7 @@ export default function AdminSocietiesPage() {
                                 style={{
                                   padding: "5px 10px",
                                   color: "#a78bfa" /* TODO: unmapped color, needs design review */,
-                                  borderBottom: "1px solid var(--fg-2)",
+                                  borderBottom: "1px solid var(--border)",
                                 }}
                               >
                                 21%
@@ -2097,7 +2038,7 @@ export default function AdminSocietiesPage() {
                                 style={{
                                   padding: "5px 10px",
                                   color: "var(--success-bg)",
-                                  borderBottom: "1px solid var(--fg-2)",
+                                  borderBottom: "1px solid var(--border)",
                                 }}
                               >
                                 {chargeCount} heads set
@@ -2220,21 +2161,21 @@ export default function AdminSocietiesPage() {
                   <thead style={{ position: "sticky", top: 0, background: "var(--fg-1)" }}>
                     <tr>
                       {["Flat", "Wing", "Owner", "Username", "Email", "Status"].map((h) => (
-                        <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: "var(--fg-3)", borderBottom: "1px solid var(--fg-2)", fontWeight: 600 }}>{h}</th>
+                        <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: "var(--fg-3)", borderBottom: "1px solid var(--border)", fontWeight: 600 }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {(viewCreds || []).map((c, i) => (
                       <tr key={i} style={{ background: i % 2 === 0 ? "var(--fg-1)" : "var(--fg-1)" }}>
-                        <td style={{ padding: "7px 10px", color: "var(--bg-muted)", borderBottom: "1px solid var(--fg-2)", fontWeight: 600 }}>{c.flatNo}</td>
-                        <td style={{ padding: "7px 10px", color: "var(--border-strong)", borderBottom: "1px solid var(--fg-2)" }}>{c.wing || "—"}</td>
-                        <td style={{ padding: "7px 10px", color: "var(--border)", borderBottom: "1px solid var(--fg-2)" }}>{c.ownerName}</td>
-                        <td style={{ padding: "7px 10px", fontFamily: "monospace", color: c.username ? "#a78bfa" /* TODO: unmapped color, needs design review */ : "var(--fg-3)", borderBottom: "1px solid var(--fg-2)" }}>
+                        <td style={{ padding: "7px 10px", color: "var(--bg-muted)", borderBottom: "1px solid var(--border)", fontWeight: 600 }}>{c.flatNo}</td>
+                        <td style={{ padding: "7px 10px", color: "var(--border-strong)", borderBottom: "1px solid var(--border)" }}>{c.wing || "—"}</td>
+                        <td style={{ padding: "7px 10px", color: "var(--border)", borderBottom: "1px solid var(--border)" }}>{c.ownerName}</td>
+                        <td style={{ padding: "7px 10px", fontFamily: "monospace", color: c.username ? "#a78bfa" /* TODO: unmapped color, needs design review */ : "var(--fg-3)", borderBottom: "1px solid var(--border)" }}>
                           {c.username ? c.username.toUpperCase() : "—"}
                         </td>
-                        <td style={{ padding: "7px 10px", color: "var(--fg-5)", borderBottom: "1px solid var(--fg-2)" }}>{c.email}</td>
-                        <td style={{ padding: "7px 10px", borderBottom: "1px solid var(--fg-2)" }}>
+                        <td style={{ padding: "7px 10px", color: "var(--fg-5)", borderBottom: "1px solid var(--border)" }}>{c.email}</td>
+                        <td style={{ padding: "7px 10px", borderBottom: "1px solid var(--border)" }}>
                           {!c.hasAccount ? (
                             <span style={{ color: "var(--fg-4)", fontSize: "0.75rem" }}>No account</span>
                           ) : c.isActive ? (
@@ -2311,3 +2252,156 @@ export default function AdminSocietiesPage() {
     </div>
   );
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   Row presentation
+   ══════════════════════════════════════════════════════════════════════ */
+
+const SOC_TD = {
+  padding: "10px 12px",
+  borderBottom: "1px solid var(--border)",
+  verticalAlign: "middle",
+};
+
+/** Is this society's next payment date in the past while still Active? */
+const OVERDUE = (society) =>
+  society.subscription?.status === "Active" &&
+  society.subscription?.nextPaymentDate &&
+  new Date(society.subscription.nextPaymentDate) < new Date();
+
+const ACTION_TONES = {
+  success: { background: "var(--success-bg)", color: "var(--success)", border: "1px solid var(--success)" },
+  danger: { background: "var(--danger-bg)", color: "var(--danger)", border: "1px solid var(--danger)" },
+  warning: { background: "var(--warning-bg)", color: "var(--warning)", border: "1px solid var(--warning)" },
+  info: { background: "var(--info-bg)", color: "var(--info)", border: "1px solid var(--info)" },
+  accent: { background: "var(--accent-tint)", color: "var(--accent)", border: "1px solid var(--accent)" },
+  neutral: { background: "var(--bg-tertiary)", color: "var(--fg-2)", border: "1px solid var(--border-strong)" },
+};
+
+/**
+ * Shared shape for a row action. Tinted rather than filled: ten saturated
+ * buttons in one cell read as ten equally urgent things, which is how the old
+ * grid made "Delete" look no louder than "Details". The tint carries the
+ * meaning; the border carries the weight.
+ */
+const ACTION_BTN = {
+  padding: "4px 9px",
+  borderRadius: 7,
+  fontSize: 11.5,
+  fontWeight: 600,
+  fontFamily: "inherit",
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+};
+
+/**
+ * The first three actions stay visible; everything else lives behind "More".
+ *
+ * Ten buttons per row was the actual complaint about this page — every row was
+ * a wall of colour, and the destructive ones sat in it unremarkably. Payment,
+ * suspend/activate and details cover almost every visit; credential resets,
+ * bill-history repair and deletion are deliberate trips.
+ */
+function RowActions({ children }) {
+  const [open, setOpen] = useState(false);
+  const items = React.Children.toArray(children).filter(Boolean);
+  const primary = items.slice(0, 3);
+  const rest = items.slice(3);
+
+  return (
+    <div style={{ display: "grid", gap: 6, minWidth: 210 }}>
+      <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
+        {primary}
+        {rest.length > 0 && (
+          <button
+            style={{ ...ACTION_BTN, ...ACTION_TONES.neutral }}
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+          >
+            {open ? "Less ▲" : `More ${rest.length} ▾`}
+          </button>
+        )}
+      </div>
+      {/* Expands INSIDE the cell rather than floating above it.
+          As an absolutely-positioned dropdown this sat on top of whatever
+          card happened to be underneath — and in the last row it escaped the
+          table entirely. Growing the row costs a little height and covers
+          nothing. */}
+      {open && rest.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 5,
+            padding: 8,
+            borderRadius: 9,
+            background: "var(--bg-sunken)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          {rest}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Admin credentials, hidden until asked for.
+ *
+ * The password used to be rendered in plain text in every row, so opening this
+ * page put every society's admin password on screen at once — in front of
+ * whoever was walking past, and in any screenshot or screen-share of it. The
+ * capability is unchanged; it now takes a deliberate click, and closes again.
+ */
+function CredentialsCell({ credentials }) {
+  const [shown, setShown] = useState(false);
+  if (!credentials?.adminEmail) return <span style={{ color: "var(--fg-5)" }}>—</span>;
+  const password = credentials.plainPassword;
+  return (
+    <div style={{ display: "grid", gap: 3, minWidth: 180 }}>
+      <div style={{ fontSize: 12, color: "var(--fg-3)", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {credentials.adminEmail}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+        <code style={{ fontFamily: "monospace", fontSize: 12, color: shown ? "var(--fg-2)" : "var(--fg-5)", letterSpacing: shown ? 0 : 2 }}>
+          {!password ? "—" : shown ? password : "••••••••"}
+        </code>
+        {password && (
+          <>
+            <button
+              onClick={() => setShown((v) => !v)}
+              style={credBtn}
+              title={shown ? "Hide password" : "Reveal password"}
+            >
+              {shown ? "Hide" : "Reveal"}
+            </button>
+            <button
+              onClick={() => {
+                navigator.clipboard?.writeText(password);
+                notify.success("Password copied");
+              }}
+              style={credBtn}
+              title="Copy password"
+            >
+              Copy
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const credBtn = {
+  background: "transparent",
+  border: "1px solid var(--border-strong)",
+  color: "var(--fg-4)",
+  borderRadius: 6,
+  fontSize: 10.5,
+  fontWeight: 600,
+  padding: "2px 7px",
+  cursor: "pointer",
+  fontFamily: "inherit",
+};

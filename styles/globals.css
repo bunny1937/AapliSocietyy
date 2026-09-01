@@ -128,6 +128,30 @@
   --r-pad-card:  18px;
   --r-row-h:     44px;
   --r-font-num:  "Inter", "SF Pro Display", system-ui, sans-serif;
+
+  /* ── Superadmin rail ───────────────────────────────────────────────
+     The platform sidebar used to be hardcoded navy with white text, so it
+     stayed the same slab of blue in dark mode while everything around it
+     went to ink — the one surface in the product that ignored the toggle.
+     These are the only colours it uses now.
+
+     Light keeps the brand navy rail: it is the platform console's identity
+     and it reads as "you are in the operator tool, not a society's admin
+     panel". Dark drops to the neutral ink surface, because a saturated navy
+     block against a #0b0b0f canvas glows. */
+  --sa-rail-bg:        #1e3a8a;
+  --sa-rail-fg:        #ffffff;
+  --sa-rail-fg-dim:    rgba(255,255,255,0.75);
+  --sa-rail-fg-muted:  rgba(255,255,255,0.65);
+  --sa-rail-fg-faint:  rgba(255,255,255,0.5);
+  --sa-rail-hover:     rgba(255,255,255,0.08);
+  --sa-rail-active:    rgba(255,255,255,0.16);
+  --sa-rail-border:    rgba(255,255,255,0.12);
+  --sa-avatar-from:    #6b8eef;
+  --sa-avatar-to:      #c7d2fe;
+  --sa-avatar-fg:      #1e3a8a;
+  --sa-splash-from:    #1e3a8a;
+  --sa-splash-to:      #2d52b0;
 }
 /* ══════════════════════════════════════════════════
    DARK MODE — single source of truth for the whole app.
@@ -226,6 +250,21 @@
   --shadow-xl: var(--r-shadow-pop);
   --shadow-glow: 0 0 0 3px rgba(124, 156, 247, 0.25);
   --shadow-accent-glow: 0 0 0 3px rgba(163, 185, 245, 0.3);
+
+  /* ── Superadmin rail (see the light block for why these exist) ──── */
+  --sa-rail-bg:        var(--r-surface);
+  --sa-rail-fg:        var(--r-fg-1);
+  --sa-rail-fg-dim:    var(--r-fg-2);
+  --sa-rail-fg-muted:  var(--r-fg-3);
+  --sa-rail-fg-faint:  var(--r-fg-4);
+  --sa-rail-hover:     rgba(255,255,255,0.06);
+  --sa-rail-active:    rgba(124,156,247,0.16);
+  --sa-rail-border:    var(--r-border);
+  --sa-avatar-from:    #4d6fd4;
+  --sa-avatar-to:      #7c9cf7;
+  --sa-avatar-fg:      #0b0b0f;
+  --sa-splash-from:    #131318;
+  --sa-splash-to:      #1c1c24;
 }
 /* ── Reset ──────────────────────────────────────── */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }

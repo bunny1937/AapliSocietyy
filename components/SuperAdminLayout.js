@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   LogOut, LayoutDashboard, Building2, ClipboardList,
   DatabaseZap, ScrollText, PackageOpen, Search, Bell, Shield, Activity, SlidersHorizontal,
+  CreditCard,
+  Archive,
 } from "lucide-react";
 import RouteLoadingBar from "./RouteLoadingBar";
 import ThemeToggle from "./theme/ThemeToggle";
@@ -20,6 +22,8 @@ const NAV = [
     title: "Platform",
     items: [
       { name: "Societies",     path: "/superadmin/societies",     icon: <Building2 size={16} strokeWidth={1.75} /> },
+      { name: "Subscriptions", path: "/superadmin/subscriptions", icon: <CreditCard size={16} strokeWidth={1.75} /> },
+      { name: "Offboarding",   path: "/superadmin/lifecycle",     icon: <Archive size={16} strokeWidth={1.75} /> },
       { name: "Audit Reports", path: "/superadmin/audit-reports", icon: <ClipboardList size={16} strokeWidth={1.75} /> },
       { name: "Data Browser",  path: "/superadmin/data-browser",  icon: <DatabaseZap size={16} strokeWidth={1.75} /> },
       { name: "Logs",          path: "/superadmin/logs",          icon: <ScrollText size={16} strokeWidth={1.75} /> },

@@ -89,13 +89,25 @@ async function runRetentionScan(req) {
   const summary = [];
 
   for (const society of societies) {
-    const sid = society.societyId || String(society._id);
+    // TWO different identifiers, and mixing them up is what made this job
+    // throw "Cast to ObjectId failed for value \"guru_soci_2026_19\"" on
+    // every run. Society carries a human code in its `societyId` STRING
+    // field (green_valley_andheri_2018_47) alongside the Mongo `_id`:
+    //   - RetentionSetting is keyed by the code (its societyId is a String)
+    //   - every content model and RetentionArchive key on the ObjectId
+    const settingsKey = society.societyId || String(society._id);
+    const sid = society._id;
     const pending = [];
 
     for (const policy of RETENTION_POLICIES) {
-      const setting = await RetentionSetting.resolve(sid, policy);
+      const setting = await RetentionSetting.resolve(settingsKey, policy);
       const Model = await loadModel(policy);
       if (!Model) continue;
+
+      // EmailOutbox has no societyId at all, so a per-society scan can only
+      // ever match nothing. It carries its own TTL index on purgeAt, which
+      // is what actually expires those rows.
+      if (!Model.schema.path("societyId")) continue;
 
       const cutoff = new Date(
         Date.now() - setting.archiveAfterDays * 24 * 60 * 60 * 1000,
@@ -170,7 +182,8 @@ async function runRetentionScan(req) {
 
     let notified = { sent: 0, failed: [] };
     if (!dryRun) {
-      const settingDoc = await RetentionSetting.findOne({ societyId: sid }).lean();
+      const settingDoc =
+        await RetentionSetting.findOne({ societyId: settingsKey }).lean();
       const recipients = retentionRecipients(society, settingDoc);
       if (recipients.length) {
         const total = pending.reduce((s, p) => s + p.recordCount, 0);
@@ -198,14 +211,14 @@ async function runRetentionScan(req) {
         );
       }
       await RetentionSetting.updateOne(
-        { societyId: sid },
+        { societyId: settingsKey },
         { $set: { lastScanAt: new Date() } },
         { upsert: true },
       );
     }
 
     summary.push({
-      societyId: sid,
+      societyId: settingsKey,
       societyName: society.societyName,
       pending,
       emailsSent: notified.sent,

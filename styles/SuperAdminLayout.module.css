@@ -1,6 +1,7 @@
 /* ══════════════════════════════════════════════════
    SUPERADMIN LAYOUT
-   Sidebar: 240px #1e3a8a | TopHeader: 56px white+border
+   Sidebar: 240px, painted from the --sa-rail-* tokens in globals.css
+   (navy in light, neutral ink in dark) | TopHeader: 56px white+border
    Canvas: #f8fafc
 ══════════════════════════════════════════════════ */
 .container {
@@ -13,7 +14,7 @@
    the same solid blue in both light and dark, same as it always has. */
 .sidebar {
   width: 240px;
-  background: #1e3a8a;
+  background: var(--sa-rail-bg);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -27,7 +28,7 @@
 .sidebar::-webkit-scrollbar { width: 0; }
 .sidebarHeader {
   padding: 18px 18px 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.12);
+  border-bottom: 1px solid var(--sa-rail-border);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -36,13 +37,13 @@
 .sidebarTitle {
   font-size: 15px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--sa-rail-fg);
   letter-spacing: -0.2px;
   line-height: 1.2;
 }
 .sidebarSubtitle {
   font-size: 10px;
-  color: rgba(255,255,255,0.65);
+  color: var(--sa-rail-fg-muted);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.6px;
@@ -64,7 +65,7 @@
 .navGroupTitle {
   font-size: 10px;
   font-weight: 600;
-  color: rgba(255,255,255,0.5);
+  color: var(--sa-rail-fg-faint);
   text-transform: uppercase;
   letter-spacing: 0.6px;
   padding: 0 8px;
@@ -78,7 +79,7 @@
   border-radius: 7px;
   font-size: 13px;
   font-weight: 500;
-  color: rgba(255,255,255,0.75);
+  color: var(--sa-rail-fg-dim);
   background: transparent;
   cursor: pointer;
   margin-bottom: 2px;
@@ -87,13 +88,13 @@
   white-space: nowrap;
 }
 .navItem:hover {
-  background: rgba(255,255,255,0.08);
-  color: #ffffff;
+  background: var(--sa-rail-hover);
+  color: var(--sa-rail-fg);
 }
 .navItem:active { transform: scale(0.98); }
 .navItemActive {
-  background: rgba(255,255,255,0.16) !important;
-  color: #ffffff !important;
+  background: var(--sa-rail-active) !important;
+  color: var(--sa-rail-fg) !important;
 }
 .navIcon {
   width: 17px;
@@ -109,7 +110,7 @@
 /* ── Sidebar Footer ─────────────────────────────── */
 .sidebarFooter {
   padding: 14px;
-  border-top: 1px solid rgba(255,255,255,0.12);
+  border-top: 1px solid var(--sa-rail-border);
   flex-shrink: 0;
 }
 .userInfo {
@@ -122,11 +123,11 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6b8eef 0%, #c7d2fe 100%);
+  background: linear-gradient(135deg, var(--sa-avatar-from) 0%, var(--sa-avatar-to) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #1e3a8a;
+  color: var(--sa-avatar-fg);
   font-weight: 800;
   font-size: 13px;
   flex-shrink: 0;
@@ -135,19 +136,19 @@
 .userName {
   font-size: 13px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--sa-rail-fg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .userRole {
   font-size: 10px;
-  color: rgba(255,255,255,0.65);
+  color: var(--sa-rail-fg-muted);
 }
 .logoutBtn {
-  background: rgba(255,255,255,0.08);
+  background: var(--sa-rail-hover);
   border: none;
-  color: rgba(255,255,255,0.85);
+  color: var(--sa-rail-fg-dim);
   padding: 6px;
   border-radius: 6px;
   cursor: pointer;
@@ -156,7 +157,7 @@
   transition: background 0.15s;
   flex-shrink: 0;
 }
-.logoutBtn:hover { background: rgba(255,255,255,0.18); }
+.logoutBtn:hover { background: var(--sa-rail-active); }
 /* ══════════════════════════════════════════════════
    MAIN AREA
 ══════════════════════════════════════════════════ */
@@ -298,7 +299,7 @@
   width: 100%;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1e3a8a 0%, #2d52b0 100%);
+  background: linear-gradient(135deg, var(--sa-splash-from) 0%, var(--sa-splash-to) 100%);
   flex-direction: column;
   gap: 20px;
 }
@@ -310,13 +311,13 @@
 .fullPageLoaderTitle {
   font-size: 20px;
   font-weight: 700;
-  color: rgba(255,255,255,0.95);
+  color: var(--sa-rail-fg);
   letter-spacing: -0.02em;
 }
 .fullPageLoaderSub {
   font-size: 11px;
   font-weight: 600;
-  color: rgba(255,255,255,0.55);
+  color: var(--sa-rail-fg-faint);
   text-transform: uppercase;
   letter-spacing: 0.6px;
   margin-left: 2px;
@@ -331,10 +332,10 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.5);
+  background: var(--sa-rail-fg-faint);
   animation: bounceDot 1.4s ease-in-out infinite;
 }
-.fullPageLoaderDot:nth-child(2) { animation-delay: 0.16s; background: rgba(255,255,255,0.75); }
+.fullPageLoaderDot:nth-child(2) { animation-delay: 0.16s; background: var(--sa-rail-fg-dim); }
 .fullPageLoaderDot:nth-child(3) { animation-delay: 0.32s; }
 /* ══════════════════════════════════════════════════
    KEYFRAMES

@@ -1,6 +1,7 @@
 import { withRoute, json } from "@/lib/v1/http";
 import { cronAuthorized } from "@/lib/v1/config";
 import mongoose from "mongoose";
+import Society from "@/models/Society";
 import RetentionArchive from "@/models/RetentionArchive";
 import RetentionSetting from "@/models/RetentionSetting";
 import { policyById, RETENTION_POLICIES } from "@/lib/retention/policies";
@@ -92,6 +93,23 @@ async function runRetentionPurge(req) {
   const results = [];
   const perSocietyDeleted = new Map();
 
+  // RetentionArchive.societyId is an ObjectId; RetentionSetting is keyed by
+  // the society's human code (its societyId field is a String). Passing the
+  // ObjectId to resolve() finds nothing, and "nothing" reads as "this society
+  // has not opted in" — so every purge was silently skipped even where a
+  // society HAD enabled deletion. Fail-safe, but never what was configured.
+  const settingsKeyCache = new Map();
+  const settingsKeyFor = async (societyObjectId) => {
+    const cacheKey = String(societyObjectId);
+    if (settingsKeyCache.has(cacheKey)) return settingsKeyCache.get(cacheKey);
+    const society = await Society.findById(societyObjectId)
+      .select("societyId")
+      .lean();
+    const key = society?.societyId || cacheKey;
+    settingsKeyCache.set(cacheKey, key);
+    return key;
+  };
+
   for (const archive of candidates) {
     const policy = policyById(archive.policyId);
     const skip = (reason) =>
@@ -110,7 +128,10 @@ async function runRetentionPurge(req) {
     if (!policy.purgeable) { skip("policy is archive-only (purgeable: false)"); continue; }
 
     // Gates 2 and 3 — per-society and per-class opt-in.
-    const setting = await RetentionSetting.resolve(archive.societyId, policy);
+    const setting = await RetentionSetting.resolve(
+      await settingsKeyFor(archive.societyId),
+      policy,
+    );
     if (!setting.societyEnabled) { skip("society has not enabled retention"); continue; }
     if (!setting.purgeEnabled) { skip(`society has not enabled deletion for ${policy.id}`); continue; }
 

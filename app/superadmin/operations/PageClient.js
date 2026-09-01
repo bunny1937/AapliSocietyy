@@ -24,10 +24,10 @@ import notify from "@/lib/notify";
 // a `blocks` string and every queue row carries a `why`.
 
 const TONE = {
-  ok: { fg: "var(--success-fg, #15803d)", bg: "var(--success-bg, #f0fdf4)", label: "Healthy" },
-  late: { fg: "#b45309", bg: "#fffbeb", label: "Running late" },
-  degraded: { fg: "#b45309", bg: "#fffbeb", label: "Degraded" },
-  critical: { fg: "var(--danger-fg, #b91c1c)", bg: "#fef2f2", label: "Something has stopped" },
+  ok: { fg: "var(--success)", bg: "var(--success-bg)", label: "Healthy" },
+  late: { fg: "var(--warning)", bg: "var(--warning-bg)", label: "Running late" },
+  degraded: { fg: "var(--warning)", bg: "var(--warning-bg)", label: "Degraded" },
+  critical: { fg: "var(--danger)", bg: "var(--danger-bg)", label: "Something has stopped" },
 };
 
 const STATE_TONE = {
@@ -39,11 +39,11 @@ const STATE_TONE = {
 };
 
 const STATE_LABEL = {
-  ok: "ok",
-  late: "late",
-  stale: "STALE",
-  failing: "FAILING",
-  "never-run": "NEVER RUN",
+  ok: "Healthy",
+  late: "Late",
+  stale: "Stale",
+  failing: "Failing",
+  "never-run": "Never run",
 };
 
 async function get(url) {
@@ -64,35 +64,41 @@ function ago(date) {
 }
 
 const card = {
-  border: "1px solid var(--border, #e5e7eb)",
-  borderRadius: 10,
-  padding: "18px 20px",
-  marginBottom: 20,
-  background: "var(--bg-1, #fff)",
+  border: "1px solid var(--border)",
+  borderRadius: 14,
+  padding: 18,
+  marginBottom: 16,
+  background: "var(--bg-surface)",
+  boxShadow: "var(--shadow-xs)",
 };
 const th = {
-  padding: "8px 10px",
+  padding: "9px 12px",
   textAlign: "left",
-  fontSize: "0.7rem",
+  fontSize: 10,
+  fontWeight: 700,
   textTransform: "uppercase",
-  letterSpacing: "0.04em",
-  color: "var(--fg-2, #6b7280)",
-  borderBottom: "1px solid var(--border, #e5e7eb)",
+  letterSpacing: "0.6px",
+  color: "var(--fg-3)",
+  background: "var(--bg-sunken)",
+  borderBottom: "1px solid var(--border)",
 };
 const td = {
-  padding: "10px",
-  fontSize: "0.82rem",
-  borderBottom: "1px solid var(--border-subtle, #f1f5f9)",
+  padding: "10px 12px",
+  fontSize: 12.5,
+  borderBottom: "1px solid var(--border)",
   verticalAlign: "top",
 };
-const btn = (bg = "var(--fg-3, #f3f4f6)", fg = "inherit") => ({
+const btn = (bg = "var(--bg-surface)", fg = "var(--fg-1)") => ({
   background: bg,
   color: fg,
-  border: "1px solid var(--border, #e5e7eb)",
-  borderRadius: 5,
-  fontSize: "0.72rem",
-  padding: "4px 10px",
+  border: "1px solid var(--border-strong)",
+  borderRadius: 7,
+  fontSize: 11.5,
+  fontWeight: 600,
+  padding: "5px 10px",
   cursor: "pointer",
+  fontFamily: "inherit",
+  whiteSpace: "nowrap",
 });
 
 export default function PageClient() {
@@ -146,7 +152,7 @@ export default function PageClient() {
   if (isLoading) return <div style={{ padding: 40, color: "var(--fg-2)" }}>Loading operations…</div>;
   if (error)
     return (
-      <div style={{ padding: 40, color: "var(--danger-fg, #b91c1c)" }}>
+      <div style={{ padding: 40, color: "var(--danger)" }}>
         Could not load operations: {error.message}
       </div>
     );
@@ -156,14 +162,14 @@ export default function PageClient() {
   const neverRun = crons.jobs.filter((j) => j.state === "never-run");
 
   return (
-    <div style={{ padding: "24px 28px", maxWidth: 1180 }}>
+    <div style={{ maxWidth: 1480, margin: "0 auto", color: "var(--fg-2)" }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 4 }}>
-        <h1 style={{ fontSize: "1.35rem", margin: 0 }}>Operations</h1>
-        <span style={{ fontSize: "0.72rem", color: "var(--fg-2, #6b7280)" }}>
+        <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0, color: "var(--fg-1)" }}>Operations</h1>
+        <span style={{ fontSize: "0.72rem", color: "var(--fg-3)" }}>
           checked {ago(generatedAt)} · refreshes every minute
         </span>
       </div>
-      <p style={{ color: "var(--fg-2, #6b7280)", fontSize: "0.82rem", margin: "0 0 20px", maxWidth: 720 }}>
+      <p style={{ color: "var(--fg-3)", fontSize: "0.82rem", margin: "0 0 20px", maxWidth: 720 }}>
         Everything here fails by going quiet rather than by raising an error. This page shows what
         should have happened and did not.
       </p>
@@ -187,6 +193,26 @@ export default function PageClient() {
         </div>
       </div>
 
+      {/* ── at a glance ───────────────────────────────────────────────
+          Counts first. The banner says whether anything is wrong; this says
+          how much and of what, so the board below is something you scan for
+          confirmation rather than read to find out. */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 11, marginBottom: 16 }}>
+        {[
+          { label: "Jobs", value: crons.jobs.length, sub: "registered", tone: "var(--fg-1)" },
+          { label: "Healthy", value: crons.jobs.filter((j) => j.state === "ok").length, sub: "ran in window", tone: "var(--success)" },
+          { label: "Late", value: crons.jobs.filter((j) => j.state === "late").length, sub: "overdue", tone: "var(--warning)" },
+          { label: "Failing / stale", value: crons.jobs.filter((j) => j.state === "failing" || j.state === "stale").length, sub: "need a look", tone: "var(--danger)" },
+          { label: "Never run", value: neverRun.length, sub: "not registered", tone: "var(--danger)" },
+        ].map((c) => (
+          <div key={c.label} style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px" }}>
+            <div style={{ fontSize: 10, color: "var(--fg-3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>{c.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: c.tone, marginTop: 4, lineHeight: 1.1 }}>{c.value}</div>
+            <div style={{ fontSize: 10.5, color: "var(--fg-4)", marginTop: 3 }}>{c.sub}</div>
+          </div>
+        ))}
+      </div>
+
       {/* ── crons ─────────────────────────────────────────────────────── */}
       <div style={card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -199,7 +225,7 @@ export default function PageClient() {
         {showSetup && (
           <pre
             style={{
-              background: "var(--bg-2, #f8fafc)",
+              background: "var(--bg-sunken)",
               padding: 12,
               borderRadius: 6,
               fontSize: "0.72rem",
@@ -211,94 +237,153 @@ export default function PageClient() {
           </pre>
         )}
 
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th style={th}>Job</th>
-                <th style={th}>State</th>
-                <th style={th}>Last real run</th>
-                <th style={th}>Cadence</th>
-                <th style={th} />
-              </tr>
-            </thead>
-            <tbody>
-              {crons.jobs.map((job) => {
-                const t = STATE_TONE[job.state] || TONE.ok;
-                const bad = ["stale", "failing", "never-run"].includes(job.state);
-                return (
-                  <tr key={job.key}>
-                    <td style={td}>
-                      <strong>{job.label}</strong>
+        {/* A board, not a table.
+            Twelve jobs in a row-per-job table read as homework: every job the
+            same weight, the two that are actually broken indistinguishable
+            from the ten that are fine until you read every row. As tiles, a
+            failing job is a red card you cannot miss, and the ones that are
+            healthy shrink to a line. */}
+        {(() => {
+          const bad = (j) => ["stale", "failing", "never-run", "late"].includes(j.state);
+          const attention = crons.jobs.filter(bad);
+          const healthy = crons.jobs.filter((j) => !bad(j));
+          return (
+            <>
+              {attention.length === 0 && (
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 10, padding: "14px 16px",
+                  background: "var(--success-bg)", border: "1px solid var(--success)",
+                  borderRadius: 12, marginBottom: 12,
+                }}>
+                  <span style={{ fontSize: 20 }}>✓</span>
+                  <span style={{ fontSize: 13, color: "var(--success)", fontWeight: 700 }}>
+                    All {crons.jobs.length} jobs ran inside their window.
+                  </span>
+                </div>
+              )}
+              {attention.length > 0 && (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--danger)", textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 9 }}>
+                    Needs attention · {attention.length}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(330px, 1fr))", gap: 11, marginBottom: 16 }}>
+                    {renderJobs(attention)}
+                  </div>
+                </>
+              )}
+              {healthy.length > 0 && (
+                <details>
+                  <summary style={{
+                    cursor: "pointer", fontSize: 11, fontWeight: 700, color: "var(--fg-3)",
+                    textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 9,
+                  }}>
+                    Healthy · {healthy.length}
+                  </summary>
+                  {/* Collapsed by default. A job that ran on time has nothing to
+                      tell you, and ten of them in full-size cards is the wall of
+                      text that buried the two that mattered. */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(330px, 1fr))", gap: 11, marginTop: 10 }}>
+                    {renderJobs(healthy)}
+                  </div>
+                </details>
+              )}
+            </>
+          );
+
+          function renderJobs(list) {
+            return list.map((job) => {
+            const t = STATE_TONE[job.state] || TONE.ok;
+            const bad = ["stale", "failing", "never-run"].includes(job.state);
+            const summary = job.lastRun?.summary || {};
+            return (
+              <div
+                key={job.key}
+                style={{
+                  border: `1px solid ${bad ? t.fg : "var(--border)"}`,
+                  borderLeft: `3px solid ${t.fg}`,
+                  borderRadius: 12,
+                  padding: 14,
+                  background: bad ? t.bg : "var(--bg-surface)",
+                  display: "grid",
+                  gap: 9,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13.5, color: "var(--fg-1)" }}>
+                      {job.label}
                       {job.critical && (
-                        <span style={{ color: "var(--danger-fg, #b91c1c)", fontSize: "0.62rem", marginLeft: 6 }}>
+                        <span style={{ color: "var(--danger)", fontSize: 9.5, marginLeft: 6, fontWeight: 800, letterSpacing: "0.5px" }}>
                           CRITICAL
                         </span>
                       )}
-                      <div style={{ color: "var(--fg-2, #6b7280)", fontSize: "0.72rem", marginTop: 3 }}>
-                        <code>{job.path}</code>
-                      </div>
-                      {/* Shown only when it matters — a healthy job does not
-                          need to explain what would break if it stopped. */}
-                      {bad && (
-                        <div
-                          style={{
-                            marginTop: 6,
-                            fontSize: "0.75rem",
-                            lineHeight: 1.55,
-                            color: "var(--danger-fg, #b91c1c)",
-                          }}
-                        >
-                          {job.blocks}
-                        </div>
-                      )}
-                    </td>
-                    <td style={{ ...td, whiteSpace: "nowrap" }}>
-                      <span style={{ color: t.fg, fontWeight: bad ? 700 : 500, fontSize: "0.75rem" }}>
-                        {STATE_LABEL[job.state]}
-                      </span>
-                      {job.state === "failing" && job.lastRun?.error && (
-                        <div style={{ fontSize: "0.68rem", color: "var(--fg-2)", marginTop: 4, maxWidth: 220 }}>
-                          {job.lastRun.error.slice(0, 120)}
-                        </div>
-                      )}
-                    </td>
-                    <td style={{ ...td, whiteSpace: "nowrap" }}>
-                      {ago(job.lastRunAt)}
-                      {job.lastRun?.summary && Object.keys(job.lastRun.summary).length > 0 && (
-                        <div style={{ fontSize: "0.68rem", color: "var(--fg-2)", marginTop: 4 }}>
-                          {Object.entries(job.lastRun.summary)
-                            .slice(0, 4)
-                            .map(([k, v]) => `${k}: ${v}`)
-                            .join(" · ")}
-                        </div>
-                      )}
-                    </td>
-                    <td style={{ ...td, whiteSpace: "nowrap", fontSize: "0.75rem" }}>{job.cadence}</td>
-                    <td style={{ ...td, whiteSpace: "nowrap" }}>
-                      <button
-                        style={btn()}
-                        disabled={running === `${job.key}:true`}
-                        onClick={() => runJob(job.key, true)}
-                      >
-                        {running === `${job.key}:true` ? "…" : "Dry run"}
-                      </button>{" "}
-                      <button
-                        style={btn("var(--danger-fg, #b91c1c)", "#fff")}
-                        disabled={running === `${job.key}:false`}
-                        onClick={() => runJob(job.key, false)}
-                      >
-                        {running === `${job.key}:false` ? "…" : "Run now"}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                    <code style={{ fontSize: 10.5, color: "var(--fg-4)" }}>{job.path}</code>
+                  </div>
+                  <span
+                    style={{
+                      background: t.bg, color: t.fg, borderRadius: 999,
+                      padding: "3px 9px", fontSize: 10.5, fontWeight: 800, whiteSpace: "nowrap",
+                    }}
+                  >
+                    {STATE_LABEL[job.state]}
+                  </span>
+                </div>
 
-        <p style={{ fontSize: "0.72rem", color: "var(--fg-2, #6b7280)", marginTop: 12, lineHeight: 1.6 }}>
+                <div style={{ display: "flex", gap: 14, fontSize: 11.5, color: "var(--fg-3)", flexWrap: "wrap" }}>
+                  <span>Last run <strong style={{ color: "var(--fg-1)" }}>{ago(job.lastRunAt)}</strong></span>
+                  <span>Every <strong style={{ color: "var(--fg-1)" }}>{job.cadence}</strong></span>
+                </div>
+
+                {Object.keys(summary).length > 0 && (
+                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                    {Object.entries(summary).slice(0, 4).map(([k, v]) => (
+                      <span key={k} style={{
+                        background: "var(--bg-sunken)", border: "1px solid var(--border)",
+                        borderRadius: 6, padding: "2px 7px", fontSize: 10.5, color: "var(--fg-3)",
+                      }}>
+                        {k} <strong style={{ color: "var(--fg-1)" }}>{String(v)}</strong>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Only a broken job explains itself — a healthy one does not
+                    need to argue for its own existence. */}
+                {bad && (
+                  <div style={{ fontSize: 11.5, lineHeight: 1.5, color: t.fg, fontWeight: 500 }}>
+                    {job.blocks}
+                  </div>
+                )}
+                {job.state === "failing" && job.lastRun?.error && (
+                  <code style={{ fontSize: 10.5, color: "var(--danger)", wordBreak: "break-word" }}>
+                    {job.lastRun.error.slice(0, 160)}
+                  </code>
+                )}
+
+                <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
+                  <button
+                    style={btn()}
+                    disabled={running === `${job.key}:true`}
+                    onClick={() => runJob(job.key, true)}
+                  >
+                    {running === `${job.key}:true` ? "Running…" : "Dry run"}
+                  </button>
+                  <button
+                    style={btn("var(--danger-bg)", "var(--danger)")}
+                    disabled={running === `${job.key}:false`}
+                    onClick={() => runJob(job.key, false)}
+                  >
+                    {running === `${job.key}:false` ? "Running…" : "Run now"}
+                  </button>
+                </div>
+              </div>
+            );
+            });
+          }
+        })()}
+
+        <p style={{ fontSize: "0.72rem", color: "var(--fg-3)", marginTop: 12, lineHeight: 1.6 }}>
           A dry run deliberately does <strong>not</strong> count as the job having run. Otherwise
           pressing the button would reset the clock and hide a dead schedule for another full
           interval — a monitor you can silence by looking at it.
@@ -312,7 +397,7 @@ export default function PageClient() {
             </summary>
             <pre
               style={{
-                background: "var(--bg-2, #f8fafc)",
+                background: "var(--bg-sunken)",
                 padding: 12,
                 borderRadius: 6,
                 fontSize: "0.7rem",
@@ -330,7 +415,7 @@ export default function PageClient() {
       {/* ── configuration ─────────────────────────────────────────────── */}
       <div style={card}>
         <h2 style={{ fontSize: "1rem", margin: "0 0 4px" }}>Configuration</h2>
-        <p style={{ color: "var(--fg-2, #6b7280)", fontSize: "0.78rem", margin: "0 0 12px" }}>
+        <p style={{ color: "var(--fg-3)", fontSize: "0.78rem", margin: "0 0 12px" }}>
           Settings whose absence produces silence rather than an error.
         </p>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -344,10 +429,10 @@ export default function PageClient() {
                   <span
                     style={{
                       color: c.ok
-                        ? "var(--success-fg, #15803d)"
+                        ? "var(--success)"
                         : c.severity === "critical"
-                          ? "var(--danger-fg, #b91c1c)"
-                          : "#b45309",
+                          ? "var(--danger)"
+                          : "var(--warning)",
                       fontWeight: 600,
                       fontSize: "0.75rem",
                     }}
@@ -355,7 +440,7 @@ export default function PageClient() {
                     {c.value || "not set"}
                   </span>
                 </td>
-                <td style={{ ...td, color: "var(--fg-2, #6b7280)", fontSize: "0.75rem", lineHeight: 1.55 }}>
+                <td style={{ ...td, color: "var(--fg-3)", fontSize: "0.75rem", lineHeight: 1.55 }}>
                   {c.why}
                 </td>
               </tr>
@@ -365,7 +450,9 @@ export default function PageClient() {
       </div>
 
       {/* ── purge queue ───────────────────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(430px, 1fr))", gap: 12, marginBottom: 16 }}>
       <Queue
+        tone="danger"
         title="Societies waiting to be erased"
         subtitle="A green purge cron does not mean anything is coming out of it. These are soft-deleted societies and the gate blocking each one."
         count={`${queues.purge.blocked} blocked · ${queues.purge.ready} ready · ${queues.purge.waiting} waiting`}
@@ -376,7 +463,7 @@ export default function PageClient() {
             <td style={td}>
               <strong>{r.name}</strong>
               {r.waived && (
-                <span style={{ fontSize: "0.62rem", color: "#b45309", marginLeft: 6 }}>WAIVED</span>
+                <span style={{ fontSize: "0.62rem", color: "var(--warning)", marginLeft: 6 }}>WAIVED</span>
               )}
               <div style={{ color: "var(--fg-2)", fontSize: "0.7rem", marginTop: 2 }}>{r.code || r.societyId}</div>
             </td>
@@ -385,9 +472,9 @@ export default function PageClient() {
                 style={{
                   color:
                     r.state === "blocked"
-                      ? "var(--danger-fg, #b91c1c)"
+                      ? "var(--danger)"
                       : r.state === "ready"
-                        ? "var(--success-fg, #15803d)"
+                        ? "var(--success)"
                         : "var(--fg-2)",
                   fontWeight: 600,
                   fontSize: "0.75rem",
@@ -403,7 +490,7 @@ export default function PageClient() {
             </td>
             <td style={td}>
               {r.blockers.length === 0 ? (
-                <span style={{ color: "var(--success-fg, #15803d)", fontSize: "0.78rem" }}>
+                <span style={{ color: "var(--success)", fontSize: "0.78rem" }}>
                   All six gates satisfied — the next purge run will erase this.
                 </span>
               ) : (
@@ -441,7 +528,7 @@ export default function PageClient() {
             </td>
             <td style={td}>
               {h.unreachable ? (
-                <span style={{ color: "var(--danger-fg, #b91c1c)", fontSize: "0.78rem" }}>
+                <span style={{ color: "var(--danger)", fontSize: "0.78rem" }}>
                   No address on file — reminders cannot reach anybody. Resend the handover from the
                   delete wizard and enter an address when it asks.
                 </span>
@@ -449,7 +536,7 @@ export default function PageClient() {
                 <span style={{ fontSize: "0.78rem" }}>{h.recipients.join(", ")}</span>
               )}
               {h.notifyError && (
-                <div style={{ color: "var(--danger-fg, #b91c1c)", fontSize: "0.7rem", marginTop: 4 }}>
+                <div style={{ color: "var(--danger)", fontSize: "0.7rem", marginTop: 4 }}>
                   {h.notifyError}
                 </div>
               )}
@@ -457,7 +544,7 @@ export default function PageClient() {
             <td style={{ ...td, whiteSpace: "nowrap" }}>
               {h.reminderCount || 0}
               {h.reminderCount >= 6 && (
-                <div style={{ fontSize: "0.68rem", color: "#b45309", marginTop: 3 }}>
+                <div style={{ fontSize: "0.68rem", color: "var(--warning)", marginTop: 3 }}>
                   chasing exhausted — needs a waiver
                 </div>
               )}
@@ -486,7 +573,7 @@ export default function PageClient() {
             <td style={{ ...td, whiteSpace: "nowrap" }}>
               <span
                 style={{
-                  color: s.state === "blocked" ? "var(--danger-fg, #b91c1c)" : "#b45309",
+                  color: s.state === "blocked" ? "var(--danger)" : "var(--warning)",
                   fontWeight: 600,
                   fontSize: "0.75rem",
                 }}
@@ -496,7 +583,7 @@ export default function PageClient() {
             </td>
             <td style={{ ...td, whiteSpace: "nowrap" }}>{s.daysInState}</td>
             <td style={td}>
-              {s.contact || <span style={{ color: "var(--danger-fg, #b91c1c)" }}>no address on file</span>}
+              {s.contact || <span style={{ color: "var(--danger)" }}>no address on file</span>}
             </td>
           </tr>
         )}
@@ -526,6 +613,7 @@ export default function PageClient() {
           </tr>
         )}
       />
+      </div>
 
       {/* ── recent runs ───────────────────────────────────────────────── */}
       <div style={card}>
@@ -549,7 +637,7 @@ export default function PageClient() {
                   <td style={td}>
                     <span
                       style={{
-                        color: r.ok ? "var(--success-fg, #15803d)" : "var(--danger-fg, #b91c1c)",
+                        color: r.ok ? "var(--success)" : "var(--danger)",
                         fontWeight: 600,
                         fontSize: "0.75rem",
                       }}
@@ -593,33 +681,61 @@ export default function PageClient() {
   );
 }
 
-function Queue({ title, subtitle, count, empty, rows, head, render }) {
+function Queue({ title, subtitle, count, empty, rows, head, render, tone = "neutral" }) {
+  const [open, setOpen] = useState(rows.length > 0);
+  const tones = {
+    danger: "var(--danger)",
+    warning: "var(--warning)",
+    neutral: "var(--border)",
+  };
   return (
-    <div style={card}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
-        <h2 style={{ fontSize: "1rem", margin: 0 }}>{title}</h2>
-        <span style={{ fontSize: "0.72rem", color: "var(--fg-2, #6b7280)" }}>{count}</span>
-      </div>
-      <p style={{ color: "var(--fg-2, #6b7280)", fontSize: "0.78rem", margin: "0 0 12px", maxWidth: 760 }}>
-        {subtitle}
-      </p>
-      {rows.length === 0 ? (
-        <div style={{ color: "var(--fg-2, #6b7280)", fontSize: "0.82rem", padding: "8px 0" }}>{empty}</div>
-      ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                {head.map((h) => (
-                  <th key={h} style={th}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>{rows.map(render)}</tbody>
-          </table>
-        </div>
+    <div style={{ ...card, marginBottom: 0, borderLeft: `3px solid ${rows.length ? tones[tone] : "var(--border)"}` }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          width: "100%", background: "transparent", border: "none", padding: 0,
+          cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+          display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12,
+        }}
+      >
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "var(--fg-1)" }}>{title}</span>
+          <span style={{ display: "block", color: "var(--fg-3)", fontSize: 12, marginTop: 3, lineHeight: 1.5 }}>
+            {subtitle}
+          </span>
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 9, whiteSpace: "nowrap" }}>
+          <span style={{
+            fontSize: 20, fontWeight: 700,
+            color: rows.length ? (tone === "neutral" ? "var(--fg-1)" : tones[tone]) : "var(--fg-4)",
+          }}>
+            {rows.length}
+          </span>
+          <span style={{ color: "var(--fg-4)", fontSize: 12 }}>{open ? "▲" : "▼"}</span>
+        </span>
+      </button>
+
+      <div style={{ fontSize: 11, color: "var(--fg-4)", marginTop: 8 }}>{count}</div>
+
+      {open && (
+        rows.length === 0 ? (
+          <div style={{ color: "var(--fg-4)", fontSize: 12.5, padding: "10px 0 0" }}>{empty}</div>
+        ) : (
+          <div style={{ overflowX: "auto", marginTop: 10 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  {head.map((h) => (
+                    <th key={h} style={th}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>{rows.map(render)}</tbody>
+            </table>
+          </div>
+        )
       )}
     </div>
   );

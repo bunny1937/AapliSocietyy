@@ -126,6 +126,20 @@ const AuditLogSchema = new mongoose.Schema(
         "SOCIETY_HANDOVER_DOWNLOADED",
         "SOCIETY_HANDOVER_CONFIRMED",
         "SOCIETY_HANDOVER_REMINDED",
+        // ── platform subscriptions (superadmin) ──
+        // Money and access changes made from the platform console. Kept as
+        // distinct actions rather than folded into UPDATE_SOCIETY_CONFIG so
+        // "who changed this society's plan, and when" is one query.
+        "SUBSCRIPTION_PLAN_CHANGED",
+        "SUBSCRIPTION_STATUS_CHANGED",
+        "SUBSCRIPTION_PAYMENT_RECORDED",
+        "SUBSCRIPTION_TRIAL_EXTENDED",
+        "SUBSCRIPTION_DUE_DATE_CHANGED",
+        "SUBSCRIPTION_MODULES_CHANGED",
+        // Waiving gate 6 of society-purge — erasing a society that never
+        // collected its own records. A judgement call, recorded as one.
+        "SOCIETY_HANDOVER_WAIVED",
+        "SOCIETY_HANDOVER_WAIVER_REMOVED",
       ],
     },
     oldData: { type: mongoose.Schema.Types.Mixed },

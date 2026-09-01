@@ -14,10 +14,24 @@ const COLLECTIONS = {
   billingheads: BillingHead,
 };
 export async function GET(request) {
-  const gate = await authorize(request, "society.data.view");
-  if (!gate.ok) return gate.response;
+  // Superadmin FIRST, and if that passes, the society-scoped RBAC gate is
+  // skipped entirely.
+  //
+  // authorize() resolves permissions from the `token` cookie — a society
+  // user's session. A superadmin holds `admin_token` (a different cookie,
+  // signed with ADMIN_JWT_SECRET, see lib/authz.js requireSuperAdmin) and has
+  // no society context at all, so running it first returned 401
+  // UNAUTHENTICATED for every superadmin request and locked the platform
+  // owner out of the data browser and out of the society detail tabs.
+  //
+  // Order matters, not just presence: the RBAC gate still guards any
+  // society-scoped caller, it simply cannot be the gate a superadmin has to
+  // pass through.
   const validation = validateAdminRequest(request);
-  if (!validation.valid) return validation;
+  if (!validation.valid) {
+    const gate = await authorize(request, "society.data.view");
+    if (!gate.ok) return gate.response;
+  }
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
@@ -56,10 +70,15 @@ export async function GET(request) {
   }
 }
 export async function POST(request) {
-  const gate = await authorize(request, "society.data.delete");
-  if (!gate.ok) return gate.response;
+  // Superadmin first — see app/api/admin/data-browser/route.js for why.
+  // authorize() reads the society-scoped `token` cookie; a superadmin holds
+  // `admin_token` and has no society context, so gating on it first returns
+  // 401 for the platform owner.
   const validation = validateAdminRequest(request);
-  if (!validation.valid) return validation;
+  if (!validation.valid) {
+    const gate = await authorize(request, "society.data.delete");
+    if (!gate.ok) return gate.response;
+  }
   try {
     await connectDB();
     const { action, societyId, collection, ids, reason } = await request.json();
