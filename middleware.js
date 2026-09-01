@@ -210,13 +210,35 @@ function extractBearerToken(request) {
 // locked down with no 'unsafe-eval'.
 function buildCsp(nonce) {
   const isDev = process.env.NODE_ENV !== "production";
+
+  // Sentry's ingest host, derived from the DSN rather than hardcoded, and
+  // added only when error reporting is actually configured.
+  //
+  // Without it every crash report was refused by our own CSP —
+  // "Refused to connect ... violates the document's Content Security Policy"
+  // in the console, and nothing arriving in Sentry. The reporting looked
+  // installed and was silently dead in production, which is the worst state
+  // for a monitor to be in.
+  //
+  // A DSN looks like https://<key>@o123.ingest.us.sentry.io/456, so the
+  // origin is what we need and the key must NOT end up in the header.
+  let sentryOrigin = "";
+  const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+  if (dsn) {
+    try {
+      sentryOrigin = ` ${new URL(dsn).origin}`;
+    } catch {
+      // A malformed DSN disables reporting anyway; never break the CSP over it.
+    }
+  }
+
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://*.r2.cloudflarestorage.com https://*.r2.dev",
     "font-src 'self' data:",
-    "connect-src 'self' https://*.r2.cloudflarestorage.com https://*.r2.dev",
+    `connect-src 'self' https://*.r2.cloudflarestorage.com https://*.r2.dev${sentryOrigin}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
