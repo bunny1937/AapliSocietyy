@@ -2,13 +2,15 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting } from "@/lib/authz";
 import { undoMatch, BankReconciliationServiceError } from "@/lib/services/BankReconciliationService";
-import { authorize } from "@/lib/rbac/authorize";
+import { authorizeAny } from "@/lib/rbac/authorize";
+
+const MATCH = ["accounting.bankAccounts.match", "society.systemTests.update"];
 
 // DELETE /api/accounting/reconciliation-matches/[matchId] — undo a match (Pending or Matched).
 export async function DELETE(request, { params }) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.update");
+  const gate = await authorizeAny(request, MATCH);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();

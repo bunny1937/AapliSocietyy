@@ -7,11 +7,16 @@ import {
   BankReconciliationServiceError,
 } from "@/lib/services/BankReconciliationService";
 import { BankAccountServiceError } from "@/lib/services/BankAccountService";
+import { authorizeAny } from "@/lib/rbac/authorize";
+
+const VIEW = ["accounting.bankAccounts.view", "society.systemTests.view"];
 
 // GET /api/accounting/bank-accounts/[id]/reconciliation?asOf=&include=unmatchedJournalLines
 export async function GET(request, { params }) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
+  const gate = await authorizeAny(request, VIEW);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await params;

@@ -2,13 +2,16 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting, requireAccountingClose } from "@/lib/authz";
 import { createBankAccount, listBankAccounts, BankAccountServiceError } from "@/lib/services/BankAccountService";
-import { authorize } from "@/lib/rbac/authorize";
+import { authorizeAny } from "@/lib/rbac/authorize";
+
+const VIEW = ["accounting.bankAccounts.view", "society.systemTests.view"];
+const CREATE = ["accounting.bankAccounts.create", "society.systemTests.update"];
 
 // GET /api/accounting/bank-accounts?includeInactive=true
 export async function GET(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.view");
+  const gate = await authorizeAny(request, VIEW);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();
@@ -30,7 +33,7 @@ export async function GET(request) {
 export async function POST(request) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.update");
+  const gate = await authorizeAny(request, CREATE);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();

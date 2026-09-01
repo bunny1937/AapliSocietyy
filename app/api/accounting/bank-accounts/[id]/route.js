@@ -2,13 +2,15 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting } from "@/lib/authz";
 import { getBankAccountById, BankAccountServiceError } from "@/lib/services/BankAccountService";
-import { authorize } from "@/lib/rbac/authorize";
+import { authorizeAny } from "@/lib/rbac/authorize";
+
+const VIEW = ["accounting.bankAccounts.view", "society.systemTests.view"];
 
 // GET /api/accounting/bank-accounts/[id]
 export async function GET(request, { params }) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.view");
+  const gate = await authorizeAny(request, VIEW);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();

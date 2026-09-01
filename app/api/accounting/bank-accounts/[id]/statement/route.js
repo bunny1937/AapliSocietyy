@@ -7,11 +7,19 @@ import {
   BankStatementServiceError,
 } from "@/lib/services/BankStatementService";
 import { BankAccountServiceError } from "@/lib/services/BankAccountService";
+import { authorizeAny } from "@/lib/rbac/authorize";
+
+// Neither GET nor POST here had any authorize() call — only the legacy hat
+// gate. POST imports a bank statement file and creates rows from it.
+const VIEW = ["accounting.bankAccounts.view", "society.systemTests.view"];
+const IMPORT = ["accounting.bankAccounts.importStatement", "society.systemTests.update"];
 
 // GET /api/accounting/bank-accounts/[id]/statement?matchStatus=Unmatched&importBatchId=
 export async function GET(request, { params }) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
+  const gate = await authorizeAny(request, VIEW);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await params;
@@ -34,6 +42,8 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorizeAny(request, IMPORT);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await params;

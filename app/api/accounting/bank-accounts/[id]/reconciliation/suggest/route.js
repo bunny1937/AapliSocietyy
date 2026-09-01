@@ -3,11 +3,16 @@ import connectDB from "@/lib/mongodb";
 import { requireAccounting } from "@/lib/authz";
 import { suggestMatches, BankReconciliationServiceError } from "@/lib/services/BankReconciliationService";
 import { BankAccountServiceError } from "@/lib/services/BankAccountService";
+import { authorizeAny } from "@/lib/rbac/authorize";
+
+const MATCH = ["accounting.bankAccounts.match", "society.systemTests.update"];
 
 // POST /api/accounting/bank-accounts/[id]/reconciliation/suggest — auto-proposes Pending matches.
 export async function POST(request, { params }) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
+  const gate = await authorizeAny(request, MATCH);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await params;
