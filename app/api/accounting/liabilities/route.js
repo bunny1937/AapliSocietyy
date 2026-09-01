@@ -9,7 +9,10 @@ import {
 import { AccountingEngineError } from "@/lib/accounting/AccountingEngine.js";
 import { AccountingEventError } from "@/lib/accounting/events.js";
 import { PostingRuleError } from "@/lib/accounting/postingRules/accountResolvers.js";
-import { authorize } from "@/lib/rbac/authorize";
+import { authorizeAny } from "@/lib/rbac/authorize";
+
+const VIEW = ["accounting.liabilities.view", "society.systemTests.view"];
+const INCUR = ["accounting.liabilities.incur", "society.systemTests.update"];
 
 function mapError(error) {
   if (
@@ -27,7 +30,7 @@ function mapError(error) {
 export async function GET(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.view");
+  const gate = await authorizeAny(request, VIEW);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();
@@ -50,7 +53,7 @@ export async function GET(request) {
 export async function POST(request) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.update");
+  const gate = await authorizeAny(request, INCUR);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();

@@ -5,12 +5,18 @@ import { withdrawFromFund, FundServiceError } from "@/lib/services/FundService";
 import { AccountingEngineError } from "@/lib/accounting/AccountingEngine.js";
 import { AccountingEventError } from "@/lib/accounting/events.js";
 import { PostingRuleError } from "@/lib/accounting/postingRules/accountResolvers.js";
+import { authorizeAny } from "@/lib/rbac/authorize";
+
+// Had NO authorize() call at all — same gap as contribute/route.js above.
+const WITHDRAW = ["accounting.funds.withdraw", "society.systemTests.update"];
 
 // POST /api/accounting/funds/[id]/withdraw — Admin/Secretary only.
 // Body: { contraAccountId, amount, date?, note? }
 export async function POST(request, { params }) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorizeAny(request, WITHDRAW);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await params;

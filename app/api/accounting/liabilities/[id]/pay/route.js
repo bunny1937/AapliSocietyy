@@ -5,12 +5,18 @@ import { recordLiabilityPayment, LiabilityServiceError } from "@/lib/services/Li
 import { AccountingEngineError } from "@/lib/accounting/AccountingEngine.js";
 import { AccountingEventError } from "@/lib/accounting/events.js";
 import { PostingRuleError } from "@/lib/accounting/postingRules/accountResolvers.js";
+import { authorizeAny } from "@/lib/rbac/authorize";
+
+// Had NO authorize() call — only the legacy hat gate. Posts a real payment.
+const PAY = ["accounting.liabilities.pay", "society.systemTests.update"];
 
 // POST /api/accounting/liabilities/[id]/pay — Admin/Secretary only.
 // Body: { date?, amount, payingAccountId, note? }
 export async function POST(request, { params }) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorizeAny(request, PAY);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await params;

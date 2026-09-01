@@ -2,13 +2,19 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting, requireAccountingClose } from "@/lib/authz";
 import { createFund, listFunds, FundServiceError } from "@/lib/services/FundService";
-import { authorize } from "@/lib/rbac/authorize";
+import { authorizeAny } from "@/lib/rbac/authorize";
+
+// Never had a real permission — the Lab's systemTests grant was the only
+// thing ever gating this. Paired with the real permission now that
+// /admin/accounting/funds actually exists.
+const VIEW = ["accounting.funds.view", "society.systemTests.view"];
+const CREATE = ["accounting.funds.create", "society.systemTests.update"];
 
 // GET /api/accounting/funds?fundType=ReserveFund
 export async function GET(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.view");
+  const gate = await authorizeAny(request, VIEW);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();
@@ -30,7 +36,7 @@ export async function GET(request) {
 export async function POST(request) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.update");
+  const gate = await authorizeAny(request, CREATE);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();
