@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting } from "@/lib/authz";
 import { getVoucherById, VoucherServiceError } from "@/lib/services/VoucherService";
-import { authorize } from "@/lib/rbac/authorize";
+import { authorizeAny } from "@/lib/rbac/authorize";
 
 export async function GET(request, ctx) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.view");
+  const gate = await authorizeAny(request, [
+    "accounting.vouchers.view",
+    "society.systemTests.view",
+  ]);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();

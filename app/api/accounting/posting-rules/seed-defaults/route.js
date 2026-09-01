@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccountingClose } from "@/lib/authz";
-import { authorize } from "@/lib/rbac/authorize";
+import { authorizeAny } from "@/lib/rbac/authorize";
 import {
   seedDefaultPostingRules,
   PostingRuleServiceError,
 } from "@/lib/services/PostingRuleService";
+
+const SEED = ["accounting.postingRules.seedDefaults", "society.systemTests.update"];
 
 // POST /api/accounting/posting-rules/seed-defaults
 // Idempotently (re)seeds the shared default-tier posting rules. Admin/Secretary
@@ -14,7 +16,7 @@ import {
 export async function POST(request) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.update");
+  const gate = await authorizeAny(request, SEED);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();

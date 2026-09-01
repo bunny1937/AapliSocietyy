@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting, requireAccountingClose } from "@/lib/authz";
-import { authorize, authorizeAny } from "@/lib/rbac/authorize";
+import { authorizeAny } from "@/lib/rbac/authorize";
 import {
   createFinancialYear,
   listFinancialYears,
@@ -13,12 +13,25 @@ import {
 // income-expenditure, assets-liabilities, other-statements) — a caller only
 // needs VIEW on any one of them, not specifically "society.systemTests".
 const FY_VIEW_IDS = [
+  "accounting.financialYears.view",
+  "accounting.overview.view",
   "statements.openingBalances.view",
   "statements.generateStatements.view",
   "statements.incomeExpenditure.view",
   "statements.assetsLiabilities.view",
   "statements.otherStatements.view",
   "society.systemTests.view",
+];
+
+// Creating a Financial Year used to require society.systemTests.update — the
+// permission for the internal test harness, on a page marked adminOnly. That
+// was the second half of the dead end: five pages told an admin to create a
+// Financial Year, and the only route that creates one demanded a permission
+// granted for debugging tools. accounting.financialYears.create is the real
+// one; systemTests stays so the Lab keeps working until Phase 6 removes it.
+const FY_CREATE_IDS = [
+  "accounting.financialYears.create",
+  "society.systemTests.update",
 ];
 
 // GET /api/accounting/financial-years — list all Financial Years for the caller's society.
@@ -46,11 +59,11 @@ export async function GET(request) {
 export async function POST(request) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.update");
+  const gate = await authorizeAny(request, FY_CREATE_IDS);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();
-    const { label, startDate, endDate } = await request.json();
+    const { label, startDate, endDate } = await request.json().catch(() => ({}));
     const fy = await createFinancialYear({
       societyId: auth.user.societyId,
       label,

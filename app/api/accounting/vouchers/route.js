@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting } from "@/lib/authz";
-import { authorize } from "@/lib/rbac/authorize";
+import { authorizeAny } from "@/lib/rbac/authorize";
 import {
   createDraftVoucher,
   listVouchers,
@@ -12,7 +12,10 @@ import {
 export async function GET(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.view");
+  const gate = await authorizeAny(request, [
+    "accounting.vouchers.view",
+    "society.systemTests.view",
+  ]);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();
@@ -39,7 +42,10 @@ export async function GET(request) {
 export async function POST(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.update");
+  const gate = await authorizeAny(request, [
+    "accounting.vouchers.create",
+    "society.systemTests.update",
+  ]);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();

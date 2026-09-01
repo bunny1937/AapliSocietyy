@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAuditor, requireAuditorWrite } from "@/lib/authz";
-import { authorize } from "@/lib/rbac/authorize";
+import { authorize, authorizeAny } from "@/lib/rbac/authorize";
 import { getAuditTrail, createAdjustment, AuditorServiceError } from "@/lib/services/AuditorService";
 import { AccountingEngineError } from "@/lib/accounting/AccountingEngine.js";
 import { AccountingEventError } from "@/lib/accounting/events.js";
@@ -11,7 +11,13 @@ import { PostingRuleError } from "@/lib/accounting/postingRules/accountResolvers
 export async function GET(request) {
   const auth = requireAuditor(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "audit.log.read");
+  // audit.log.read is the society-wide activity-log permission and stays as
+  // an alternative; the page has its own so it can be granted without handing
+  // out every other log in the product.
+  const gate = await authorizeAny(request, [
+    "accounting.auditTrail.view",
+    "audit.log.read",
+  ]);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();

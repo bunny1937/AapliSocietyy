@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccountingClose } from "@/lib/authz";
+import { authorizeAny } from "@/lib/rbac/authorize";
 import { FinancialYearServiceError } from "@/lib/services/FinancialYearService";
 import {
   advanceFinancialYear,
   FinancialClosingServiceError,
 } from "@/lib/services/FinancialClosingService";
+
+// requireAccountingClose() alone waves any RBAC staff token through (see its
+// own doc comment) — this route writes state that closes a financial period,
+// so it gets the real permission pairing the same way chart-of-accounts'
+// write routes already do.
+const CLOSE = ["accounting.financialYears.close", "society.systemTests.update"];
 
 // POST /api/accounting/financial-years/:id/transition
 // Advances a Financial Year exactly one step forward through its 5-state
@@ -16,6 +23,8 @@ import {
 export async function POST(request, ctx) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
+  const gate = await authorizeAny(request, CLOSE);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await ctx.params;

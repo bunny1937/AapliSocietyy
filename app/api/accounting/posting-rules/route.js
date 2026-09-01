@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting, requireAccountingClose } from "@/lib/authz";
-import { authorize } from "@/lib/rbac/authorize";
+import { authorizeAny } from "@/lib/rbac/authorize";
 import {
   listPostingRules,
   createPostingRule,
@@ -12,7 +12,14 @@ import {
 export async function GET(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.view");
+  // Widened from society.systemTests.view — that is the test-harness
+  // permission, and gating a real page on it made the page unreachable
+  // for every role that is supposed to read it.
+  const gate = await authorizeAny(request, [
+    "accounting.postingRules.view",
+    "accounting.overview.view",
+    "society.systemTests.view",
+  ]);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();
@@ -35,7 +42,7 @@ export async function GET(request) {
 export async function POST(request) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.update");
+  const gate = await authorizeAny(request, ["accounting.postingRules.override", "society.systemTests.update"]);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();

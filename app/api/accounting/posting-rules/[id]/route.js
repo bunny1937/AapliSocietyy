@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting, requireAccountingClose } from "@/lib/authz";
-import { authorize } from "@/lib/rbac/authorize";
+import { authorizeAny } from "@/lib/rbac/authorize";
 import {
   getPostingRuleById,
   updatePostingRule,
@@ -9,10 +9,13 @@ import {
   PostingRuleServiceError,
 } from "@/lib/services/PostingRuleService";
 
+const VIEW = ["accounting.postingRules.view", "society.systemTests.view"];
+const OVERRIDE = ["accounting.postingRules.override", "society.systemTests.update"];
+
 export async function GET(request, ctx) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.view");
+  const gate = await authorizeAny(request, VIEW);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();
@@ -35,7 +38,7 @@ export async function GET(request, ctx) {
 export async function PATCH(request, ctx) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.update");
+  const gate = await authorizeAny(request, OVERRIDE);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();
@@ -59,7 +62,7 @@ export async function PATCH(request, ctx) {
 export async function DELETE(request, ctx) {
   const auth = requireAccountingClose(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.update");
+  const gate = await authorizeAny(request, OVERRIDE);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();

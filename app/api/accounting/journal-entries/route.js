@@ -9,13 +9,17 @@ import {
 import { AccountingEngineError } from "@/lib/accounting/AccountingEngine.js";
 import { AccountingEventError } from "@/lib/accounting/events.js";
 import { PostingRuleError } from "@/lib/accounting/postingRules/accountResolvers.js";
-import { authorize } from "@/lib/rbac/authorize";
+import { authorizeAny } from "@/lib/rbac/authorize";
 
 // GET /api/accounting/journal-entries?financialYearId=&status=&sourceModule=
 export async function GET(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.view");
+  const gate = await authorizeAny(request, [
+    "accounting.journalEntries.view",
+    "accounting.vouchers.view",
+    "society.systemTests.view",
+  ]);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();
@@ -40,7 +44,10 @@ export async function GET(request) {
 export async function POST(request) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
-  const gate = await authorize(request, "society.systemTests.update");
+  const gate = await authorizeAny(request, [
+    "accounting.vouchers.create",
+    "society.systemTests.update",
+  ]);
   if (!gate.ok) return gate.response;
   try {
     await connectDB();

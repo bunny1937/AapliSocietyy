@@ -2,12 +2,21 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { requireAccounting } from "@/lib/authz";
 import { reverseVoucher, JournalEntryServiceError } from "@/lib/services/JournalEntryService";
+import { authorizeAny } from "@/lib/rbac/authorize";
 
 // POST /api/accounting/vouchers/:id/reverse
 // Body: { reason } — creates an offsetting reversal voucher + journal entry.
 export async function POST(request, ctx) {
   const auth = requireAccounting(request);
   if (!auth.valid) return auth;
+  // Phase 5. This route previously carried only the legacy hat check, and
+  // that helper waves ANY RBAC staff token through on the documented
+  // assumption that a real authorize() call follows it. None did.
+  const gate = await authorizeAny(request, [
+    "accounting.vouchers.reverse",
+    "society.systemTests.update",
+  ]);
+  if (!gate.ok) return gate.response;
   try {
     await connectDB();
     const { id } = await ctx.params;
