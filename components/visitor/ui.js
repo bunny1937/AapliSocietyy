@@ -3,7 +3,7 @@
 // Shared, dependency-light UI primitives for the visitor/security module.
 // NOTE: we deliberately use single-brace style references (style={obj}) with
 // named style objects instead of inline style=... to keep JSX clean.
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { STATUS_COLOR, PURPOSE_ICON } from "@/lib/visitor-config";
 export const tokens = {
   radius: 14,
@@ -304,7 +304,20 @@ export function Spinner({ size = 22 }) {
     </span>
   );
 }
-export function Toast({ message, type = "info", onClose }) {
+export function Toast({ message, type = "info", onClose, duration = 5000 }) {
+  // Dismiss itself.
+  //
+  // It used to wait for a click and nothing else, so a "file saved" note sat
+  // over the page indefinitely — the one kind of message nobody needs to
+  // acknowledge was the one that demanded acknowledgement. Clicking still
+  // works; the timer restarts whenever the message changes, so a second toast
+  // gets its own full life rather than inheriting the tail of the first.
+  useEffect(() => {
+    if (!message || !onClose || duration === 0) return undefined;
+    const t = setTimeout(onClose, duration);
+    return () => clearTimeout(t);
+  }, [message, duration, onClose]);
+
   if (!message) return null;
   const colors = {
     info: tokens.primary,
@@ -316,8 +329,14 @@ export function Toast({ message, type = "info", onClose }) {
     bottom: 24,
     left: "50%",
     transform: "translateX(-50%)",
-    background: tokens.text,
-    color: "#fff",
+    // Was `background: tokens.text` with white text on top. tokens.text is
+    // var(--fg-1) — the strongest INK, which is near-black in light mode and
+    // near-WHITE in dark mode. So in dark mode this painted white text on a
+    // white panel and the message was invisible. A toast is a surface, so it
+    // is painted with surface tokens like every other surface.
+    background: "var(--bg-surface)",
+    color: "var(--fg-1)",
+    border: "1px solid var(--border)",
     padding: "12px 18px",
     borderRadius: tokens.radiusSm,
     boxShadow: tokens.shadowLg,
@@ -329,7 +348,7 @@ export function Toast({ message, type = "info", onClose }) {
     maxWidth: 420,
   };
   return (
-    <div onClick={onClose} style={s}>
+    <div onClick={onClose} style={s} role="status">
       {message}
     </div>
   );
