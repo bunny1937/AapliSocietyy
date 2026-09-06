@@ -299,11 +299,11 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
                   marginBottom: 14,
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 13.5, color: "var(--border)", marginBottom: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 13.5, color: "var(--fg-2)", marginBottom: 6 }}>
                   {societyHasErrors ? <AlertTriangle size={15} color={ROW_COLOR.error} /> : <CheckCircle2 size={15} color={ROW_COLOR.ok} />}
                   Society — {previewResult.society?.name || "(unnamed)"}
                 </div>
-                <div style={{ fontSize: 12.5, color: "var(--primary-tint)" }}>
+                <div style={{ fontSize: 12.5, color: "var(--fg-3)" }}>
                   Admin: {previewResult.society?.adminName} · {previewResult.society?.adminEmail}
                 </div>
                 {previewResult.society?.errors?.map((e, i) => (
@@ -345,7 +345,7 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
                     {r.status === "warning" && <AlertTriangle size={14} color={ROW_COLOR.warning} style={{ marginTop: 1, flexShrink: 0 }} />}
                     {r.status === "error" && <AlertTriangle size={14} color={ROW_COLOR.error} style={{ marginTop: 1, flexShrink: 0 }} />}
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--border)" }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--fg-2)" }}>
                         {r.wing ? `${r.wing}-${r.flatNo}` : r.flatNo || `Row ${r.rowNum}`}
                       </span>
                       {r.ownerName && <span style={{ fontSize: 12, color: "var(--fg-5)" }}> · {r.ownerName}</span>}
@@ -552,48 +552,48 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
               )}
 
               {serverResult.warnings?.length > 0 && (
-                <div style={{ background: "var(--warning)", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
-                  <div style={{ color: "var(--warning)", fontWeight: 600, marginBottom: "0.5rem" }}>
+                <div style={{ background: "var(--warning-bg)", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
+                  <div style={{ color: "var(--warning-fg)", fontWeight: 600, marginBottom: "0.5rem" }}>
                     ⚠ {serverResult.warnings.length} Warning{serverResult.warnings.length > 1 ? "s" : ""}
                   </div>
                   {serverResult.warnings.map((w, i) => (
-                    <div key={i} style={{ fontSize: "0.8rem", color: "var(--warning)", marginBottom: 4 }}>• {w}</div>
+                    <div key={i} style={{ fontSize: "0.8rem", color: "var(--warning-fg)", marginBottom: 4 }}>• {w}</div>
                   ))}
                 </div>
               )}
 
               {serverResult.billErrors?.length > 0 && (
-                <div style={{ background: "var(--fg-1)", border: "1px solid var(--warning)", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
-                  <div style={{ color: "var(--warning)", fontWeight: 600, marginBottom: "0.5rem", fontSize: "0.85rem" }}>
+                <div style={{ background: "var(--warning-bg)", border: "1px solid var(--warning)", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
+                  <div style={{ color: "var(--warning-fg)", fontWeight: 600, marginBottom: "0.5rem", fontSize: "0.85rem" }}>
                     ⚠ {serverResult.billErrors.length} bill(s) failed to generate:
                   </div>
                   {serverResult.billErrors.map((e, i) => (
-                    <div key={i} style={{ fontSize: "0.78rem", color: "var(--warning)" }}>• {e}</div>
+                    <div key={i} style={{ fontSize: "0.78rem", color: "var(--warning-fg)" }}>• {e}</div>
                   ))}
                 </div>
               )}
 
               {serverResult.memberCreateErrors?.length > 0 && (
-                <div style={{ background: "var(--danger)", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
-                  <div style={{ color: "var(--danger)", fontWeight: 600, marginBottom: "0.5rem" }}>
+                <div style={{ background: "var(--danger-bg)", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
+                  <div style={{ color: "var(--danger-fg)", fontWeight: 600, marginBottom: "0.5rem" }}>
                     {serverResult.memberCreateErrors.length} member(s) failed:
                   </div>
                   {serverResult.memberCreateErrors.map((e, i) => (
-                    <div key={i} style={{ fontSize: "0.8rem", color: "var(--danger)" }}>{e.flat}: {e.error}</div>
+                    <div key={i} style={{ fontSize: "0.8rem", color: "var(--danger-fg)" }}>{e.flat}: {e.error}</div>
                   ))}
                 </div>
               )}
 
               {serverResult.onboardingEmailErrors?.length > 0 && (
-                <div style={{ background: "var(--danger)", border: "1px solid var(--danger)", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
-                  <div style={{ color: "var(--danger)", fontWeight: 700, marginBottom: "0.5rem" }}>
+                <div style={{ background: "var(--danger-bg)", border: "1px solid var(--danger)", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
+                  <div style={{ color: "var(--danger-fg)", fontWeight: 700, marginBottom: "0.5rem" }}>
                     ⚠ {serverResult.onboardingEmailErrors.length} onboarding email(s) failed to send
                   </div>
-                  <div style={{ fontSize: "0.78rem", color: "var(--danger)", marginBottom: 8 }}>
+                  <div style={{ fontSize: "0.78rem", color: "var(--danger-fg)", marginBottom: 8 }}>
                     Everything was created, but these members won't get their link by mail — use the Copy link column or the export below.
                   </div>
                   {serverResult.onboardingEmailErrors.map((e, i) => (
-                    <div key={i} style={{ fontSize: "0.8rem", color: "var(--danger)" }}>• {e}</div>
+                    <div key={i} style={{ fontSize: "0.8rem", color: "var(--danger-fg)" }}>• {e}</div>
                   ))}
                 </div>
               )}
@@ -637,7 +637,7 @@ export default function BulkImportWizard({ open, onClose, onImported, BillHistor
               )}
 
               {BillHistoryStep && showBillHistory && !billHistoryDone && (
-                <div style={{ background: "var(--fg-1)", border: "1px solid var(--fg-3)", borderRadius: 8, padding: "1.25rem", marginBottom: "0.75rem" }}>
+                <div style={{ background: "var(--bg-sunken)", border: "1px solid var(--border)", borderRadius: 8, padding: "1.25rem", marginBottom: "0.75rem" }}>
                   <BillHistoryStep
                     societyId={serverResult.society?.id}
                     societyName={serverResult.society?.name || ""}
