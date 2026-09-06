@@ -12,6 +12,45 @@ const SocietySchema = new mongoose.Schema(
     personOfContact: { type: String, trim: true },
     contactEmail: { type: String, trim: true },
     contactPhone: { type: String, trim: true },
+    // Essential-contacts directory the admin manages and the resident app
+    // shows on the "Essential contacts" screen (see
+    // app/api/v1/society/contacts/route.js). Up to 3 numbers per contact —
+    // e.g. a plumber's own phone plus a WhatsApp/alternate number.
+    contacts: [
+      {
+        _id: false,
+        category: {
+          type: String,
+          enum: [
+            "Society Office",
+            "Watchman/Security",
+            "Plumber",
+            "Electrician",
+            "Gas Agency",
+            "Housekeeping",
+            "Pest Control",
+            "Lift AMC",
+            "Other",
+          ],
+          required: true,
+        },
+        // Free-form label when category is "Other" (or just a nicer name,
+        // e.g. "Ramesh — Plumber"). Falls back to the category itself in the
+        // v1 route when blank.
+        name: { type: String, trim: true },
+        numbers: {
+          type: [{ type: String, trim: true }],
+          validate: {
+            validator: (v) => Array.isArray(v) && v.length >= 1 && v.length <= 3,
+            message: "A contact needs between 1 and 3 numbers.",
+          },
+        },
+        // True for a category the "Seed defaults" button added with no
+        // number filled in yet — lets the admin UI show it distinctly from
+        // a fully admin-authored row. Never read by the mobile route.
+        isDefault: { type: Boolean, default: false },
+      },
+    ],
     // Carpet Area
     carpetAreaSqft: { type: Number, default: 0 },
     // Bill Template - UPDATED STRUCTURE

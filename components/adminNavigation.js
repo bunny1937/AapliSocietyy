@@ -38,6 +38,7 @@ import {
   Banknote,
   SlidersHorizontal,
   Layers,
+  PhoneCall,
 } from "lucide-react";
 
 // Shared between app/admin/layout.js and app/my-access/page.js — the latter
@@ -60,6 +61,7 @@ export const ADMIN_NAVIGATION = [
     title: "Configuration",
     items: [
       { name: "Society Config", path: "/admin/society-config", pageKey: "societyConfig", icon: <Settings size={16} /> },
+      { name: "Essential Contacts", path: "/admin/society-contacts", pageKey: "societyContacts", icon: <PhoneCall size={16} /> },
       { name: "DB Manager", path: "/admin/database-manager", pageKey: "databaseManager", icon: <Database size={16} /> },
     ],
   },

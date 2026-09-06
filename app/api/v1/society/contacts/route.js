@@ -18,6 +18,12 @@
 // secretary, chairman, treasurer, admin, the society office and the builder.
 // Everything is best-effort - a society that has filled in nothing returns an
 // empty list and the app falls back to the built-in directory exactly as now.
+//
+// 2026-09-06: the "Society group" numbers below (the free-form watchman/
+// plumber/gas-agency entries) used to read society.emergencyContacts /
+// society.staffContacts — fields that were never in the Society schema, so
+// that half of the list was permanently empty too. They now read
+// society.contacts, the field /admin/society-contacts actually writes.
 
 import { withRoute, json } from "@/lib/v1/http";
 import { getClaims, requireTenant } from "@/lib/v1/auth";
@@ -104,16 +110,16 @@ async function fetchContacts(societyId) {
         "Builder",
       ),
     );
-    // Free-form staff the admin added (watchman, plumber, electrician...).
-    const extra = Array.isArray(society.emergencyContacts)
-      ? society.emergencyContacts
-      : Array.isArray(society.staffContacts)
-        ? society.staffContacts
-        : [];
-    for (const s of extra.slice(0, 25)) {
-      contacts.push(
-        entry(s?.name, s?.phone ?? s?.number ?? s?.contactNumber, s?.role ?? s?.designation),
-      );
+    // Admin-managed directory — /admin/society-contacts, see
+    // app/api/admin/society-contacts/route.js. One row can carry up to 3
+    // numbers (own + WhatsApp/alternate); the phone book shows the first
+    // that survives entry()'s validity check as the row, so numbers beyond
+    // the first are folded in as a second/third entry under the same name.
+    const directory = Array.isArray(society.contacts) ? society.contacts : [];
+    for (const c of directory.slice(0, 25)) {
+      for (const num of (c?.numbers || []).slice(0, 3)) {
+        contacts.push(entry(c?.name || c?.category, num, c?.category));
+      }
     }
   }
 
