@@ -132,9 +132,25 @@ export async function POST(request) {
           { status: 409 },
         );
       }
-      // Presumed-crashed run (no progress for 3+ min). Anything it actually
-      // wrote is tagged with this importRunId and gets swept here before we
-      // let a fresh attempt reuse the key.
+      // Presumed-crashed run (no progress for 3+ min).
+      if (existingRun.pointOfNoReturn) {
+        // Society/members/bills are real and already exposed, and onboarding
+        // emails may already be sitting in real inboxes. Deleting them now
+        // would orphan those users — never auto-compensate past this point.
+        // The stuck run needs a human, not a silent retry.
+        return NextResponse.json(
+          {
+            error:
+              "This import already created the society, members, and bills — and may already have emailed onboarding credentials — before an internal error interrupted the final step. Nothing was rolled back and nothing will be auto-deleted. Do NOT re-upload/re-run this file; check the Society list for it, and contact support with this importRunId if anything looks incomplete.",
+            importRunId,
+            status: existingRun.status,
+            pointOfNoReturn: true,
+          },
+          { status: 409 },
+        );
+      }
+      // Anything it actually wrote is tagged with this importRunId and gets
+      // swept here before we let a fresh attempt reuse the key.
       await compensateImportRun(importRunId);
     }
   }
@@ -659,8 +675,16 @@ export async function POST(request) {
     status: "COMMITTED",
     stage: "Queueing onboarding emails",
     processedCount: billsGenerated,
+    pointOfNoReturn: true, // real data now — never auto-compensate a stuck retry past here
   });
 
+  // ── Past this point nothing may compensate/delete. Any error below is
+  // real, must never crash uncaught (it would leave the run stuck at
+  // COMMITTED/EMAIL_QUEUED forever with no FAILED/finishedAt, and a later
+  // retry would hit the pointOfNoReturn guard above and dead-end on a run
+  // that never actually finished) — so it's caught here, logged, and turned
+  // into a clear "data is real, don't retry, contact support" response.
+  try {
   // ── EMAIL OUTBOX — created only now, after every rollback checkpoint has
   // passed. Durable + idempotent: a retry of this same importRunId can never
   // queue a duplicate email (unique importRunId+userId+type index), and a
@@ -747,6 +771,8 @@ export async function POST(request) {
     }
   }
 
+  const activeCharges = societyPayload.config.charges.filter((c) => c.value > 0);
+
   const result = {
     success: true,
     importRunId,
@@ -787,4 +813,23 @@ export async function POST(request) {
     finishedAt: new Date(),
   });
   return NextResponse.json(result);
+  } catch (err) {
+    console.error(`[bulk-import] post-commit error for run ${importRunId}:`, err.message, err.stack);
+    await markRun(importRunId, {
+      errorMessages: [err.message],
+      finishedAt: new Date(),
+      // status intentionally left as-is (COMMITTED/EMAIL_QUEUED) — the data
+      // is real, this was not a validation/rollback failure.
+    });
+    return NextResponse.json(
+      {
+        error:
+          "Society, members, and bills were created successfully, and onboarding emails may already be sent, but an internal error interrupted the final step. Nothing was rolled back. Do NOT re-upload/re-run this file — check the Society list, and contact support with this importRunId if anything looks incomplete.",
+        detail: err.message,
+        importRunId,
+        pointOfNoReturn: true,
+      },
+      { status: 500 },
+    );
+  }
 }

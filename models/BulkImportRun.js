@@ -28,6 +28,14 @@ const BulkImportRunSchema = new mongoose.Schema(
     warnings: [{ type: String }],
     errorMessages: [{ type: String }],
     result: { type: mongoose.Schema.Types.Mixed, default: null }, // final response payload, cached for idempotent replay
+    // Set true the instant the society is exposed to normal queries and the
+    // preview is marked used (see route.js). Past this point the society,
+    // admin, members, and bills are REAL and onboarding emails may already
+    // be sitting in real inboxes — a crash after this can never be cleaned
+    // up by deleting importRunId-tagged docs, because that would orphan
+    // users who already received working login links. compensateImportRun
+    // must never run once this is true.
+    pointOfNoReturn: { type: Boolean, default: false },
     startedAt: { type: Date, default: Date.now },
     finishedAt: { type: Date },
   },
