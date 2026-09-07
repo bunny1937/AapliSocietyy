@@ -1,15 +1,22 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import TurnstileWidget from "@/components/TurnstileWidget";
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [adminKey, setAdminKey] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const router = useRouter();
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (!turnstileToken) {
+      setError("Please complete the verification check.");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -19,12 +26,15 @@ export default function AdminLogin() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password, adminKey }),
+        body: JSON.stringify({ email, password, adminKey, turnstileToken }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Login failed");
         setLoading(false);
+        // Token was single-use and already burned by the failed verify call.
+        setTurnstileToken("");
+        setTurnstileResetKey((k) => k + 1);
         return;
       }
       // 🔥 FIXED: redirect based on role
@@ -140,9 +150,17 @@ export default function AdminLogin() {
               }}
             />
           </div>
+          <div style={{ marginBottom: "20px" }}>
+            <TurnstileWidget
+              key={turnstileResetKey}
+              onVerify={setTurnstileToken}
+              onExpire={() => setTurnstileToken("")}
+              onError={() => setTurnstileToken("")}
+            />
+          </div>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !turnstileToken}
             style={{
               width: "100%",
               padding: "14px",

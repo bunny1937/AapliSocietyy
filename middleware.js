@@ -238,7 +238,11 @@ function buildCsp(nonce) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://*.r2.cloudflarestorage.com https://*.r2.dev",
     "font-src 'self' data:",
-    `connect-src 'self' https://*.r2.cloudflarestorage.com https://*.r2.dev${sentryOrigin}`,
+    // Turnstile: challenges.cloudflare.com both runs an XHR challenge
+    // exchange (connect-src) and renders its own checkbox in an iframe
+    // (frame-src) — default-src's 'self' fallback blocks both without these.
+    `connect-src 'self' https://*.r2.cloudflarestorage.com https://*.r2.dev https://challenges.cloudflare.com${sentryOrigin}`,
+    "frame-src https://challenges.cloudflare.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",

@@ -6,6 +6,7 @@ import { signToken } from "@/lib/jwt";
 import bcrypt from "bcryptjs";
 import cache from "@/lib/cache";
 import { issueRefreshToken, setRefreshCookie } from "@/lib/refresh-token";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 export async function POST(request) {
   try {
     await connectDB();
@@ -19,6 +20,16 @@ export async function POST(request) {
         { error: "Username and password required" },
         { status: 400 },
       );
+    const turnstileOk = await verifyTurnstileToken(
+      body.turnstileToken,
+      request.headers.get("x-forwarded-for") || undefined,
+    );
+    if (!turnstileOk) {
+      return NextResponse.json(
+        { error: "Verification failed. Please try again." },
+        { status: 400 },
+      );
+    }
     // Rate limit: 5 failed attempts per username per 15 min
     const rlKey = `guard_login_fail:${username}`;
     const fails = await cache.get(rlKey);

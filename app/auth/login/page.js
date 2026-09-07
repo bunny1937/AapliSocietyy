@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import styles from "@/styles/Auth.module.css";
+import TurnstileWidget from "@/components/TurnstileWidget";
+import { SkylineArcMark } from "@/components/brand/SkylineArc";
 export default function LoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({ username: "", password: "" });
@@ -12,6 +14,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [onboardedMessage, setOnboardedMessage] = useState("");
   const [hydrated, setHydrated] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
   // Avoids useSearchParams (which would require wrapping this page in a
   // Suspense boundary) for a one-off, low-stakes success banner.
@@ -67,6 +71,10 @@ export default function LoginPage() {
       setErrors(newErrors);
       return;
     }
+    if (!turnstileToken) {
+      setApiError("Please complete the verification check.");
+      return;
+    }
     setIsLoading(true);
     setApiError("");
     try {
@@ -100,6 +108,7 @@ export default function LoginPage() {
         body: JSON.stringify({
           username: formData.username,
           password: formData.password,
+          turnstileToken,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -156,6 +165,11 @@ export default function LoginPage() {
     } catch (err) {
       console.error("LOGIN ERROR:", err);
       setApiError(err.message || "Something went wrong");
+      // Turnstile tokens are single-use — Cloudflare already burned this one
+      // on the verify call the failed attempt made, so force a fresh widget
+      // (and re-render its DOM node) rather than resubmitting a dead token.
+      setTurnstileToken("");
+      setTurnstileResetKey((k) => k + 1);
     } finally {
       setIsLoading(false);
     }
@@ -164,9 +178,11 @@ export default function LoginPage() {
     <div className={styles.authContainer}>
       <div className={styles.authCard}>
         <div className={styles.authHeader}>
-          <div className={styles.authLogoMark}>N</div>
+          <div className={styles.authLogoMark}>
+            <SkylineArcMark color="#ffffff" size={30} />
+          </div>
           <h1 className={styles.authTitle}>Welcome Back</h1>
-          <p className={styles.authSubtitle}>Sign in to NexGen Society ERP</p>
+          <p className={styles.authSubtitle}>Sign in to AapliSociety</p>
         </div>
 <form onSubmit={handleSubmit} method="post" autoComplete="off">
             {onboardedMessage && (
@@ -244,11 +260,19 @@ export default function LoginPage() {
             </div>
             {errors.password && <p className="error-text">{errors.password}</p>}
           </div>
+          <div className={styles.formGroup}>
+            <TurnstileWidget
+              key={turnstileResetKey}
+              onVerify={setTurnstileToken}
+              onExpire={() => setTurnstileToken("")}
+              onError={() => setTurnstileToken("")}
+            />
+          </div>
           <div className={styles.formActions}>
            <button
   type="submit"
   className="btn btn-primary"
-  disabled={isLoading || !hydrated}
+  disabled={isLoading || !hydrated || !turnstileToken}
   style={{ width: "100%", justifyContent: "center" }}
 >
               {isLoading ? (

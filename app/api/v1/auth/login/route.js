@@ -2,7 +2,7 @@
 //
 // THIS is the login route the Flutter app actually talks to.
 //
-// The app's Dio baseUrl is https://aaplisociety.vercel.app/v1, and vercel.json
+// The app's Dio baseUrl is https://aaplisociety.visync.in/v1, and vercel.json
 // rewrites /v1/:path* -> /api/v1/:path*. So `dio.post('/auth/login')` lands
 // here. It does NOT land on app/api/auth/login/route.js - that one is the
 // website's cookie-session route and the app never calls it.
@@ -36,6 +36,7 @@ import { enforceRateLimit } from "@/lib/v1/ratelimit";
 import { OCCUPANCY_TYPES } from "@/lib/v1/constants";
 import Shop from "@/models/Shop";
 import { attachProfileRoles } from "@/lib/v1/profileRoles";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 // Shapes one profile for the picker. The old response sent only
 // profileId/societyName/flatNo, so every flat rendered the same
@@ -98,6 +99,14 @@ export const POST = withRoute(async (req) => {
   if (!parsed.success) throw zodError(parsed);
   const identifier = parsed.data.identifier.trim().toLowerCase();
   const { password } = parsed.data;
+
+  const turnstileOk = await verifyTurnstileToken(
+    body.turnstileToken,
+    req.headers.get("x-forwarded-for") || undefined,
+  );
+  if (!turnstileOk) {
+    throw new ApiError(400, "Verification failed. Please try again.");
+  }
 
   const user = await User.findOne({
     $or: [{ username: identifier }, { email: identifier }],

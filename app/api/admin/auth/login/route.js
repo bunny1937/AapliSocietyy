@@ -3,13 +3,24 @@ import { NextResponse } from "next/server";
 import { getAdminModels } from "@/lib/admin-models";
 import jwt from "jsonwebtoken";
 import { checkRateLimit, clearRateLimit } from "@/lib/admin-middleware";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 export async function POST(request) {
   try {
-    const { email, password, adminKey } = await request.json();
+    const { email, password, adminKey, turnstileToken } = await request.json();
     // ✅ SECURITY 1: Require admin secret key in request body
     if (!adminKey || adminKey !== process.env.ADMIN_SECRET_KEY) {
       console.warn("🚨 Admin login attempt without valid admin key");
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const turnstileOk = await verifyTurnstileToken(
+      turnstileToken,
+      request.headers.get("x-forwarded-for") || undefined,
+    );
+    if (!turnstileOk) {
+      return NextResponse.json(
+        { error: "Verification failed. Please try again." },
+        { status: 400 },
+      );
     }
     // ✅ SECURITY 2: Rate limiting
     const rateLimit = checkRateLimit(email);

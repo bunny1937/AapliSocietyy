@@ -12,6 +12,7 @@ import { loginBlockFor, pauseHasExpired } from "@/lib/auth/login-block";
 import { enforceRateLimit } from "@/lib/v1/ratelimit";
 import { ApiError } from "@/lib/v1/http";
 import { refreshEntitlementSnapshot } from "@/lib/entitlements/resolve";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 const MAX_ATTEMPTS = parseInt(process.env.RATE_LIMIT_LOGIN, 10) || 10;
 const WINDOW_MS = 15 * 60 * 1000;
 export async function POST(request) {
@@ -36,6 +37,17 @@ export async function POST(request) {
     if (!identifier || !password) {
       return NextResponse.json(
         { error: "Username/email and password are required" },
+        { status: 400 },
+      );
+    }
+    const ipForTurnstile = request.headers.get("x-forwarded-for") || undefined;
+    const turnstileOk = await verifyTurnstileToken(
+      body.turnstileToken,
+      ipForTurnstile,
+    );
+    if (!turnstileOk) {
+      return NextResponse.json(
+        { error: "Verification failed. Please try again." },
         { status: 400 },
       );
     }
