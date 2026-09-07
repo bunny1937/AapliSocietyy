@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "@/styles/Auth.module.css";
+import { SkylineArcMark } from "@/components/brand/SkylineArc";
 function SetCredentialsForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -67,7 +68,9 @@ function SetCredentialsForm() {
     <div className={styles.authContainer}>
       <div className={styles.authCard}>
         <div className={styles.authHeader}>
-          <div className={styles.authLogoMark}>N</div>
+          <div className={styles.authLogoMark}>
+            <SkylineArcMark color="#ffffff" size={30} />
+          </div>
           <h1 className={styles.authTitle}>Set up your account</h1>
           <p className={styles.authSubtitle}>
             {details ? `Welcome, ${details.name} — ${details.societyName}` : "Verifying your link…"}

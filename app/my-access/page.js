@@ -247,7 +247,7 @@ function MyAccessInner() {
 export default function MyAccessPage() {
   const { visibleNavigation } = useVisibleAdminNavigation();
   return (
-    <DashboardLayout role="Staff" navigation={visibleNavigation} title="NexGen ERP" subtitle="My Access">
+    <DashboardLayout role="Staff" navigation={visibleNavigation} title="AapliSociety" subtitle="My Access">
       <PermissionProvider>
         <Suspense
           fallback={

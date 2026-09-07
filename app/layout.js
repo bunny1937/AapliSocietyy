@@ -7,7 +7,7 @@ import ToastProvider from "@/components/ui/ToastProvider";
 import ConfirmDialogHost from "@/components/ui/ConfirmDialogHost";
 const inter = Inter({ subsets: ["latin"] });
 export const metadata = {
-  title: "NexGen Society ERP",
+  title: "AapliSociety",
   description: "Enterprise Society Management System",
 };
 // Runs before React hydrates, so the correct theme is on <html> before the
@@ -29,6 +29,15 @@ export default async function RootLayout({ children }) {
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
       </head>
       <body className={inter.className}>
+        {/* Global Aurora background — one mount for every route (was
+            admin-dashboard-only; see styles/globals.css for the 4-layer
+            stack and public/bg.svg + public/bg-dark.svg for the art).
+            Static/server-rendered: the light↔dark swap is pure CSS via
+            [data-theme], no client JS needed here. */}
+        <div aria-hidden className="appBgLayer" />
+        <div aria-hidden className="appBgDarkDepth" />
+        <div aria-hidden className="appBgDarkRightFade" />
+        <div aria-hidden className="appBgScrim" />
         <QueryProvider>{children}</QueryProvider>
         <ToastProvider />
         <ConfirmDialogHost />

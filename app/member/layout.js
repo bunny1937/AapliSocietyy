@@ -29,7 +29,7 @@ export default function MemberLayout({ children }) {
     <DashboardLayout
       role="Member"
       navigation={navigation}
-      title="NexGen ERP"
+      title="AapliSociety"
       subtitle="Member Panel"
     >
       {children}

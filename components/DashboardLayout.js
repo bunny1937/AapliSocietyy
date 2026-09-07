@@ -7,6 +7,7 @@ import NotificationBell from "./NotificationBell";
 import ProfileSwitcher from "./ProfileSwitcher";
 import RouteLoadingBar from "./RouteLoadingBar";
 import ThemeToggle from "./theme/ThemeToggle";
+import { SkylineArcMark } from "./brand/SkylineArc";
 import styles from "@/styles/Dashboard.module.css";
 // Legacy role strings a staff-hat session can carry (see legacyRoleForKey /
 // session-context.js) — flagged with a colored pill in the sidebar so a
@@ -23,6 +24,8 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  // Sidebar is permanently Capsule now — no switcher, no data-sidebar-style
+  // attribute needed; that's just Dashboard.module.css's default state.
   const [user, setUser] = useState(null);
   const [navigating, setNavigating] = useState(false);
   const navTimeoutRef = useRef(null);
@@ -93,54 +96,62 @@ export default function DashboardLayout({
           <div className={styles.navLoadingSpinner} />
         </div>
       )}
-      {/* SIDEBAR */}
+      {/* SIDEBAR — 3 fixed segments, order: header, nav, user/logout (back
+          at the bottom — the "above the nav" reorder was tried and
+          reverted). Capsule shape only now (Segmented/Weighted variants +
+          their switcher were retired) — reads as one continuous panel
+          with thin divider seams; see styles/Dashboard.module.css. */}
       <aside className={styles.sidebar}>
-        {/* Logo */}
-        <div className={styles.sidebarHeader}>
-          <div className={styles.sidebarLogoMark}>N</div>
-          <div>
-            <h1 className={styles.sidebarTitle}>{title}</h1>
-            <div className={styles.sidebarSubtitle}>{subtitle}</div>
+        <div className={styles.sidebarSegHeader}>
+          <div className={styles.sidebarHeader}>
+            <div className={styles.sidebarLogoMark}>
+              <SkylineArcMark color="#ffffff" size={20} />
+            </div>
+            <div>
+              <h1 className={styles.sidebarTitle}>{title}</h1>
+              <div className={styles.sidebarSubtitle}>{subtitle}</div>
+            </div>
+          </div>
+          {/* Quick actions — static, never scrolls with the nav list below
+              it. Notifications and the light/dark toggle live here for
+              every role that uses this component (Admin/Member/Security)
+              — NotificationBell already no-ops on routes that don't need
+              it, and ThemeToggle is now permanent app-wide (previously
+              shown only on Commercial pages). sidebarExtra remains
+              available for any other future per-role slot; this component
+              doesn't know or care what it is. */}
+          <div className={styles.sidebarQuickActions}>
+            <NotificationBell />
+            <ThemeToggle />
+            {sidebarExtra}
           </div>
         </div>
-        {/* Quick actions — static, never scrolls with the nav list below it
-            (a flex sibling of sidebarNav, not a child, so sidebarNav's own
-            overflow-y:auto is the only thing that scrolls). Notifications
-            and the light/dark toggle live here for every role that uses
-            this component (Admin/Member/Security) — NotificationBell
-            already no-ops on routes that don't need it, and ThemeToggle is
-            now permanent app-wide (previously shown only on Commercial
-            pages). sidebarExtra remains available for any other future
-            per-role slot; this component doesn't know or care what it is. */}
-        <div className={styles.sidebarQuickActions}>
-          <NotificationBell />
-          <ThemeToggle />
-          {sidebarExtra}
-        </div>
         {/* Nav */}
-        <nav className={styles.sidebarNav}>
-          {navigation.map((group, i) => (
-            <div key={i} className={styles.navGroup}>
-              <div className={styles.navGroupTitle}>{group.title}</div>
-              {group.items.map((item) => {
-                const isActive = pathname.startsWith(item.path);
-                return (
-                  <div
-                    key={item.path}
-                    className={`${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
-                    onClick={() => handleNav(item.path)}
-                    title={item.name}
-                  >
-                    <span className={styles.navIcon}>{item.icon}</span>
-                    <span>{item.name}</span>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+        <nav className={styles.sidebarSegNav}>
+          <div className={styles.sidebarNav}>
+            {navigation.map((group, i) => (
+              <div key={i} className={styles.navGroup}>
+                <div className={styles.navGroupTitle}>{group.title}</div>
+                {group.items.map((item) => {
+                  const isActive = pathname.startsWith(item.path);
+                  return (
+                    <div
+                      key={item.path}
+                      className={`${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
+                      onClick={() => handleNav(item.path)}
+                      title={item.name}
+                    >
+                      <span className={styles.navIcon}>{item.icon}</span>
+                      <span>{item.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </nav>
         {/* User footer */}
-        <div className={styles.sidebarFooter}>
+        <div className={styles.sidebarSegFooter}>
           <div className={styles.userInfo}>
             <div className={styles.userAvatar}>
               {user.name?.charAt(0)?.toUpperCase()}
@@ -174,7 +185,10 @@ export default function DashboardLayout({
             defined in Dashboard.module.css — components/SuperAdminLayout.js
             still uses them for its own, separate header. */}
         <main key={pathname} className={styles.mainContent}>
-          {children}
+          {/* Global glass frame — every page gets it now, not just the admin
+              dashboard (which used to mount its own, page-local copy; see
+              .contentFrame's comment in Dashboard.module.css). */}
+          <div className={styles.contentFrame}>{children}</div>
         </main>
       </div>
     </div>

@@ -25,7 +25,7 @@ export default function AdminLayout({ children }) {
     <DashboardLayout
       role="Admin"
       navigation={visibleNavigation}
-      title="NexGen ERP"
+      title="AapliSociety"
       subtitle="Admin Panel"
     >
       {children}
