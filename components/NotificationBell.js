@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { Bell } from "lucide-react";
 import { useNotifications } from "../hooks/useNotifications";
 import NotificationToast from "./NotificationToast";
 import styles from "@/styles/NotificationBell.module.css";
@@ -88,7 +89,7 @@ export default function NotificationBell() {
           onClick={handleOpen}
           aria-label="Notifications"
         >
-          🔔
+          <Bell size={15} />
           {unreadCount > 0 && (
             <span className={styles.badge}>
               {unreadCount > 99 ? "99+" : unreadCount}

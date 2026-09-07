@@ -7,6 +7,8 @@ import {
   DatabaseZap, ScrollText, PackageOpen, Search, Bell, Shield, Activity, SlidersHorizontal,
   CreditCard,
   Archive,
+  LifeBuoy,
+  RefreshCw,
 } from "lucide-react";
 import RouteLoadingBar from "./RouteLoadingBar";
 import ThemeToggle from "./theme/ThemeToggle";
@@ -22,10 +24,12 @@ const NAV = [
     title: "Platform",
     items: [
       { name: "Societies",     path: "/superadmin/societies",     icon: <Building2 size={16} strokeWidth={1.75} /> },
+      { name: "Support Tickets", path: "/superadmin/tickets",     icon: <LifeBuoy size={16} strokeWidth={1.75} /> },
       { name: "Subscriptions", path: "/superadmin/subscriptions", icon: <CreditCard size={16} strokeWidth={1.75} /> },
       { name: "Offboarding",   path: "/superadmin/lifecycle",     icon: <Archive size={16} strokeWidth={1.75} /> },
       { name: "Audit Reports", path: "/superadmin/audit-reports", icon: <ClipboardList size={16} strokeWidth={1.75} /> },
       { name: "Data Browser",  path: "/superadmin/data-browser",  icon: <DatabaseZap size={16} strokeWidth={1.75} /> },
+      { name: "DB Sync",       path: "/superadmin/db-sync",       icon: <RefreshCw size={16} strokeWidth={1.75} /> },
       { name: "Logs",          path: "/superadmin/logs",          icon: <ScrollText size={16} strokeWidth={1.75} /> },
       { name: "Exports",       path: "/superadmin/exports",       icon: <PackageOpen size={16} strokeWidth={1.75} /> },
       { name: "Operations",    path: "/superadmin/operations",    icon: <Activity size={16} strokeWidth={1.75} /> },
@@ -197,7 +201,7 @@ export default function SuperAdminLayout({ children }) {
             </div>
           </header>
           <main className={styles.mainContent}>
-            {children}
+            <div className={styles.contentFrame}>{children}</div>
           </main>
         </div>
       </div>

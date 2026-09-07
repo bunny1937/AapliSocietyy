@@ -7,7 +7,10 @@
 .container {
   display: flex;
   min-height: 100vh;
-  background: var(--bg-canvas);
+  /* Transparent, not var(--bg-canvas) — same fix as Dashboard.module.css's
+     .dashboardContainer: an opaque background here was painting over the
+     global Aurora bg (app/layout.js) on every superadmin page. */
+  background: transparent;
 }
 /* ── Sidebar ─────────────────────────────────────────────────────────
    Deliberately a fixed brand-blue panel, not themed page chrome — stays
@@ -263,6 +266,36 @@
   flex: 1;
   padding: 0 24px 24px;
   animation: fadeSlideIn 0.18s ease;
+}
+/* Same global glass frame as styles/Dashboard.module.css's .contentFrame —
+   superadmin has its own separate layout/CSS module, so it needs its own
+   copy rather than sharing the class (CSS Modules scope class names per
+   file). Kept in sync deliberately: same values, same behavior, just two
+   places because two different root layouts exist. */
+.contentFrame {
+  border-radius: 28px;
+  padding: clamp(18px, 2.4vw, 32px);
+  backdrop-filter: blur(38px) saturate(140%);
+  -webkit-backdrop-filter: blur(38px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 28px 70px -24px rgba(20, 20, 40, 0.2);
+  background: rgba(255, 255, 255, 0.42);
+}
+:global(html[data-theme="dark"]) .contentFrame {
+  background: rgba(22, 30, 50, 0.68);
+  backdrop-filter: blur(48px);
+  -webkit-backdrop-filter: blur(48px);
+  border-color: rgba(150, 180, 235, 0.14);
+  box-shadow:
+    0 1px 0 rgba(180, 205, 255, 0.08) inset,
+    0 28px 70px -24px rgba(0, 0, 0, 0.55);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .contentFrame {
+    background: var(--bg-surface);
+  }
 }
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateY(8px); }
