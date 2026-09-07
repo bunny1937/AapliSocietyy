@@ -22,7 +22,7 @@ export const maxDuration = 300;
  * Replaces the old `retention-export` route. Delete that file.
  *
  * cron-job.org, daily 02:30 IST:
- *   https://aaplisociety.vercel.app/v1/cron/retention-scan
+ *   https://aaplisociety.visync.in/v1/cron/retention-scan
  *   Header: Authorization: Bearer <CRON_SECRET>
  *
  * ## This job cannot delete anything and does not build any files

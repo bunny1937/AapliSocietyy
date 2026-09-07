@@ -25,7 +25,7 @@ const BLOCKED_REMINDER_SECONDS = 7 * 24 * 60 * 60;
  * GET /v1/cron/subscription-lifecycle
  *
  * cron-job.org, daily 06:00 IST:
- *   https://aaplisociety.vercel.app/v1/cron/subscription-lifecycle
+ *   https://aaplisociety.visync.in/v1/cron/subscription-lifecycle
  *   Header: Authorization: Bearer <CRON_SECRET>
  *
  * ## This job does not enforce anything

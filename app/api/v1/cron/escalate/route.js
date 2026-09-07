@@ -4,7 +4,7 @@
 //
 // cron-job.org has a job named "Escalate" pointed at
 //
-//   https://aaplisociety.vercel.app/api/v1/cron/escalate
+//   https://aaplisociety.visync.in/api/v1/cron/escalate
 //
 // which has never existed. The real escalation route is
 // /api/v1/cron/escalate-visitors (a superseded duplicate at

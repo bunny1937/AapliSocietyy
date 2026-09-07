@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 // counters that drifted from manual adjustments or a partial failure get
 // restated from the source attendance ledger. Call once a day, off-peak:
 //
-//   URL:    https://aaplisociety.vercel.app/v1/cron/amenities-analytics-recompute
+//   URL:    https://aaplisociety.visync.in/v1/cron/amenities-analytics-recompute
 //   Method: GET
 //   Header: Authorization: Bearer <CRON_SECRET>
 //   When:   nightly, ~03:00 IST

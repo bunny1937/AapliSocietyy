@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 // records reminderSentAt before sending, so overlapping runs cannot double
 // notify. Call every 15 minutes from an external scheduler:
 //
-//   URL:    https://aaplisociety.vercel.app/v1/cron/amenities-event-reminders
+//   URL:    https://aaplisociety.visync.in/v1/cron/amenities-event-reminders
 //   Method: GET
 //   Header: Authorization: Bearer <CRON_SECRET>
 //   When:   every 15 minutes

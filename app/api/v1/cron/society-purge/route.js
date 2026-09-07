@@ -23,7 +23,7 @@ const MAX_SOCIETIES_PER_RUN = 5;
  * GET /v1/cron/society-purge
  *
  * cron-job.org, daily 04:00 IST (after retention-scan and retention-purge):
- *   https://aaplisociety.vercel.app/v1/cron/society-purge
+ *   https://aaplisociety.visync.in/v1/cron/society-purge
  *   Header: Authorization: Bearer <CRON_SECRET>
  *
  * ## What this fixes

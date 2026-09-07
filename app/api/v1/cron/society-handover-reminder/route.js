@@ -24,7 +24,7 @@ const MAX_PER_RUN = 25;
  * GET /v1/cron/society-handover-reminder
  *
  * cron-job.org, weekly (Mondays, 05:00 IST):
- *   https://aaplisociety.vercel.app/v1/cron/society-handover-reminder
+ *   https://aaplisociety.visync.in/v1/cron/society-handover-reminder
  *   Header: Authorization: Bearer <CRON_SECRET>
  *
  * ## Why this is not optional

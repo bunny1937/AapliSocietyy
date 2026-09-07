@@ -31,7 +31,7 @@ const MAX_SOCIETIES_PER_RUN = 50;
  * GET /v1/cron/entitlement-denials
  *
  * cron-job.org, hourly:
- *   https://aaplisociety.vercel.app/v1/cron/entitlement-denials
+ *   https://aaplisociety.visync.in/v1/cron/entitlement-denials
  *   Header: Authorization: Bearer <CRON_SECRET>
  *
  * ## What it does

@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 // to skip). Call every 15 minutes from an external scheduler (cron-jobs.org),
 // same as /v1/cron/cleanup, since Vercel Hobby cron cannot run finer than daily:
 //
-//   URL:    https://aaplisociety.vercel.app/v1/cron/amenities-auto-checkout
+//   URL:    https://aaplisociety.visync.in/v1/cron/amenities-auto-checkout
 //   Method: GET
 //   Header: Authorization: Bearer <CRON_SECRET>
 //   When:   every 15 minutes

@@ -16,7 +16,7 @@ export const maxDuration = 300;
  * GET /v1/cron/retention-purge
  *
  * cron-job.org, daily 03:30 IST (an hour after the scan):
- *   https://aaplisociety.vercel.app/v1/cron/retention-purge
+ *   https://aaplisociety.visync.in/v1/cron/retention-purge
  *   Header: Authorization: Bearer <CRON_SECRET>
  *
  * ## The gate

@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 // Call this once a day from cron-jobs.org (Vercel Hobby only allows 2 crons/day
 // and they cannot be finer than daily, which is why you set up an external one):
 //
-//   URL:    https://aaplisociety.vercel.app/v1/cron/cleanup
+//   URL:    https://aaplisociety.visync.in/v1/cron/cleanup
 //   Method: GET
 //   Header: Authorization: Bearer <CRON_SECRET>
 //   When:   once a day, ~03:30 IST (pick a time nobody is using the app)
