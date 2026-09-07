@@ -39,6 +39,7 @@ import {
   SlidersHorizontal,
   Layers,
   PhoneCall,
+  LifeBuoy,
 } from "lucide-react";
 
 // Shared between app/admin/layout.js and app/my-access/page.js — the latter
@@ -55,6 +56,19 @@ export const ADMIN_NAVIGATION = [
       // way to find that page from inside the app. The page shows an empty
       // state when there is nothing waiting, which is the normal case.
       { name: "My Society Data", path: "/admin/data-handover", pageKey: null, icon: <Download size={16} /> },
+    ],
+  },
+  {
+    title: "Support",
+    items: [
+      // pageKey: null — same reasoning as "My Society Data" above: submitting
+      // a ticket to the platform team must never depend on a granular RBAC
+      // grant. `roles` is a second, independent filter (below, in
+      // useVisibleAdminNavigation) restricting the item itself to the
+      // "Admin" role — Secretary/Accountant never see it, matching the
+      // route guard (lib/authz.js requireRoles(["Admin"])) so the nav never
+      // offers a link that would 403.
+      { name: "Support Ticket", path: "/admin/tickets", pageKey: null, roles: ["Admin"], icon: <LifeBuoy size={16} /> },
     ],
   },
   {
@@ -216,6 +230,15 @@ let navCachePromise = null;
 let entCache = null; // { modules } | null
 let entCachePromise = null;
 
+// Third cache, same pattern: the caller's own legacy role string, used only
+// to filter nav items that declare a `roles` allow-list (currently just
+// "Support Ticket" — Admin-only). Unlike allowedPages/modules, an unknown
+// role hides a `roles`-restricted item rather than showing it — the item
+// exists to match a route that would otherwise 403, so failing open here
+// would just be a dead link, not a security issue.
+let roleCache = null; // { role } | null
+let roleCachePromise = null;
+
 function toAllowedPages(d) {
   if (!d || d.error) return new Set();
   if (d.bootstrapped === false) return "all";
@@ -295,6 +318,30 @@ export function useVisibleAdminNavigation({ commercialEnabled = false } = {}) {
     };
   }, []);
 
+  const [role, setRole] = useState(roleCache ? roleCache.role : undefined);
+  useEffect(() => {
+    let alive = true;
+    if (!roleCachePromise) {
+      roleCachePromise = fetch("/api/auth/me", { credentials: "include" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          const resolved = d?.user?.role || null;
+          roleCache = { role: resolved };
+          return resolved;
+        })
+        .catch(() => {
+          roleCache = { role: null };
+          return null;
+        });
+    }
+    roleCachePromise.then((resolved) => {
+      if (alive) setRole(resolved);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const baseNavigation = commercialEnabled
     ? [...ADMIN_NAVIGATION.slice(0, -1), COMMERCIAL_NAVIGATION, ADMIN_NAVIGATION[ADMIN_NAVIGATION.length - 1]]
     : ADMIN_NAVIGATION;
@@ -308,15 +355,28 @@ export function useVisibleAdminNavigation({ commercialEnabled = false } = {}) {
   // modules (Tenancy, RBAC) own no nav group at all — their items live inside
   // base groups — so an early return on an empty hidden-set left Tenant
   // Requests visible to a society that never bought it.
+  // An item's `roles` allow-list (e.g. Support Ticket: Admin-only) fails
+  // closed while the role fetch is still in flight (role === undefined) —
+  // the opposite of the modules===null fail-open above. That table hides
+  // routes the society hasn't bought (cosmetic only, middleware is the real
+  // gate); `roles` exists to keep the nav from ever offering a link that
+  // 403s for this specific user, so briefly hiding it is the safer default.
+  const itemAllowedByRole = (item) => !item.roles || (role && item.roles.includes(role));
+
   const hidden = modules ? hiddenNavGroups(modules) : new Set();
-  const navigation = modules
-    ? baseNavigation
-        .map((group) => ({
+  const navigation = (
+    modules
+      ? baseNavigation.map((group) => ({
           ...group,
           items: group.items.filter((item) => !isModulePath(item.path, modules)),
         }))
-        .filter((group) => !hidden.has(group.title) && group.items.length > 0)
-    : baseNavigation;
+      : baseNavigation
+  )
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(itemAllowedByRole),
+    }))
+    .filter((group) => !(modules && hidden.has(group.title)) && group.items.length > 0);
 
   const visibleNavigation =
     allowedPages === null
