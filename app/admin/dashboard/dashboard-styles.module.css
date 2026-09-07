@@ -1,0 +1,96 @@
+/* app/admin/dashboard/dashboard-styles.module.css
+ *
+ * Aurora Glass — the ONE dashboard style. Every existing components/revamp
+ * tile (Card, MiniMetric, ActionTile, …) paints itself purely from
+ * var(--r-*) — none of those files change here.
+ *
+ * The fixed background (bg.svg/bg-dark.svg + darkDepth + darkRightFade +
+ * scrim) used to be mounted here, page-local. It's now global — one mount
+ * in app/layout.js, classes in styles/globals.css (.appBgLayer etc) — so
+ * every route gets it, not just this page.
+ */
+
+.wrap {
+  position: relative;
+  /* NOT isolation:isolate anymore. That was here to keep the OLD
+     page-local bg layers scoped to this page — it also, as a side
+     effect, put .wrap in its own stacking context. backdrop-filter can't
+     see past a stacking-context boundary, so once the bg moved to
+     app/layout.js (a sibling stacking context, not a descendant of
+     .wrap), .frame's blur had nothing to sample and just rendered as a
+     flat, near-opaque panel — the "pure white everywhere" bug. Removing
+     this lets .frame's backdrop-filter reach the global bg again. */
+}
+
+/* ── Card shadow — scoped override, not touching the shared kit's default
+   (--r-shadow-card is used by components/revamp's Card/MiniMetric/etc
+   across 20+ other pages; overriding it here on .wrap only affects this
+   page, same pattern as --card-tint below). The kit's default is nearly
+   flat (0 1px 0 @2% + 0 1px 3px @4%) — barely a shadow at rest, which
+   read as "stale" against the glass frame. Real elevation now, tinted
+   toward the brand blue instead of generic black (taste-skill: shadows
+   should carry the background's hue). */
+.wrap {
+  --r-shadow-card: 0 1px 2px rgba(30, 58, 138, 0.06), 0 10px 24px -8px rgba(30, 58, 138, 0.22);
+}
+:global(html[data-theme="dark"]) .wrap {
+  --r-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.45), 0 12px 28px -8px rgba(0, 0, 0, 0.6);
+}
+
+/* ── Brand tokens ───────────────────────────────────────────────────── */
+.wrap {
+  --r-brand: #3452e1;
+  --r-brand-soft: #e7ebfd;
+  --r-accent: #6f86ef;
+  --r-radius-lg: 18px;
+  --r-radius-xl: 26px;
+}
+:global(html[data-theme="dark"]) .wrap {
+  --r-brand: #98abf0;
+  --r-brand-soft: #22284a;
+  --r-accent: #bbc5f7;
+}
+
+/* ── Card surface tint — fixed at 20% ───────────────────────────────────
+   The kit's default --r-surface is pure #ffffff, which reads as a harsh
+   glare against the blue glass frame/bg. Blend it 20% of the way toward
+   a blue-tinted target — final value, no slider. Still fully opaque, per
+   "clean pure cards" — this is color, not transparency.
+   Plain fallback first (mid-intensity look) for browsers without
+   color-mix(); the color-mix declaration after it wins when supported and
+   is simply invalid (ignored, fallback stands) when it isn't. */
+.wrap {
+  --card-tint: 20;
+  --r-canvas: #eef1f9;
+  --r-surface: #f8fafd;
+  --r-surface-2: #eef2fa;
+  --r-surface-3: #e6ecf8;
+  --r-border: #dee6f5;
+  --r-hairline: #e6ecf8;
+  --r-canvas: color-mix(in srgb, #f6f7f9 calc(100% - var(--card-tint) * 1%), #e6ebf7 calc(var(--card-tint) * 1%));
+  --r-surface: color-mix(in srgb, #ffffff calc(100% - var(--card-tint) * 1%), #eef2fb calc(var(--card-tint) * 1%));
+  --r-surface-2: color-mix(in srgb, #fafbfc calc(100% - var(--card-tint) * 1%), #e4eaf8 calc(var(--card-tint) * 1%));
+  --r-surface-3: color-mix(in srgb, #f3f4f6 calc(100% - var(--card-tint) * 1%), #d9e2f5 calc(var(--card-tint) * 1%));
+  --r-border: color-mix(in srgb, #ececef calc(100% - var(--card-tint) * 1%), #cdd9f2 calc(var(--card-tint) * 1%));
+  --r-hairline: color-mix(in srgb, #f1f1f3 calc(100% - var(--card-tint) * 1%), #dbe4f6 calc(var(--card-tint) * 1%));
+}
+:global(html[data-theme="dark"]) .wrap {
+  --r-canvas: #0a0d15;
+  --r-surface: #12161f;
+  --r-surface-2: #161b27;
+  --r-surface-3: #1c2230;
+  --r-border: #232b3d;
+  --r-hairline: #1c2230;
+  --r-canvas: color-mix(in srgb, #0b0b0f calc(100% - var(--card-tint) * 1%), #0a0f1c calc(var(--card-tint) * 1%));
+  --r-surface: color-mix(in srgb, #131318 calc(100% - var(--card-tint) * 1%), #141a29 calc(var(--card-tint) * 1%));
+  --r-surface-2: color-mix(in srgb, #16161c calc(100% - var(--card-tint) * 1%), #182034 calc(var(--card-tint) * 1%));
+  --r-surface-3: color-mix(in srgb, #1c1c24 calc(100% - var(--card-tint) * 1%), #1e2740 calc(var(--card-tint) * 1%));
+  --r-border: color-mix(in srgb, #24242c calc(100% - var(--card-tint) * 1%), #2a3654 calc(var(--card-tint) * 1%));
+  --r-hairline: color-mix(in srgb, #1d1d24 calc(100% - var(--card-tint) * 1%), #202a42 calc(var(--card-tint) * 1%));
+}
+
+/* The outer glass frame that used to live here (.frame) is gone — the
+   dashboard now gets its glass shell from the GLOBAL .contentFrame in
+   styles/Dashboard.module.css (wrapped once, in DashboardLayout.js, around
+   every admin/member/security page). Keeping a second, page-local frame
+   here would have nested two backdrop-filters, blurring each other. */

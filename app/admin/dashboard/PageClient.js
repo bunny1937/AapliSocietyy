@@ -18,6 +18,7 @@ import {
   PageHeader, SectionLabel, ActionTile, Card, CardHead, MiniMetric, MiniTable,
   Progress, Sparkline, Avatar, Pill, Btn, Select, Icon, SummaryStat, EmptyState,
 } from "@/components/revamp";
+import styles from "./dashboard-styles.module.css";
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -285,6 +286,24 @@ export default function AdminDashboardPage() {
 
   const rateColor = collectionRate >= 80 ? "var(--r-success)" : collectionRate >= 50 ? "var(--r-warning)" : "var(--r-danger)";
 
+  // Momentum — this period's collection vs the one right before it in the
+  // same trend series already fetched above. No new request, no invented
+  // number: trend[trend.length-1] is the current period, [-2] the prior one.
+  const momentum = useMemo(() => {
+    if (collectedTrend.length < 2) return null;
+    const curr = collectedTrend[collectedTrend.length - 1];
+    const prev = collectedTrend[collectedTrend.length - 2];
+    if (!prev) return null;
+    return Math.round(((curr - prev) / prev) * 100);
+  }, [collectedTrend]);
+
+  // Top payment mode — same paymentModes array already shown inside the
+  // collection-rate card, just surfaced as its own headline stat.
+  const topMode = useMemo(() => {
+    if (!paymentModes.length) return null;
+    return [...paymentModes].sort((a, b) => (b.total || 0) - (a.total || 0))[0];
+  }, [paymentModes]);
+
   const quickLinks = [
     { label: "Generate Bills", icon: "file-text", path: "/admin/generate-bills" },
     { label: "Record Payment", icon: "credit-card", path: "/admin/payments" },
@@ -297,7 +316,7 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div style={{ maxWidth: 1480, margin: "0 auto" }}>
+    <div className={styles.wrap} style={{ maxWidth: 1480, margin: "0 auto" }}>
       <SubscriptionBanner />
       <HandoverBanner />
       <PageHeader
@@ -441,6 +460,24 @@ export default function AdminDashboardPage() {
           onClick={() => router.push("/admin/ledger")}
           extra={<div style={{ marginTop: 12 }}><Progress value={fyCollectionRate} total={100} color="var(--r-accent)" height={5} /></div>}
         />
+
+        {/* Momentum — vs previous period in the same trend series */}
+        {momentum !== null && (
+          <MiniMetric
+            label="Momentum" value={`${momentum > 0 ? "+" : ""}${momentum}%`}
+            icon={momentum >= 0 ? "trending-up" : "trending-down"}
+            tone={momentum >= 0 ? "success" : "danger"}
+            delta="Collected vs previous period"
+          />
+        )}
+
+        {/* Top payment mode — same data already listed in the ring card, surfaced */}
+        {topMode && (
+          <MiniMetric
+            label="Top payment mode" value={topMode.mode || "—"} icon="credit-card"
+            delta={`₹${fmt(topMode.total)} via ${topMode.mode}`}
+          />
+        )}
       </div>
 
       {/* ── QUICK ACTIONS ───────────────────────────────────────────── */}
