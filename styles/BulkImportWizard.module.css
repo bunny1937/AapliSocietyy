@@ -611,6 +611,471 @@
   font-style: italic;
 }
 
+/* ── Review (preview) stage ────────────────────────────────────────────── */
+
+.reviewBody {
+  padding: 2px 2px 4px;
+}
+
+.summaryCard {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--success-bg);
+  margin-bottom: 12px;
+}
+
+.summaryCardErr {
+  background: var(--danger-bg);
+}
+
+.summaryHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 650;
+  font-size: 13.5px;
+  color: var(--success-fg);
+}
+
+.summaryCardErr .summaryHead {
+  color: var(--danger-fg);
+}
+
+.summaryMeta {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--success-fg);
+  opacity: 0.85;
+}
+
+.summaryCardErr .summaryMeta {
+  color: var(--danger-fg);
+}
+
+.summaryLine {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.summaryLineErr {
+  color: var(--danger-fg);
+}
+
+.summaryLineWarn {
+  color: var(--warning-fg);
+}
+
+.warningBanner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--warning-bg);
+  color: var(--warning-fg);
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.memberListHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-weight: 650;
+  font-size: 13px;
+  color: var(--fg-2);
+  margin-bottom: 8px;
+}
+
+.memberListCount {
+  font-weight: 500;
+  color: var(--fg-4);
+}
+
+.memberList {
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.memberRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 9px 12px;
+  border-top: 1px solid var(--border);
+  animation: bulkImportRowIn 0.22s ease both;
+}
+
+.memberRow:first-child {
+  border-top: none;
+}
+
+.memberRowWarning {
+  background: var(--warning-bg);
+}
+
+.memberRowError {
+  background: var(--danger-bg);
+}
+
+.memberRowIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.memberRowFlat {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--fg-2);
+}
+
+.memberRowOwner {
+  font-size: 12px;
+  color: var(--fg-5);
+}
+
+.memberRowMsg {
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--warning-fg);
+}
+
+.memberRowMsgErr {
+  color: var(--danger-fg);
+}
+
+.checkingRow {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--fg-4);
+}
+
+.ackRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg-sunken);
+  font-size: 12.5px;
+  color: var(--fg-2);
+  cursor: pointer;
+}
+
+.ackRow input {
+  margin-top: 2px;
+  accent-color: var(--accent);
+}
+
+.reviewFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.reviewFooterHint {
+  font-size: 12px;
+  color: var(--danger-fg);
+}
+
+.reviewFooterHintWarn {
+  color: var(--warning-fg);
+}
+
+/* ── Importing stage ───────────────────────────────────────────────────── */
+
+.progressBody {
+  padding: 20px 4px 4px;
+}
+
+.progressHead {
+  margin-bottom: 16px;
+  font-weight: 650;
+  color: var(--fg-2);
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.progressStep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  opacity: 0.5;
+  transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.progressStepDone {
+  background: var(--success-bg);
+  border-color: var(--success-bg);
+  opacity: 1;
+}
+
+.progressStepActive {
+  background: var(--accent-tint);
+  border-color: var(--accent);
+  opacity: 1;
+}
+
+.progressStepIcon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--fg-4);
+}
+
+.progressStepDone .progressStepIcon {
+  color: var(--success-fg);
+}
+
+.progressStepActive .progressStepIcon {
+  color: var(--accent);
+}
+
+.progressStepLabel {
+  flex: 1;
+  font-size: 13px;
+  color: var(--fg-4);
+}
+
+.progressStepDone .progressStepLabel {
+  color: var(--success-fg);
+  font-weight: 560;
+}
+
+.progressStepActive .progressStepLabel {
+  color: var(--fg-1);
+  font-weight: 560;
+}
+
+.progressStepStatus {
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--success-fg);
+}
+
+/* ── Result (success / failure) stage ──────────────────────────────────── */
+
+.resultStack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 2px 2px 4px;
+}
+
+.resultCard {
+  padding: 16px 18px;
+  border-radius: 10px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+}
+
+.resultCardOk {
+  background: var(--success-bg);
+  border-color: var(--success-bg);
+}
+
+.resultCardWarn {
+  background: var(--warning-bg);
+  border-color: var(--warning-bg);
+}
+
+.resultCardErr {
+  background: var(--danger-bg);
+  border-color: var(--danger-bg);
+}
+
+.resultCardAccent {
+  background: var(--accent-tint);
+  border-color: var(--accent-tint);
+}
+
+.resultTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 650;
+  font-size: 14px;
+  color: var(--fg-1);
+  margin-bottom: 10px;
+}
+
+.resultCardOk .resultTitle {
+  color: var(--success-fg);
+}
+
+.resultCardWarn .resultTitle {
+  color: var(--warning-fg);
+}
+
+.resultCardErr .resultTitle {
+  color: var(--danger-fg);
+}
+
+.resultCardAccent .resultTitle {
+  color: var(--primary);
+}
+
+.resultRows {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--fg-2);
+}
+
+.resultCardOk .resultRows {
+  color: var(--success-fg);
+}
+
+.resultCardWarn .resultRows {
+  color: var(--warning-fg);
+}
+
+.resultCardErr .resultRows {
+  color: var(--danger-fg);
+}
+
+.resultCardAccent .resultRows {
+  color: var(--fg-2);
+}
+
+.resultCharges {
+  margin-top: 4px;
+  padding-left: 10px;
+  border-left: 1px solid var(--success-fg);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.credentialLine {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.credentialCode {
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  color: var(--fg-1);
+}
+
+.credentialFlag {
+  font-size: 11.5px;
+  color: var(--danger-fg);
+}
+
+.resultList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+}
+
+/* Members table: repurposes the sheet-editor table tokens for the read-only
+   credentials table shown in the success summary. */
+.membersTableWrap {
+  max-height: 320px;
+}
+
+.accountOk {
+  color: var(--success-fg);
+  font-weight: 550;
+}
+
+.accountWarn {
+  color: var(--warning-fg);
+  font-weight: 550;
+}
+
+.linkBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.linkBtn:hover {
+  text-decoration: underline;
+}
+
+.downloadBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px;
+  border: none;
+  border-radius: 9px;
+  background: var(--success);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.downloadBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.28);
+}
+
+.doneBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--success-bg);
+  border: 1px solid var(--success-bg);
+  color: var(--success-fg);
+  font-size: 13px;
+  font-weight: 560;
+}
+
+.closeBtn {
+  width: 100%;
+  padding: 11px;
+  border: none;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.closeBtn:hover {
+  transform: translateY(-1px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .shell,
   .header,
